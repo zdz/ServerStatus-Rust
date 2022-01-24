@@ -1,5 +1,7 @@
 # ServerStatus - Rust
 
+[![Docker](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml)
+
 ## 介绍
 项目基于`cppla`版本`ServerStatus`，修改如下：
 
