@@ -1,0 +1,16 @@
+[Unit]
+Description=Server Status Server
+After=network.target
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/opt/ServerStatus
+ExecStart=/usr/bin/python3 client-linux.py -a http://127.0.0.1:8080/report -u h1 -p p1
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+
+# /etc/systemd/system/stat_client.service

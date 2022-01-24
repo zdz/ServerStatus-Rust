@@ -1,0 +1,16 @@
+[Unit]
+Description=Server Status Server
+After=network.target
+
+[Service]
+User=nobody
+Group=nobody
+WorkingDirectory=/opt/ServerStatus
+ExecStart=/opt/ServerStatus/stat_srv -c /opt/ServerStatus/config.toml
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+
+# /etc/systemd/system/stat_srv.service

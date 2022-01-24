@@ -1,0 +1,57 @@
+---
+kind: pipeline
+type: docker
+name: default
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: build docker
+  image: plugins/docker
+  settings:
+    username:
+      from_secret: hub_docker_username
+    password:
+      from_secret: hub_docker_password
+    repo: idoge/stat_srv
+    tags:
+      - latest
+      - '1.0'
+    # 与  Dockerfile 对应
+    target: production
+
+- name: notify-wx
+  image: lizheming/drone-wechat
+  pull: always
+  settings:
+    title: >
+     {% if success %}
+     ✅ {{repo.owner}}/{{repo.name}} 第 {{build.number}} 次构建成功！
+     {% else %}
+     ❌ {{repo.owner}}/{{repo.name}} 第 {{build.number}} 次构建失败了，快来修理下吧。
+     {% endif %}
+    corpid:
+      from_secret: corpid
+    corp_secret:
+      from_secret: corp_secret
+    agent_id:
+      from_secret: agent_id
+    to_user: "@all"
+    message: >
+      {% if success %}
+      😊主人，{{repo.owner}}/{{repo.name}}第{{build.number}}次构建成功！
+      {% else %}
+      😭主人，{{repo.owner}}/{{repo.name}}第{{build.number}}次构建失败了，快来修理下吧。
+      {% endif %}
+  when:
+    status:
+    - success
+    - failure
+
+trigger:
+  branch:
+  - master
+
+

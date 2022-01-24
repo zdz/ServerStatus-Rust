@@ -1,0 +1,57 @@
+
+addr = "0.0.0.0:8080"
+log_level = "trace"
+
+# admin pass
+admin_pass = "<admin pass>"
+admin_user = "<admin name>"
+
+# https://core.telegram.org/bots/api
+# https://jinja.palletsprojects.com/en/3.0.x/templates/#if
+[tgbot]
+bot_token = "<tg bot token>"
+chat_id = "<chat id>"
+enabled = false
+# host参见payload文件HostStat结构，模板置空则停用自定义告警
+custom_tpl = """
+{% if host.memory_used / host.memory_total > 0.5  %}
+<pre>❗{{ host.name }} 主机内存使用率超50%, 当前{{ (100 * host.memory_used / host.memory_total) | round }}%  </pre>
+{% endif %}
+
+{% if host.hdd_used / host.hdd_total  > 0.5  %}
+<pre>❗{{ host.name }} 主机硬盘使用率超50%, 当前{{ (100 * host.hdd_used / host.hdd_total) | round }}% </pre>
+{% endif %}
+"""
+
+[wechat]
+agent_id = "<agent id>"
+corp_id = "<corp id>"
+corp_secret = "<corp secret>"
+enabled = false
+
+custom_tpl = """
+{% if host.memory_used / host.memory_total > 0.8  %}
+❗{{ host.name }} 主机内存使用率超80%
+{% endif %}
+
+{% if host.hdd_used / host.hdd_total  > 0.8  %}
+❗{{ host.name }} 主机硬盘使用率超80%
+{% endif %}
+"""
+
+# name 不可重复，代替原来的 ClientID/ClientNetID
+[[hosts]]
+host = "h1"
+location = "🇨🇳"
+monthstart = 1
+name = "h1"
+password = "p1"
+type = "kvm"
+
+[[hosts]]
+host = "h2"
+location = "us"
+monthstart = 1
+name = "h2"
+password = "p2"
+type = "kvm"

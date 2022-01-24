@@ -1,0 +1,21 @@
+version: "3"
+networks:
+  traefik:
+    external:
+      name: traefik_gw
+
+services:
+  stat_srv:
+    image: idoge/stat_srv:latest
+    container_name: stat_srv
+    restart: unless-stopped
+    networks:
+      - traefik
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./config.toml:/config.toml
+    ports:
+      - 8080:8080
+    environment:
+      - RUST_BACKTRACE=1
+      - RUST_LOG=trace
