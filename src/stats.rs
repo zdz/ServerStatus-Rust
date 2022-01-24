@@ -82,6 +82,7 @@ impl StatsMgr {
                     stat_t.host = String::from(&info.host);
                     stat_t.location = String::from(&info.location);
                     stat_t.host_type = String::from(&info.host_type);
+                    stat_t.pos = info.pos;
                     stat_t.lastest_ts = SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .unwrap()
@@ -164,6 +165,7 @@ impl StatsMgr {
 
                     resp.servers.push(o);
                 }
+                resp.servers.sort_by(|a, b| a.pos.cmp(&b.pos));
                 if notified {
                     last_notify_ts = resp.updated;
                 }

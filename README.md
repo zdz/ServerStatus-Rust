@@ -22,6 +22,13 @@ log_level = "trace"
 admin_pass = "<admin pass>"
 admin_user = "<admin name>"
 
+# name 不可重复，代替原来的 ClientID/ClientNetID
+hosts = [
+  {name = "op", password = "pass", host = "op", location = "🇨🇳", type = "kvm", monthstart = 1},
+  {name = "rn", password = "pass", host = "rn", location = "us", type = "kvm", monthstart = 1},
+]
+
+
 # https://core.telegram.org/bots/api
 # https://jinja.palletsprojects.com/en/3.0.x/templates/#if
 [tgbot]
@@ -53,23 +60,6 @@ custom_tpl = """
 ❗{{ host.name }} 主机硬盘使用率超80%
 {% endif %}
 """
-
-# name 不可重复，代替原来的 ClientID/ClientNetID
-[[hosts]]
-name = "h1"
-password = "p1"
-host = "h1"
-location = "🇨🇳"
-monthstart = 1
-type = "kvm"
-
-[[hosts]]
-name = "h2"
-password = "p2"
-host = "h2"
-location = "us"
-monthstart = 1
-type = "kvm"
 
 ```
 
@@ -119,7 +109,7 @@ systemctl start stat_client
 ```
 
 ### 管理接口
-```json
+```
 [POST] http://127.0.0.1:8080/admin
 {
 	"cmd": "disable", // add, del, disable, enable

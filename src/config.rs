@@ -42,6 +42,10 @@ pub struct Host {
     pub last_network_in: u64,
     #[serde(skip_deserializing)]
     pub last_network_out: u64,
+
+    // user data
+    #[serde(skip_serializing, skip_deserializing)]
+    pub pos: usize,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -76,9 +80,10 @@ pub fn parse_config(cfg: &String) -> Config {
     let mut o: Config = toml::from_str(&contents).unwrap();
 
     o.auth_map = HashMap::new();
-    for host in &o.hosts {
+    for (idx, host) in o.hosts.iter_mut().enumerate() {
         o.auth_map
             .insert(String::from(&host.name), String::from(&host.password));
+        host.pos = idx;
     }
 
     o

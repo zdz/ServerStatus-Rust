@@ -67,8 +67,12 @@ pub struct HostStat {
     #[serde(skip_deserializing)]
     pub custom: String,
 
+    // user data
     #[serde(skip_deserializing)]
     pub lastest_ts: u64,
+
+    #[serde(skip_serializing, skip_deserializing)]
+    pub pos: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
