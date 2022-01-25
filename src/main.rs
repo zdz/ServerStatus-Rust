@@ -109,7 +109,10 @@ async fn main_service_func(
         (&Method::POST, "/admin") => proc_admin_cmd(req, &stats_mgr).await,
         (&Method::GET, "/") | (&Method::GET, "/index.html") => {
             let body = Body::from(Asset::get("/index.html").unwrap().data);
-            return Ok(Response::new(body));
+            Ok(Response::builder()
+                .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
+                .body(Body::from(body))
+                .unwrap())
         }
         _ => {
             match req.method() {

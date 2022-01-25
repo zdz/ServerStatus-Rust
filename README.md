@@ -3,13 +3,13 @@
 [![Docker](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml)
 
 ## 介绍
-项目基于`cppla`版本`ServerStatus`，修改如下：
+基于 `cppla` 版本 `ServerStatus`，修改如下：
 
-- `rust`版本`server`，单个执行文件部署
-- 支持简单自定义 `telegram`，`wechat` 规则告警
-- 使用`http`协议上报
-- 支持`systemd`, 开机自启
-- 更小`docker`镜像(5M)
+- `rust` 版本 `server`，单个执行文件部署
+- 支持简单自定义规则告警(`telegram`, `wechat`)
+- 使用 `http` 协议上报
+- 支持 `systemd`, 开机自启
+- 更小 `docker` 镜像(5M)
 
 ## 服务端
 
@@ -75,12 +75,13 @@ cargo build --release
 或
 RUST_BACKTRACE=1 RUST_LOG=trace ./stat_srv -c config.toml
 
+## docker
+docker-compose up -d
+
 ## systemd
 systemctl enable stat_srv
 systemctl start stat_srv
 
-## docker
-docker-compose up -d
 ```
 
 ## 客户端
@@ -96,6 +97,7 @@ sudo apt -y install python3-pip
 sudo python3 -m pip install psutil requests
 
 # 运行
+wget --no-check-certificate -qO client-linux.py 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/client/client-linux.py'
 python3 client-linux.py -a http://127.0.0.1:8080/report -u h1 -p p1
 
 ## systemd
@@ -106,6 +108,7 @@ systemctl start stat_client
 ## TODO
 ```
 1. manager api
+2. rust client
 ```
 
 ### 管理接口
