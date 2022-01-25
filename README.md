@@ -3,10 +3,10 @@
 [![Docker](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml)
 
 ## 介绍
-基于 `cppla` 版本 `ServerStatus`，修改如下：
+基于 `cppla` 版本 `ServerStatus`，特性如下：
 
 - `rust` 版本 `server`，单个执行文件部署
-- 支持简单自定义规则告警(`telegram`, `wechat`)
+- 支持上下线和简单自定义规则告警 (`telegram`, `wechat`)
 - 使用 `http` 协议上报
 - 支持 `systemd`, 开机自启
 - 更小 `docker` 镜像(5M)
@@ -64,7 +64,13 @@ custom_tpl = """
 ```
 
 ```bash
-# 编译
+# docker (推荐)
+wget --no-check-certificate -qO docker-compose.yml 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/docker-compose.yml'
+wget --no-check-certificate -qO config.toml 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/config.toml'
+touch stats.json
+docker-compose up -d
+
+# 源码编译
 yum install -y openssl-devel
 cargo build --release
 
@@ -74,9 +80,6 @@ cargo build --release
 ./stat_srv -c config.toml
 或
 RUST_BACKTRACE=1 RUST_LOG=trace ./stat_srv -c config.toml
-
-## docker
-docker-compose up -d
 
 ## systemd
 systemctl enable stat_srv
@@ -107,18 +110,11 @@ systemctl start stat_client
 
 ## TODO
 ```
-1. manager api
-2. rust client
-```
-
-### 管理接口
-```
-[POST] http://127.0.0.1:8080/admin
-{
-	"cmd": "disable", // add, del, disable, enable
-	"name": "h1",
-    ...
-}
+1. rust client
+2. admin api
+# 管理接口
+curl -X POST -H "Content-Type: application/json" -u "admin:pass" \
+http://127.0.0.1:8080/admin/{cmd}/{name} -d '{ //data }'
 ```
 
 ## 参考

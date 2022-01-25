@@ -14,6 +14,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./config.toml:/config.toml
+      - ./stats.json:/stats.json
     ports:
       - 8080:8080
     environment:

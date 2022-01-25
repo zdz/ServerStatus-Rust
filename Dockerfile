@@ -16,5 +16,6 @@ FROM alpine:3.15 as production
 RUN apk add --no-cache libgcc
 COPY --from=builder /app/target/release/stat_srv /stat_srv
 
+WORKDIR /
 EXPOSE 8080
 ENTRYPOINT ["/stat_srv", "-c", "/config.toml"]
