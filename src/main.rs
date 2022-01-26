@@ -23,6 +23,14 @@ use hyper::{header, Body, Method, Request, Response, Server, StatusCode};
 type GenericError = Box<dyn std::error::Error + Send + Sync>;
 type Result<T> = std::result::Result<T, GenericError>;
 
+static APP_VERSION: &'static str = concat!(
+    "v",
+    env!("CARGO_PKG_VERSION"),
+    " (",
+    env!("GIT_HASH"),
+    ") - BUILD_TS:",
+    env!("BUILD_ST")
+);
 static G_CONFIG: OnceCell<crate::config::Config> = OnceCell::new();
 static NOTFOUND: &[u8] = b"Not Found";
 static UNAUTHORIZED: &[u8] = b"Unauthorized";
@@ -129,7 +137,7 @@ async fn main_service_func(
                                 .unwrap();
                             return Ok(resp);
                         } else {
-                            debug!("can't get => {:?}", req_path);
+                            error!("can't get => {:?}", req_path);
                         }
                     }
                 }
@@ -153,7 +161,7 @@ async fn shutdown_signal() {
 }
 
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
+#[clap(author, version = APP_VERSION, about, long_about = None)]
 struct Args {
     #[clap(short, long, default_value = "config.toml")]
     config: String,
