@@ -3,7 +3,7 @@ FROM rust:1-alpine3.15 as builder
 ENV RUSTFLAGS="-C target-feature=-crt-static" \
     APP_TARGET=/app/target/release/stat_srv
 
-RUN apk add --no-cache musl-dev upx openssl-dev
+RUN apk add --no-cache musl-dev upx openssl-dev git
 
 WORKDIR /app
 COPY ./ /app
