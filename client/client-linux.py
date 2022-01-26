@@ -492,7 +492,7 @@ def http_report(addr, username, password, vnstat=False):
             if 's' in locals().keys():
                 del s
             time.sleep(3)
-            sess = requests.Session(auth=auth)
+            sess = requests.Session()
 
 
 def main():
