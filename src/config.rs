@@ -6,18 +6,16 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct TGBot {
-    #[serde(default = "bool::default")]
     pub enabled: bool,
     pub bot_token: String,
     pub chat_id: String,
     pub custom_tpl: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct WeChat {
-    #[serde(default = "bool::default")]
     pub enabled: bool,
     pub corp_id: String,
     pub corp_secret: String,
@@ -28,9 +26,7 @@ pub struct WeChat {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Host {
     pub name: String,
-    pub host: String,
     pub location: String,
-    // pub username: String,
     pub password: String,
     #[serde(rename = "type")]
     pub host_type: String,
@@ -52,9 +48,13 @@ pub struct Host {
 pub struct Config {
     pub addr: String,
     pub log_level: String,
-    pub admin_user: String,
-    pub admin_pass: String,
+    // pub admin_user: String,
+    // pub admin_pass: String,
+    #[serde(default = "bool::default")]
+    pub vnstat: bool,
+    #[serde(default = "Default::default")]
     pub tgbot: TGBot,
+    #[serde(default = "Default::default")]
     pub wechat: WeChat,
     pub hosts: Vec<Host>,
 

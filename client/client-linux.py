@@ -382,11 +382,40 @@ def tcp_report():
 
 import requests
 import traceback
+from datetime import datetime
 from requests.auth import HTTPBasicAuth
 from optparse import OptionParser
 
+def get_vnstat_traffic():
+    now = datetime.now()
+    vnstat_res = subprocess.check_output("/usr/bin/vnstat --json m", shell=True)
+    json_dict = json.loads(vnstat_res)
+    network_in, network_out, m_network_in, m_network_out = (0, 0, 0, 0)
+    ignore_list = ["docker", "vnet", "veth", "vmbr", "kube", "br-"]
+    for iface in json_dict.get("interfaces", []):
+        skip = False
+        name = iface["name"]
+        for s in ignore_list:
+            if s in name:
+                skip = True
+        if skip:
+            continue
 
-def http_report(addr, username, password):
+        traffic = iface["traffic"]
+        network_out += traffic["total"]["tx"]
+        network_in += traffic["total"]["rx"]
+        # print(name, json.dumps(iface["traffic"], indent=2))
+
+        for month in traffic.get("month", []):
+            if now.year != month["date"]["year"] or month["date"]["month"] != now.month:
+                continue
+            m_network_out += month["tx"]
+            m_network_in += month["rx"]
+
+    return (network_in, network_out, m_network_in, m_network_out)
+
+
+def http_report(addr, username, password, vnstat=False):
     socket.setdefaulttimeout(30)
     get_realtime_date()
 
@@ -398,7 +427,6 @@ def http_report(addr, username, password):
     while True:
         try:
             CPU = get_cpu()
-            NET_IN, NET_OUT = liuliang()
             Uptime = get_uptime()
             Load_1, Load_5, Load_15 = os.getloadavg()
             MemoryTotal, MemoryUsed, SwapTotal, SwapFree = get_memory()
@@ -430,8 +458,7 @@ def http_report(addr, username, password):
             array['cpu'] = CPU
             array['network_rx'] = netSpeed.get("netrx")
             array['network_tx'] = netSpeed.get("nettx")
-            array['network_in'] = NET_IN
-            array['network_out'] = NET_OUT
+
             # todo：兼容旧版本，下个版本删除ip_status
             array['ip_status'] = True
             array['ping_10010'] = lostRate.get('10010') * 100
@@ -441,6 +468,17 @@ def http_report(addr, username, password):
             array['time_189'] = pingTime.get('189')
             array['time_10086'] = pingTime.get('10086')
             array['tcp'], array['udp'], array['process'], array['thread'] = tupd()
+
+            if vnstat:
+                (network_in, network_out, m_network_in, m_network_out) = get_vnstat_traffic()
+                array['network_in'] = network_in + m_network_in
+                array['network_out'] = network_out + m_network_out
+                array['last_network_in'] = network_in
+                array['last_network_out'] = network_out
+            else:
+                NET_IN, NET_OUT = liuliang()
+                array['network_in'] = NET_IN
+                array['network_out'] = NET_OUT
 
             print(json.dumps(array))
             r = sess.post(addr, auth=auth, json=array)
@@ -461,15 +499,17 @@ def main():
     usage = """usage: python3 %prog [options] arg
     eg:
         python3 %prog -a http://127.0.0.1:8080/report -u h1 -p p1
+        python3 %prog -a http://127.0.0.1:8080/report -u h1 -p p1 -n
     """
     parser = OptionParser(usage)
 
     parser.add_option("-a", "--addr", dest="addr", default="http://127.0.0.1:8080/report", help="http url addr")
     parser.add_option("-u", "--user", dest="username", default="h1", help="auth user")
     parser.add_option("-p", "--pass", dest="password", default="p1", help="auth pass")
+    parser.add_option("-n", "--vnstat", default=False, action="store_true", help="enable vnstat")
 
     (options, args) = parser.parse_args()
-    http_report(options.addr, options.username, options.password)
+    http_report(options.addr, options.username, options.password, options.vnstat)
 
 
 if __name__ == '__main__':

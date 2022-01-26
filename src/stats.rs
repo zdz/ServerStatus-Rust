@@ -99,6 +99,7 @@ impl StatsMgr {
         // stat_rx thread
         let stat_dict_1 = stat_dict.clone();
         let notifier_tx_1 = notifier_tx.clone();
+        let vnstat = cfg.vnstat;
         self.stat_rx_t = Some(thread::spawn(move || loop {
             while let Ok(stat) = stat_rx.recv() {
                 trace!("recv stat `{:?}", stat);
@@ -106,7 +107,6 @@ impl StatsMgr {
                     let local_now = Local::now();
                     // 补齐
                     let mut stat_t = stat; //.clone();
-                    stat_t.host = String::from(&info.host);
                     stat_t.location = String::from(&info.location);
                     stat_t.host_type = String::from(&info.host_type);
                     stat_t.pos = info.pos;
@@ -115,17 +115,19 @@ impl StatsMgr {
                         .unwrap()
                         .as_secs();
                     // last_network_in/out
-                    if info.last_network_in == 0
-                        || (stat_t.network_in != 0 && info.last_network_in > stat_t.network_in)
-                        || (local_now.day() == info.monthstart
-                            && local_now.hour() == 0
-                            && local_now.minute() < 5)
-                    {
-                        info.last_network_in = stat_t.network_in;
-                        info.last_network_out = stat_t.network_out;
-                    } else {
-                        stat_t.last_network_in = info.last_network_in;
-                        stat_t.last_network_out = info.last_network_out;
+                    if !vnstat {
+                        if info.last_network_in == 0
+                            || (stat_t.network_in != 0 && info.last_network_in > stat_t.network_in)
+                            || (local_now.day() == info.monthstart
+                                && local_now.hour() == 0
+                                && local_now.minute() < 5)
+                        {
+                            info.last_network_in = stat_t.network_in;
+                            info.last_network_out = stat_t.network_out;
+                        } else {
+                            stat_t.last_network_in = info.last_network_in;
+                            stat_t.last_network_out = info.last_network_out;
+                        }
                     }
 
                     // uptime str
@@ -155,7 +157,7 @@ impl StatsMgr {
                             notifier_tx_1.send((crate::notifier::Event::NodeUp, stat_t.clone()));
                         }
                         host_stat_map.insert(String::from(&info.name), Box::new(stat_t));
-                        info!("{:?}", host_stat_map);
+                        //info!("{:?}", host_stat_map);
                     }
                 } else {
                     error!("invalid stat `{:?}", stat);

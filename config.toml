@@ -2,14 +2,13 @@
 addr = "0.0.0.0:8080"
 log_level = "trace"
 
-# admin pass
-admin_pass = "<admin pass>"
-admin_user = "<admin name>"
+# 使用vnstat来更精准统计月流量，开启参考下面 vnstat 一节
+vnstat = false
 
-# name 不可重复，代替原来的 ClientID/ClientNetID
+# name 不可重复，代替原来的 ClientID
 hosts = [
-  {name = "op", password = "pass", host = "op", location = "🇨🇳", type = "kvm", monthstart = 1},
-  {name = "rn", password = "pass", host = "rn", location = "us", type = "kvm", monthstart = 1},
+  {name = "h1", password = "p1", location = "🇨🇳", type = "kvm", monthstart = 1},
+  {name = "h2", password = "p2", location = "us", type = "kvm", monthstart = 1},
 ]
 
 # https://core.telegram.org/bots/api
@@ -33,8 +32,6 @@ custom_tpl = """
 agent_id = "<agent id>"
 corp_id = "<corp id>"
 corp_secret = "<corp secret>"
-enabled = false
-
 custom_tpl = """
 {% if host.memory_used / host.memory_total > 0.8  %}
 ❗{{ host.name }} 主机内存使用率超80%
@@ -44,3 +41,4 @@ custom_tpl = """
 ❗{{ host.name }} 主机硬盘使用率超80%
 {% endif %}
 """
+enabled = false

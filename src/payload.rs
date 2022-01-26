@@ -51,9 +51,9 @@ pub struct HostStat {
     pub network_in: u64,
     pub network_out: u64,
 
-    #[serde(skip_deserializing)]
+    #[serde(default)]
     pub last_network_in: u64,
-    #[serde(skip_deserializing)]
+    #[serde(default)]
     pub last_network_out: u64,
 
     pub cpu: f32,

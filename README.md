@@ -7,7 +7,8 @@
 
 - `rust` 版本 `server`，单个执行文件部署
 - 支持上下线和简单自定义规则告警 (`telegram`, `wechat`)
-- 使用 `http` 协议上报
+- 支持 `vnstat` 更精准统计月流量
+- 改用 `http` 协议上报
 - 支持 `systemd`, 开机自启
 - 更小 `docker` 镜像(5M)
 
@@ -18,14 +19,13 @@
 addr = "0.0.0.0:8080"
 log_level = "trace"
 
-# admin pass
-admin_pass = "<admin pass>"
-admin_user = "<admin name>"
+# 使用vnstat来更精准统计月流量，开启参考下面 vnstat 一节
+vnstat = false
 
-# name 不可重复，代替原来的 ClientID/ClientNetID
+# name 不可重复，代替原来的 ClientID
 hosts = [
-  {name = "op", password = "pass", host = "op", location = "🇨🇳", type = "kvm", monthstart = 1},
-  {name = "rn", password = "pass", host = "rn", location = "us", type = "kvm", monthstart = 1},
+  {name = "h1", password = "p1", location = "🇨🇳", type = "kvm", monthstart = 1},
+  {name = "h2", password = "p2", location = "us", type = "kvm", monthstart = 1},
 ]
 
 
@@ -108,13 +108,32 @@ systemctl enable stat_client
 systemctl start stat_client
 ```
 
+## 开启 `vnstat` 支持
+[vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux下一个流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量，优点是重启不丢流量数据，数据更准确。
+```bash
+# 在client端安装 vnstat
+## Centos
+sudo yum install epel-release -y
+sudo yum install -y vnstat
+## Ubuntu/Debian
+sudo apt install -y vnstat
+
+# 确保 version >=2.6
+vnstat --version
+# 测试查看月流量
+vnstat -m
+vnstat --json m
+
+# client使用 -n 参数开启vnstat统计
+python3 client-linux.py -a http://127.0.0.1:8080/report -u h1 -p p1 -n
+```
+
 ## TODO
 ```
-1. rust client
-2. admin api
-# 管理接口
-curl -X POST -H "Content-Type: application/json" -u "admin:pass" \
-http://127.0.0.1:8080/admin/{cmd}/{name} -d '{ //data }'
+- rust client
+- admin api
+  curl -X POST -H "Content-Type: application/json" -u "admin:pass" \
+  http://127.0.0.1:8080/admin/{cmd}/{name} -d '{ //data }'
 ```
 
 ## 参考
