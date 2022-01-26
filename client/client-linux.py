@@ -471,10 +471,10 @@ def http_report(addr, username, password, vnstat=False):
 
             if vnstat:
                 (network_in, network_out, m_network_in, m_network_out) = get_vnstat_traffic()
-                array['network_in'] = network_in + m_network_in
-                array['network_out'] = network_out + m_network_out
-                array['last_network_in'] = network_in
-                array['last_network_out'] = network_out
+                array['network_in'] = network_in
+                array['network_out'] = network_out
+                array['last_network_in'] = network_in - m_network_in
+                array['last_network_out'] = network_out - m_network_out
             else:
                 NET_IN, NET_OUT = liuliang()
                 array['network_in'] = NET_IN
