@@ -124,7 +124,10 @@ vnstat --version
 vnstat -m
 vnstat --json m
 
-# client使用 -n 参数开启vnstat统计
+# server config.toml 开启 vnstat
+vnstat = true
+
+# client 使用 -n 参数开启 vnstat 统计
 python3 client-linux.py -a http://127.0.0.1:8080/report -u h1 -p p1 -n
 ```
 
