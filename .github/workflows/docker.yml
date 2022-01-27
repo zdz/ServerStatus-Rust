@@ -45,6 +45,7 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
+            ${{ env.DOCKERHUB_REPO }}:amd64
             ${{ env.DOCKERHUB_REPO }}:latest
             ${{ env.DOCKERHUB_REPO }}:${{ env.APP_VERSION }}
 
@@ -57,5 +58,4 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: |
-            ${{ env.DOCKERHUB_REPO }}:latest
-            ${{ env.DOCKERHUB_REPO }}:${{ env.APP_VERSION }}
+            ${{ env.DOCKERHUB_REPO }}:arm64

@@ -17,8 +17,7 @@ steps:
       from_secret: hub_docker_password
     repo: idoge/stat_srv
     tags:
-      - latest
-      - '1.0'
+      - dev
     # 与  Dockerfile 对应
     target: production
 
