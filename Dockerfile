@@ -3,14 +3,14 @@ FROM rust:1-alpine3.15 as builder
 ENV RUSTFLAGS="-C target-feature=-crt-static" \
     APP_TARGET=/app/target/release/stat_srv
 
-RUN apk add --no-cache musl-dev upx openssl-dev git
+RUN apk add --no-cache musl-dev openssl-dev git
 
 WORKDIR /app
 COPY ./ /app
 
 RUN cargo build --release
 RUN strip /app/target/release/stat_srv
-RUN upx -q --best --lzma /app/target/release/stat_srv
+# RUN upx -q --best --lzma /app/target/release/stat_srv
 
 FROM alpine:3.15 as production
 RUN apk add --no-cache libgcc

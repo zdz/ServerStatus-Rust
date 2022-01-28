@@ -36,26 +36,15 @@ jobs:
         run: echo GIT_TAG=`git describe --tags --always` >> $GITHUB_ENV
 
       # 构建 Docker 并推送到 Docker hub
-      - name: Build amd64
+      - name: Build Docker
         uses: docker/build-push-action@v2
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64
+          platforms: linux/amd64, linux/arm64
           push: true
           tags: |
-            ${{ env.DOCKERHUB_REPO }}:amd64
             ${{ env.DOCKERHUB_REPO }}:latest
             ${{ env.DOCKERHUB_REPO }}:${{ env.APP_VERSION }}
 
-      - name: Build arm64
-        uses: docker/build-push-action@v2
-        with:
-          builder: ${{ steps.buildx.outputs.name }}
-          context: .
-          file: ./Dockerfile-arm64
-          platforms: linux/arm64
-          push: true
-          tags: |
-            ${{ env.DOCKERHUB_REPO }}:arm64
