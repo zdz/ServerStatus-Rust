@@ -1,8 +1,9 @@
 # ServerStatus - Rust
 
 [![Docker](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml)
+[![Release](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml)
 
-## 介绍
+### 介绍
 基于 `cppla` 版本 `ServerStatus`，特性如下：
 
 - `rust` 版本 `server`, `client`，单个执行文件部署
@@ -11,6 +12,9 @@
 - 支持 `tcp`, `http` 协议上报
 - 支持 `systemd`, 开机自启
 - 更小 `docker` 镜像
+
+
+### [Release下载](https://github.com/zdz/ServerStatus-Rust/releases)
 
 ## 服务端
 
@@ -62,6 +66,7 @@ custom_tpl = """
 """
 
 ```
+
 
 ```bash
 # docker (推荐)
