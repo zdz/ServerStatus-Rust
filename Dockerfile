@@ -14,11 +14,10 @@ RUN strip /app/target/release/stat_server
 
 FROM alpine:3.15 as production
 RUN apk add --no-cache libgcc
-COPY docker-entrypoint.sh /
 COPY --from=builder /app/target/release/stat_server /stat_server
 # COPY --from=builder /app/target/release/stat_client /stat_client
 
 WORKDIR /
 EXPOSE 8080
-ENTRYPOINT ["/bin/sh", "/docker-entrypoint.sh"]
-# CMD ["/stat_server", "-c", "/config.toml"]
+# ENTRYPOINT ["/bin/sh", "/docker-entrypoint.sh"]
+CMD ["/stat_server", "-c", "/config.toml"]
