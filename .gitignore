@@ -16,5 +16,7 @@ Cargo.lock
 
 .DS_Store
 
+stats.json
+tmp
 .prod
 sync.sh

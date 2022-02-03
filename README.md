@@ -5,19 +5,19 @@
 ## 介绍
 基于 `cppla` 版本 `ServerStatus`，特性如下：
 
-- `rust` 版本 `server`，单个执行文件部署
+- `rust` 版本 `server`, `client`，单个执行文件部署
 - 支持上下线和简单自定义规则告警 (`telegram`, `wechat`)
 - 支持 `vnstat` 更精准统计月流量
-- 改用 `http` 协议上报
+- 支持 `tcp`, `http` 协议上报
 - 支持 `systemd`, 开机自启
-- 更小 `docker` 镜像(5M)
+- 更小 `docker` 镜像
 
 ## 服务端
 
 配置文件 `config.toml`
 ```toml
-addr = "0.0.0.0:8080"
-log_level = "trace"
+tcp_addr = "0.0.0.0:35601"
+http_addr = "0.0.0.0:8080"
 
 # 使用vnstat来更精准统计月流量，开启参考下面 vnstat 一节
 vnstat = false
@@ -75,21 +75,26 @@ yum install -y openssl-devel
 cargo build --release
 
 # 运行
-./stat_srv
+./stat_server
 或
-./stat_srv -c config.toml
+./stat_server -c config.toml
 或
-RUST_BACKTRACE=1 RUST_LOG=trace ./stat_srv -c config.toml
+RUST_BACKTRACE=1 RUST_LOG=trace ./stat_server -c config.toml
 
 ## systemd
-systemctl enable stat_srv
-systemctl start stat_srv
+systemctl enable stat_server
+systemctl start stat_server
 
 ```
 
 ## 客户端
 ```bash
-# 依赖安装
+# Rust 版本 Client
+./stat_client -h
+./stat_client -a "tcp://127.0.0.1:35601" -u h1 -p p1
+./stat_client -a "http://127.0.0.1:8080/report" -u h1 -p p1
+
+# Python 版本 Client 依赖安装
 ## Centos
 sudo yum -y install epel-release
 sudo yum -y install python3-pip gcc python3-devel
@@ -99,9 +104,11 @@ sudo python3 -m pip install psutil requests
 sudo apt -y install python3-pip
 sudo python3 -m pip install psutil requests
 
-# 运行
+## 运行
 wget --no-check-certificate -qO client-linux.py 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/client/client-linux.py'
-python3 client-linux.py -a http://127.0.0.1:8080/report -u h1 -p p1
+python3 client-linux.py -h
+python3 client-linux.py -a "tcp://127.0.0.1:35601" -u h1 -p p1
+python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
 
 ## systemd
 systemctl enable stat_client
@@ -128,16 +135,11 @@ vnstat --json m
 vnstat = true
 
 # client 使用 -n 参数开启 vnstat 统计
-python3 client-linux.py -a http://127.0.0.1:8080/report -u h1 -p p1 -n
+./stat_client -a "tcp://127.0.0.1:35601" -u h1 -p p1 -n
+或
+python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1 -n
 ```
 
-## TODO
-```
-- rust client
-- admin api
-  curl -X POST -H "Content-Type: application/json" -u "admin:pass" \
-  http://127.0.0.1:8080/admin/{cmd}/{name} -d '{ //data }'
-```
 
 ## 参考
 - https://github.com/cppla/ServerStatus

@@ -46,8 +46,8 @@ pub struct Host {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
-    pub addr: String,
-    pub log_level: String,
+    pub http_addr: String,
+    pub tcp_addr: String,
     // pub admin_user: String,
     // pub admin_pass: String,
     #[serde(default = "bool::default")]

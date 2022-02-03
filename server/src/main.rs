@@ -1,4 +1,4 @@
-// #![deny(warnings)]
+#![deny(warnings)]
 
 #[macro_use]
 extern crate log;
@@ -10,8 +10,12 @@ use http_auth_basic::Credentials;
 use once_cell::sync::OnceCell;
 use rust_embed::RustEmbed;
 use std::collections::HashMap;
+use std::io::BufRead;
+use std::io::BufReader;
 use std::io::Read;
 use std::sync::Arc;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpListener;
 
 mod config;
 mod notifier;
@@ -36,7 +40,7 @@ static NOTFOUND: &[u8] = b"Not Found";
 static UNAUTHORIZED: &[u8] = b"Unauthorized";
 
 #[derive(RustEmbed)]
-#[folder = "web"]
+#[folder = "../web"]
 #[prefix = "/"]
 struct Asset;
 
@@ -167,6 +171,66 @@ struct Args {
     config: String,
 }
 
+async fn serv_tcp(stats_mgr: Arc<stats::StatsMgr>) -> Result<()> {
+    let addr = &*G_CONFIG.get().unwrap().tcp_addr;
+    let listener = TcpListener::bind(addr).await.unwrap();
+    println!("Listening on tcp://{}", addr);
+
+    loop {
+        let (mut socket, _) = listener.accept().await?;
+        let mgr = stats_mgr.clone();
+        tokio::spawn(async move {
+            if socket.write(b"Authentication required\n").await.is_err() {
+                return;
+            }
+
+            loop {
+                let mut buf = vec![0; 1024];
+                match socket.read(&mut buf).await {
+                    // Return value of `Ok(0)` signifies that the remote has closed
+                    Ok(0) => return,
+                    Ok(n) => {
+                        dbg!(&n);
+                        let mut reader = BufReader::new(&*buf);
+                        let mut line = String::new();
+                        let ln = reader.read_line(&mut line).unwrap();
+                        if ln < 1 {
+                            continue;
+                        }
+                        dbg!(&line);
+                        let stat: serde_json::Value = serde_json::from_str(&line).unwrap();
+                        let frame = stat["frame"].as_str().unwrap();
+
+                        // dbg!(&stat);
+                        if frame.eq("data") {
+                            mgr.report(&line).unwrap();
+                        } else if frame.eq("auth") {
+                            let user = stat["user"].as_str().unwrap();
+                            let pass = stat["pass"].as_str().unwrap();
+                            if !G_CONFIG.get().unwrap().auth(&user, &pass) {
+                                return;
+                            }
+                            if socket
+                            .write_all(b"Authentication successful. Access granted. You are connecting via: IPv4")
+                            .await
+                            .is_err()
+                            {
+                                // Unexpected socket error.
+                                return;
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        error!("{:?}", e);
+                        // Unexpected socket error.
+                        return;
+                    }
+                }
+            }
+        });
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     pretty_env_logger::init();
@@ -180,7 +244,13 @@ async fn main() -> Result<()> {
     stats_mgr_.init(G_CONFIG.get().unwrap()).unwrap();
     let stats_mgr = Arc::new(stats_mgr_);
 
-    let addr = G_CONFIG.get().unwrap().addr.parse().unwrap();
+    let http_addr = G_CONFIG.get().unwrap().http_addr.parse().unwrap();
+
+    let stats_mgr_1 = stats_mgr.clone();
+    tokio::spawn(async move {
+        //
+        let _ = serv_tcp(stats_mgr_1).await;
+    });
 
     let http_service = make_service_fn(move |_| {
         // Move a clone into the `service_fn`.
@@ -193,8 +263,8 @@ async fn main() -> Result<()> {
         }
     });
 
-    println!("Listening on http://{}", addr);
-    let server = Server::bind(&addr).serve(http_service);
+    println!("Listening on http://{}", http_addr);
+    let server = Server::bind(&http_addr).serve(http_service);
     let graceful = server.with_graceful_shutdown(shutdown_signal());
     if let Err(e) = graceful.await {
         eprintln!("server error: {}", e);

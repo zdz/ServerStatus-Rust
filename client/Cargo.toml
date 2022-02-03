@@ -1,0 +1,19 @@
+[package]
+edition = "2021"
+name = "stat_client"
+version = "1.0.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bytes = "1"
+chrono = "0.4"
+clap = {version = "3.0", features = ["derive"]}
+lazy_static = "1.4"
+log = "0.4"
+pretty_env_logger = "0.4"
+regex = "1.5.4"
+reqwest = {version = "0.11", features = ["json", "blocking", "rustls-tls"], default-features = false}
+serde = {version = "1", features = ["derive"]}
+serde_json = "1.0"
+tokio = {version = "1", features = ["full"]}

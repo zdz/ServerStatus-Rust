@@ -15,7 +15,7 @@ steps:
       from_secret: hub_docker_username
     password:
       from_secret: hub_docker_password
-    repo: idoge/stat_srv
+    repo: idoge/stat_server
     tags:
       - dev
     # 与  Dockerfile 对应

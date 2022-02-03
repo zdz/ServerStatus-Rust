@@ -6,7 +6,7 @@ After=network.target
 User=root
 Group=root
 WorkingDirectory=/opt/ServerStatus
-ExecStart=/usr/bin/python3 client-linux.py -a http://127.0.0.1:8080/report -u h1 -p p1
+ExecStart=/opt/ServerStatus/stat_client -a "tcp://127.0.0.1:35601" -u h1 -p p1
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 

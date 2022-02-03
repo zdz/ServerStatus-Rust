@@ -1,6 +1,5 @@
-
-addr = "0.0.0.0:8080"
-log_level = "trace"
+http_addr = "0.0.0.0:8080"
+tcp_addr = "0.0.0.0:35601"
 
 # 使用vnstat来更精准统计月流量，开启参考下面 vnstat 一节
 vnstat = false

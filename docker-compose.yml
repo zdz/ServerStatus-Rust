@@ -5,9 +5,9 @@ networks:
       name: traefik_gw
 
 services:
-  stat_srv:
-    image: idoge/stat_srv:latest
-    container_name: stat_srv
+  stat_server:
+    image: idoge/stat_server:latest
+    container_name: stat_server
     restart: unless-stopped
     networks:
       - traefik

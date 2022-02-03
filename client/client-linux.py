@@ -277,7 +277,8 @@ def byte_str(object):
         print(type(object))
 
 
-def tcp_report():
+def tcp_report(vnstat=False):
+    global SERVER, PORT, USER, PASSWORD, INTERVAL
     for argc in sys.argv:
         if 'SERVER' in argc:
             SERVER = argc.split('SERVER=')[-1]
@@ -291,28 +292,32 @@ def tcp_report():
             INTERVAL = int(argc.split('INTERVAL=')[-1])
     socket.setdefaulttimeout(30)
     get_realtime_date()
+
+    auth_obj = {"frame": "auth", "user": USER, "pass": PASSWORD}
+
     while True:
         try:
             data = "IPv4"
 
-            def test():
-                print("Connecting...")
-                s = socket.create_connection((SERVER, PORT))
+            print(SERVER, PORT, USER, PASSWORD, INTERVAL)
+            print("Connecting...")
+            s = socket.create_connection((SERVER, PORT))
+            data = byte_str(s.recv(1024))
+            if data.find("Authentication required") > -1:
+                # s.send(byte_str(USER + ':' + PASSWORD + '\n'))
+                s.send(byte_str(json.dumps(auth_obj) + "\n"))
                 data = byte_str(s.recv(1024))
-                if data.find("Authentication required") > -1:
-                    s.send(byte_str(USER + ':' + PASSWORD + '\n'))
-                    data = byte_str(s.recv(1024))
-                    if data.find("Authentication successful") < 0:
-                        print(data)
-                        raise socket.error
-                else:
+                if data.find("Authentication successful") < 0:
                     print(data)
                     raise socket.error
-
+            else:
                 print(data)
-                if data.find("You are connecting via") < 0:
-                    data = byte_str(s.recv(1024))
-                    print(data)
+                raise socket.error
+
+            print(data)
+            if data.find("You are connecting via") < 0:
+                data = byte_str(s.recv(1024))
+                print(data)
 
             timer = 0
             check_ip = 0
@@ -326,7 +331,7 @@ def tcp_report():
 
             while True:
                 CPU = get_cpu()
-                NET_IN, NET_OUT = liuliang()
+                # NET_IN, NET_OUT = liuliang()
                 Uptime = get_uptime()
                 Load_1, Load_5, Load_15 = os.getloadavg()
                 MemoryTotal, MemoryUsed, SwapTotal, SwapFree = get_memory()
@@ -339,6 +344,7 @@ def tcp_report():
                 else:
                     timer -= 1 * INTERVAL
 
+                array['name'] = USER
                 array['uptime'] = Uptime
                 array['load_1'] = Load_1
                 array['load_5'] = Load_5
@@ -352,8 +358,18 @@ def tcp_report():
                 array['cpu'] = CPU
                 array['network_rx'] = netSpeed.get("netrx")
                 array['network_tx'] = netSpeed.get("nettx")
-                array['network_in'] = NET_IN
-                array['network_out'] = NET_OUT
+
+                if vnstat:
+                    (network_in, network_out, m_network_in, m_network_out) = get_vnstat_traffic()
+                    array['network_in'] = network_in
+                    array['network_out'] = network_out
+                    array['last_network_in'] = network_in - m_network_in
+                    array['last_network_out'] = network_out - m_network_out
+                else:
+                    NET_IN, NET_OUT = liuliang()
+                    array['network_in'] = NET_IN
+                    array['network_out'] = NET_OUT
+
                 # todo：兼容旧版本，下个版本删除ip_status
                 array['ip_status'] = True
                 array['ping_10010'] = lostRate.get('10010') * 100
@@ -365,10 +381,12 @@ def tcp_report():
                 array['tcp'], array['udp'], array['process'], array['thread'] = tupd()
 
                 print(json.dumps(array))
-                s.send(byte_str("update " + json.dumps(array) + "\n"))
+                array["frame"] = "data"
+                s.send(byte_str(json.dumps(array) + "\n"))
         except KeyboardInterrupt:
             raise
         except socket.error:
+            traceback.print_exc()
             print("Disconnected...")
             if 's' in locals().keys():
                 del s
@@ -483,7 +501,7 @@ def http_report(addr, username, password, vnstat=False):
             print(json.dumps(array))
             r = sess.post(addr, auth=auth, json=array)
             print(r)
-            time.sleep(0.5)
+            # time.sleep(0.5)
         except KeyboardInterrupt:
             raise
         except Exception as e:
@@ -498,19 +516,32 @@ def http_report(addr, username, password, vnstat=False):
 def main():
     usage = """usage: python3 %prog [options] arg
     eg:
+        python3 %prog -a tcp://127.0.0.1:35601 -u h1 -p p1
+        python3 %prog -a tcp://127.0.0.1:35601 -u h1 -p p1 -n
         python3 %prog -a http://127.0.0.1:8080/report -u h1 -p p1
         python3 %prog -a http://127.0.0.1:8080/report -u h1 -p p1 -n
     """
     parser = OptionParser(usage)
 
-    parser.add_option("-a", "--addr", dest="addr", default="http://127.0.0.1:8080/report", help="http url addr")
+    parser.add_option("-a", "--addr", dest="addr", default="http://127.0.0.1:8080/report", help="http/tcp addr")
     parser.add_option("-u", "--user", dest="username", default="h1", help="auth user")
     parser.add_option("-p", "--pass", dest="password", default="p1", help="auth pass")
     parser.add_option("-n", "--vnstat", default=False, action="store_true", help="enable vnstat")
 
     (options, args) = parser.parse_args()
-    http_report(options.addr, options.username, options.password, options.vnstat)
-
+    if options.addr.startswith("http"):
+        http_report(options.addr, options.username, options.password, options.vnstat)
+    elif options.addr.startswith("tcp"):
+        global SERVER, PORT, USER, PASSWORD, INTERVAL
+        arr = options.addr.replace("tcp://", "").split(":")
+        SERVER = arr[0]
+        PORT = arr[1]
+        USER = options.username
+        PASSWORD = options.password
+        print(SERVER, PORT, USER, PASSWORD, INTERVAL)
+        tcp_report(options.vnstat)
+    else:
+        print("invalid addr scheme")
 
 if __name__ == '__main__':
     main()
