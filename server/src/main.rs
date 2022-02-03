@@ -30,10 +30,11 @@ type Result<T> = std::result::Result<T, GenericError>;
 static APP_VERSION: &'static str = concat!(
     "v",
     env!("CARGO_PKG_VERSION"),
-    " (",
+    " (GIT:",
     env!("GIT_HASH"),
-    ") - BUILD_TS:",
-    env!("BUILD_ST")
+    ",BUILD:",
+    env!("BUILD_ST"),
+    ")"
 );
 static G_CONFIG: OnceCell<crate::config::Config> = OnceCell::new();
 static NOTFOUND: &[u8] = b"Not Found";

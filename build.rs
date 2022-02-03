@@ -3,7 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 fn main() {
     let output = Command::new("git")
-        .args(&["describe", "--tags", "--always"])
+        .args(&["rev-parse", "--short", "HEAD"])
         .output()
         .unwrap();
     let git_hash = String::from_utf8(output.stdout).unwrap();
