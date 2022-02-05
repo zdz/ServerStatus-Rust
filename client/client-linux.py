@@ -9,7 +9,7 @@ SERVER = "127.0.0.1"
 USER = "s01"
 
 
-PORT = 35601
+PORT = 34512
 PASSWORD = "USER_DEFAULT_PASSWORD"
 INTERVAL = 1
 PROBEPORT = 80
@@ -516,8 +516,8 @@ def http_report(addr, username, password, vnstat=False):
 def main():
     usage = """usage: python3 %prog [options] arg
     eg:
-        python3 %prog -a tcp://127.0.0.1:35601 -u h1 -p p1
-        python3 %prog -a tcp://127.0.0.1:35601 -u h1 -p p1 -n
+        python3 %prog -a tcp://127.0.0.1:34512 -u h1 -p p1
+        python3 %prog -a tcp://127.0.0.1:34512 -u h1 -p p1 -n
         python3 %prog -a http://127.0.0.1:8080/report -u h1 -p p1
         python3 %prog -a http://127.0.0.1:8080/report -u h1 -p p1 -n
     """

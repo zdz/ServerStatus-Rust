@@ -18,6 +18,6 @@ COPY --from=builder /app/target/release/stat_server /stat_server
 # COPY --from=builder /app/target/release/stat_client /stat_client
 
 WORKDIR /
-EXPOSE 8080
-# ENTRYPOINT ["/bin/sh", "/docker-entrypoint.sh"]
+EXPOSE 8080 34512
+
 CMD ["/stat_server", "-c", "/config.toml"]

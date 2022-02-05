@@ -16,11 +16,21 @@
 
 ### [Release下载](https://github.com/zdz/ServerStatus-Rust/releases)
 
+## 安装体验
+```bash
+# for x86_64
+mkdir -p /opt/ServerStatus && cd /opt/ServerStatus
+# apt install -y unzip / yum install -y unzip
+wget --no-check-certificate -qO one-touch.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/one-touch.sh'
+bash -ex one-touch.sh
+# open http://127.0.0.1:8080/
+```
+
 ## 服务端
 
 配置文件 `config.toml`
 ```toml
-tcp_addr = "0.0.0.0:35601"
+tcp_addr = "0.0.0.0:34512"
 http_addr = "0.0.0.0:8080"
 
 # 使用vnstat来更精准统计月流量，开启参考下面 vnstat 一节
@@ -69,7 +79,7 @@ custom_tpl = """
 
 
 ```bash
-# docker (推荐)
+# docker
 wget --no-check-certificate -qO docker-compose.yml 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/docker-compose.yml'
 wget --no-check-certificate -qO config.toml 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/config.toml'
 touch stats.json
@@ -96,7 +106,7 @@ systemctl start stat_server
 ```bash
 # Rust 版本 Client
 ./stat_client -h
-./stat_client -a "tcp://127.0.0.1:35601" -u h1 -p p1
+./stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1
 ./stat_client -a "http://127.0.0.1:8080/report" -u h1 -p p1
 
 # Python 版本 Client 依赖安装
@@ -112,7 +122,7 @@ sudo python3 -m pip install psutil requests
 ## 运行
 wget --no-check-certificate -qO client-linux.py 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/client/client-linux.py'
 python3 client-linux.py -h
-python3 client-linux.py -a "tcp://127.0.0.1:35601" -u h1 -p p1
+python3 client-linux.py -a "tcp://127.0.0.1:34512" -u h1 -p p1
 python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
 
 ## systemd
@@ -140,7 +150,7 @@ vnstat --json m
 vnstat = true
 
 # client 使用 -n 参数开启 vnstat 统计
-./stat_client -a "tcp://127.0.0.1:35601" -u h1 -p p1 -n
+./stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1 -n
 或
 python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1 -n
 ```

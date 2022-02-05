@@ -114,7 +114,7 @@ async fn do_tcp_report(
     args: &Args,
     stat_base: &HashMap<&'static str, serde_json::Value>,
 ) -> Result<()> {
-    let tcp_addr = args.addr.replace("tcp://", ""); // "127.0.0.1:35601";
+    let tcp_addr = args.addr.replace("tcp://", ""); // "127.0.0.1:34512";
     loop {
         let result = TcpStream::connect(&tcp_addr).await;
         if result.is_err() {
