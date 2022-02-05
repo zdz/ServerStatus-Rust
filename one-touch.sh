@@ -3,7 +3,7 @@ set -ex
 WORKSPACE=/opt/ServerStatus
 
 mkdir -p ${WORKSPACE}
-wget --no-check-certificate -qO ServerStatus-x86_64-unknown-linux-musl.zip  "https://github.com/zdz/ServerStatus-Rust/releases/download/v1.0/ServerStatus-x86_64-unknown-linux-musl.zip"
+wget --no-check-certificate -qO ServerStatus-x86_64-unknown-linux-musl.zip  "https://github.com/zdz/ServerStatus-Rust/releases/download/v1.1/ServerStatus-x86_64-unknown-linux-musl.zip"
 unzip ServerStatus-x86_64-unknown-linux-musl.zip
 
 cp stat_server.service /etc/systemd/system/stat_server.service
