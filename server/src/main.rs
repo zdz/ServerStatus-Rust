@@ -179,6 +179,7 @@ async fn serv_tcp(stats_mgr: Arc<stats::StatsMgr>) -> Result<()> {
 
     loop {
         let (mut socket, _) = listener.accept().await?;
+        let mut auth_ok = false;
         let mgr = stats_mgr.clone();
         tokio::spawn(async move {
             if socket.write(b"Authentication required\n").await.is_err() {
@@ -204,6 +205,9 @@ async fn serv_tcp(stats_mgr: Arc<stats::StatsMgr>) -> Result<()> {
 
                         // dbg!(&stat);
                         if frame.eq("data") {
+                            if !auth_ok {
+                                return;
+                            }
                             mgr.report(&line).unwrap();
                         } else if frame.eq("auth") {
                             let user = stat["user"].as_str().unwrap();
@@ -211,6 +215,7 @@ async fn serv_tcp(stats_mgr: Arc<stats::StatsMgr>) -> Result<()> {
                             if !G_CONFIG.get().unwrap().auth(&user, &pass) {
                                 return;
                             }
+                            auth_ok = true;
                             if socket
                             .write_all(b"Authentication successful. Access granted. You are connecting via: IPv4")
                             .await
