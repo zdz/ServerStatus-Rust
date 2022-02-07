@@ -1,17 +1,24 @@
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-fn main() {
-    let output = Command::new("git")
+fn commit_hash() -> Option<String> {
+    Command::new("git")
         .args(&["rev-parse", "--short", "HEAD"])
         .output()
-        .unwrap();
-    let git_hash = String::from_utf8(output.stdout).unwrap();
-    println!("cargo:rustc-env=GIT_HASH={}", git_hash);
+        .ok()
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|hash| hash.trim().into())
+}
 
-    let sys_time = SystemTime::now()
+fn main() {
+    let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs();
-    println!("cargo:rustc-env=BUILD_ST={}", sys_time);
+
+    let mut app_version = String::from(env!("CARGO_PKG_VERSION"));
+    if let Some(commit_hash) = commit_hash() {
+        app_version = format!("v{} (GIT:{}, BUILD:{})", app_version, commit_hash, now);
+    }
+    println!("cargo:rustc-env=APP_VERSION={}", app_version);
 }

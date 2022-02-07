@@ -16,7 +16,7 @@
 
 ### [Release下载](https://github.com/zdz/ServerStatus-Rust/releases)
 
-## 安装体验
+## 快速安装
 ```bash
 # for x86_64
 mkdir -p /opt/ServerStatus && cd /opt/ServerStatus

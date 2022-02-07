@@ -244,8 +244,8 @@ impl StatsMgr {
         String::from(self.resp_json.lock().unwrap().as_str())
     }
 
-    pub fn report(&self, data: &String) -> Result<()> {
-        match serde_json::from_str(data) {
+    pub fn report(&self, data: serde_json::Value) -> Result<()> {
+        match serde_json::from_value(data) {
             Ok(stat) => {
                 if let Some(ref sender) = self.stat_sender {
                     trace!("send stat => {:?} ", stat);

@@ -1,9 +1,8 @@
-#![allow(unused)]
-use chrono::{Datelike, Local, Timelike};
+// #![allow(unused)]
+use chrono::{Datelike, Local};
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde_json;
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::collections::LinkedList;
 use std::fs;
@@ -11,10 +10,8 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::ErrorKind::ConnectionRefused;
-use std::io::Read;
 use std::net::TcpStream;
-use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr, ToSocketAddrs};
-use std::ops::Index;
+use std::net::{Shutdown, ToSocketAddrs};
 use std::process::Command;
 use std::str;
 use std::sync::Arc;
@@ -67,7 +64,7 @@ lazy_static! {
 }
 pub fn get_memory() -> (u64, u64, u64, u64) {
     let file = File::open("/proc/meminfo").unwrap();
-    let mut buf_reader = BufReader::new(file);
+    let buf_reader = BufReader::new(file);
     let mut res_dict = HashMap::new();
     for line in buf_reader.lines() {
         let l = line.unwrap();
@@ -156,7 +153,7 @@ lazy_static! {
 pub fn get_sys_traffic() -> (u64, u64) {
     let (mut network_in, mut network_out) = (0, 0);
     let file = File::open("/proc/net/dev").unwrap();
-    let mut buf_reader = BufReader::new(file);
+    let buf_reader = BufReader::new(file);
     for line in buf_reader.lines() {
         let l = line.unwrap();
 
@@ -216,8 +213,8 @@ lazy_static! {
 
 pub fn start_net_speed_t() {
     thread::spawn(|| loop {
-        let _ = File::open("/proc/net/dev").and_then(|mut file| {
-            let mut buf_reader = BufReader::new(file);
+        let _ = File::open("/proc/net/dev").and_then(|file| {
+            let buf_reader = BufReader::new(file);
             let (mut avgrx, mut avgtx) = (0, 0);
             for line in buf_reader.lines() {
                 let l = line.unwrap();
@@ -262,11 +259,11 @@ lazy_static! {
 pub fn start_cpu_percent_collect_t() {
     let mut pre_cpu: Vec<u64> = vec![0, 0, 0, 0];
     thread::spawn(move || loop {
-        let _ = File::open("/proc/stat").and_then(|mut file| {
+        let _ = File::open("/proc/stat").and_then(|file| {
             let mut buf_reader = BufReader::new(file);
             let mut buf = String::new();
-            let _ = buf_reader.read_line(&mut buf).and_then(|size| {
-                let mut cur_cpu = buf
+            let _ = buf_reader.read_line(&mut buf).and_then(|_| {
+                let cur_cpu = buf
                     .split_whitespace()
                     .enumerate()
                     .filter(|&(idx, _)| idx > 0 && idx < 5)
@@ -287,7 +284,7 @@ pub fn start_cpu_percent_collect_t() {
 
                 pre_cpu = cur_cpu;
 
-                let mut cpu_percent = &mut *G_CPU_PERCENT.lock().unwrap();
+                let cpu_percent = &mut *G_CPU_PERCENT.lock().unwrap();
                 *cpu_percent = res.round();
                 // dbg!(cpu_percent);
                 Ok(())
@@ -301,37 +298,28 @@ pub fn start_cpu_percent_collect_t() {
 }
 
 pub fn get_network() -> (bool, bool) {
-    let (mut ipv4, mut ipv6) = (false, false);
-    let _ = IPV4_ADDR.to_socket_addrs().and_then(|mut iter| {
-        iter.next().and_then(|addr| {
-            dbg!(&addr);
-            let _ = TcpStream::connect_timeout(&addr, Duration::from_millis(TIMEOUT_MS))
-                .and_then(|s| {
-                    ipv4 = true;
-                    Ok(s)
-                })
-                .and_then(|s| {
-                    let _ = s.shutdown(Shutdown::Both);
-                    Ok(())
-                });
-            Some(())
-        });
-        Ok(())
-    });
-
-    IPV6_ADDR.to_socket_addrs().and_then(|mut iter| {
-        iter.next().and_then(|addr| {
-            dbg!(&addr);
-            TcpStream::connect_timeout(&addr, Duration::from_millis(TIMEOUT_MS)).and_then(|s| {
-                ipv6 = true;
-                Ok(s)
+    let mut network: [bool; 2] = [false, false];
+    let addrs = vec![IPV4_ADDR, IPV6_ADDR];
+    for (idx, probe_addr) in addrs.into_iter().enumerate() {
+        let _ = probe_addr.to_socket_addrs().and_then(|mut iter| {
+            iter.next().and_then(|addr| {
+                info!("{} => {}", probe_addr, addr);
+                let _ = TcpStream::connect_timeout(&addr, Duration::from_millis(TIMEOUT_MS))
+                    .and_then(|s| {
+                        network[idx] = true;
+                        Ok(s)
+                    })
+                    .and_then(|s| {
+                        let _ = s.shutdown(Shutdown::Both);
+                        Ok(())
+                    });
+                Some(())
             });
-            Some(())
+            Ok(())
         });
-        Ok(())
-    });
+    }
 
-    (ipv4, ipv6)
+    (network[0], network[1])
 }
 
 #[derive(Debug, Default)]

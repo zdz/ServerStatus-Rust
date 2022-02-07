@@ -2,7 +2,6 @@
 #[macro_use]
 extern crate log;
 extern crate pretty_env_logger;
-// use bytes::Buf;
 use clap::Parser;
 use reqwest;
 use serde_json;
@@ -18,18 +17,9 @@ type Result<T> = std::result::Result<T, GenericError>;
 mod status;
 
 const INTERVAL_MS: u64 = 1000;
-static APP_VERSION: &'static str = concat!(
-    "v",
-    env!("CARGO_PKG_VERSION"),
-    " (GIT:",
-    env!("GIT_HASH"),
-    ",BUILD:",
-    env!("BUILD_ST"),
-    ")"
-);
 
 #[derive(Parser, Debug)]
-#[clap(author, version = APP_VERSION, about, long_about = None)]
+#[clap(author, version = env!("APP_VERSION"), about, long_about = None)]
 struct Args {
     #[clap(short, long, default_value = "http://127.0.0.1:8080/report")]
     addr: String,
