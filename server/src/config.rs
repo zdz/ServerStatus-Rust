@@ -71,7 +71,7 @@ impl Config {
     }
 }
 
-pub fn parse_config(cfg: &String) -> Config {
+pub fn from_file(cfg: &String) -> Config {
     let file = File::open(cfg).unwrap();
     let mut buf_reader = BufReader::new(file);
     let mut contents = String::new();

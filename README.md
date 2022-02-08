@@ -140,6 +140,10 @@ sudo yum install -y vnstat
 ## Ubuntu/Debian
 sudo apt install -y vnstat
 
+# 修改 /etc/vnstat.conf
+# MaxBandwidth 0
+systemctl restart vnstat
+
 # 确保 version >=2.6
 vnstat --version
 # 测试查看月流量
