@@ -32,6 +32,8 @@ bash -ex one-touch.sh
 ```toml
 tcp_addr = "0.0.0.0:34512"
 http_addr = "0.0.0.0:8080"
+# sec
+notify_interval = 30
 
 # 使用vnstat来更精准统计月流量，开启参考下面 vnstat 一节
 vnstat = false

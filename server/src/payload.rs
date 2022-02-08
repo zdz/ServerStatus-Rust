@@ -73,6 +73,8 @@ pub struct HostStat {
 
     #[serde(skip_serializing, skip_deserializing)]
     pub pos: usize,
+    #[serde(skip_serializing, skip_deserializing)]
+    pub disabled: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

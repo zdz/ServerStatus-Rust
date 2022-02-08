@@ -26,7 +26,6 @@ use crate::notifier::{Event, Notifier};
 use crate::payload::{HostStat, StatsResp};
 
 const OFFLINE_THRESHOLD: u64 = 10; // 10s 下线
-const NOTIFY_INTERVAL: u64 = 30; // 30s
 const SAVE_INTERVAL: u64 = 60;
 
 static STAT_SENDER: OnceCell<SyncSender<Cow<HostStat>>> = OnceCell::new();
@@ -111,6 +110,7 @@ impl StatsMgr {
                     stat_t.location = String::from(&info.location);
                     stat_t.host_type = String::from(&info.host_type);
                     stat_t.pos = info.pos;
+                    stat_t.disabled = false;
                     stat_t.lastest_ts = SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .unwrap()
@@ -152,9 +152,6 @@ impl StatsMgr {
                                 // node up notify
                                 notifier_tx_1.send((Event::NodeUp, stat_c.to_owned()));
                             }
-                        } else {
-                            // node up notify
-                            notifier_tx_1.send((Event::NodeUp, stat_c.to_owned()));
                         }
                         host_stat_map.insert(String::from(&info.name), stat_c.to_owned());
                         //trace!("{:?}", host_stat_map);
@@ -171,12 +168,17 @@ impl StatsMgr {
         let notifier_tx_2 = notifier_tx.clone();
         let mut latest_notify_ts: u64 = 0;
         let mut latest_save_ts: u64 = 0;
+        let notify_interval: u64 = cfg.notify_interval;
         thread::spawn(move || loop {
             let mut resp = StatsResp::new();
             let mut notified = false;
             {
                 let mut host_stat_map = stat_dict_2.lock().unwrap();
                 for (_, mut stat) in host_stat_map.iter_mut() {
+                    if stat.disabled {
+                        resp.servers.push(stat.to_owned().into_owned());
+                        continue;
+                    }
                     let mut stat_c = stat.borrow_mut();
                     let o = stat_c.to_mut();
                     // 10s 下线
@@ -186,10 +188,11 @@ impl StatsMgr {
                     }
 
                     // notify check /30 s
-                    if latest_notify_ts + NOTIFY_INTERVAL < resp.updated {
+                    if latest_notify_ts + notify_interval < resp.updated {
                         if o.online4 || o.online6 {
                             notifier_tx_2.send((Event::Custom, stat_c.to_owned()));
                         } else {
+                            o.disabled = true;
                             notifier_tx_2.send((Event::NodeDown, stat_c.to_owned()));
                         }
                         notified = true;

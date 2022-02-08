@@ -197,9 +197,9 @@ async fn serv_tcp() -> Result<()> {
                             }
                             auth_ok = true;
                             if socket
-                            .write_all(b"Authentication successful. Access granted. You are connecting via: IPv4")
-                            .await
-                            .is_err()
+                                .write_all(b"Authentication successful. Access granted.")
+                                .await
+                                .is_err()
                             {
                                 // Unexpected socket error.
                                 return;
@@ -222,9 +222,13 @@ async fn main() -> Result<()> {
     pretty_env_logger::init();
     let args = Args::parse();
 
-    let cfg = crate::config::from_file(&args.config);
-    debug!("{:?}", cfg);
-    G_CONFIG.set(cfg).unwrap();
+    if let Some(cfg) = crate::config::from_file(&args.config) {
+        debug!("{:?}", cfg);
+        G_CONFIG.set(cfg).unwrap();
+    } else {
+        error!("can't parse config");
+        process::exit(1);
+    }
 
     let mut mgr = crate::stats::StatsMgr::new();
     mgr.init(G_CONFIG.get().unwrap()).unwrap();

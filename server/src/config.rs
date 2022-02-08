@@ -2,9 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::BufReader;
+use std::fs;
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct TGBot {
@@ -48,6 +46,8 @@ pub struct Host {
 pub struct Config {
     pub http_addr: String,
     pub tcp_addr: String,
+    #[serde(default = "Default::default")]
+    pub notify_interval: u64,
     // pub admin_user: String,
     // pub admin_pass: String,
     #[serde(default = "bool::default")]
@@ -71,20 +71,22 @@ impl Config {
     }
 }
 
-pub fn from_file(cfg: &String) -> Config {
-    let file = File::open(cfg).unwrap();
-    let mut buf_reader = BufReader::new(file);
-    let mut contents = String::new();
-    buf_reader.read_to_string(&mut contents).unwrap();
+pub fn from_file(cfg: &String) -> Option<Config> {
+    fs::read_to_string(cfg)
+        .and_then(|contents| {
+            let mut o: Config = toml::from_str(&contents).unwrap();
+            o.auth_map = HashMap::new();
+            for (idx, host) in o.hosts.iter_mut().enumerate() {
+                o.auth_map
+                    .insert(String::from(&host.name), String::from(&host.password));
+                host.pos = idx;
+            }
+            if o.notify_interval < 30 {
+                o.notify_interval = 30;
+            }
 
-    let mut o: Config = toml::from_str(&contents).unwrap();
-
-    o.auth_map = HashMap::new();
-    for (idx, host) in o.hosts.iter_mut().enumerate() {
-        o.auth_map
-            .insert(String::from(&host.name), String::from(&host.password));
-        host.pos = idx;
-    }
-
-    o
+            Ok(o)
+        })
+        .ok()?
+        .into()
 }
