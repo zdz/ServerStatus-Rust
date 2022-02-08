@@ -49,6 +49,19 @@ jobs:
         cp systemd/stat_server.service target/${{ matrix.target }}/release/
         cp systemd/stat_client.service target/${{ matrix.target }}/release/
 
+    - name: Run UPX
+      # Upx may not support some platforms. Ignore the errors
+      continue-on-error: true
+      # Disable upx for mips. See https://github.com/upx/upx/issues/387
+      if: matrix.os == 'ubuntu-latest' && !contains(matrix.target, 'mips')
+      uses: crazy-max/ghaction-upx@v1
+      with:
+        version: latest
+        files: |
+          target/${{ matrix.target }}/release/stat_server
+          target/${{ matrix.target }}/release/stat_client
+        args: -q --best --lzma
+
     - uses: actions/upload-artifact@v2
       with:
         name: ServerStatus-${{ matrix.target }}
