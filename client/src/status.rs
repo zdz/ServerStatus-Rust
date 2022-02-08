@@ -357,7 +357,7 @@ fn start_ping_thread_t(data: &Arc<Mutex<PingData>>) {
         .unwrap()
         .next()
         .expect("can't get addr info");
-    dbg!(&addr);
+    info!("{} => {:?}", pt.probe_uri, addr);
     drop(pt);
 
     let ping_data = data.clone();

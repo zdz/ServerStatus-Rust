@@ -151,7 +151,7 @@ async fn do_tcp_report(
             .contains("Authentication successful")
         {
             dbg!(&result);
-            dbg!("Authentication failed!");
+            error!("Authentication failed!");
             drop(socket);
             thread::sleep(Duration::from_millis(INTERVAL_MS));
             continue;
@@ -171,7 +171,7 @@ async fn do_tcp_report(
 
             sample(&mut stat, args.vnstat);
             let json_str = serde_json::to_string(&stat).unwrap();
-            dbg!(&json_str);
+            trace!("json_str => {:?}", json_str);
 
             //
             let frame_data = json_str + "\n";
@@ -203,7 +203,7 @@ fn do_http_report(args: &Args, stat_base: &HashMap<&'static str, serde_json::Val
 
         sample(&mut stat, args.vnstat);
         let json_str = serde_json::to_string(&stat).unwrap();
-        dbg!(&json_str);
+        trace!("json_str => {:?}", json_str);
 
         let client = http_client.clone();
         let url = args.addr.to_string();
