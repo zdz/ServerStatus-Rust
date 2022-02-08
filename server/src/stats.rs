@@ -1,10 +1,16 @@
 #![allow(unused)]
 use chrono::{Datelike, Local, Timelike};
+use lazy_static::lazy_static;
+use once_cell::sync::OnceCell;
+use std::borrow::Borrow;
+use std::borrow::BorrowMut;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Write;
 use std::sync::mpsc::sync_channel;
+use std::sync::mpsc::Receiver;
 use std::sync::mpsc::SyncSender;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -15,19 +21,17 @@ use tokio::runtime::Handle;
 
 use crate::Result;
 
-use crate::notifier::Notifier;
 use crate::notifier::NOTIFIER_HANDLE;
+use crate::notifier::{Event, Notifier};
 use crate::payload::{HostStat, StatsResp};
 
-static OFFLINE_THRESHOLD: u64 = 10; // 10s 下线
-static NOTIFY_INTERVAL: u64 = 30; // 30s
-static SAVE_INTERVAL: u64 = 60;
+const OFFLINE_THRESHOLD: u64 = 10; // 10s 下线
+const NOTIFY_INTERVAL: u64 = 30; // 30s
+const SAVE_INTERVAL: u64 = 60;
+
+static STAT_SENDER: OnceCell<SyncSender<Cow<HostStat>>> = OnceCell::new();
 
 pub struct StatsMgr {
-    stat_sender: Option<SyncSender<HostStat>>,
-    stat_rx_t: Option<thread::JoinHandle<()>>,
-    timer_t: Option<thread::JoinHandle<()>>,
-    notify_t: Option<thread::JoinHandle<()>>,
     resp_json: Arc<Mutex<String>>,
     notifier_list: Arc<Mutex<Vec<Box<dyn Notifier + Send>>>>,
 }
@@ -35,11 +39,7 @@ pub struct StatsMgr {
 impl StatsMgr {
     pub fn new() -> Self {
         Self {
-            stat_sender: None,
             resp_json: Arc::new(Mutex::new(String::from("{}"))),
-            stat_rx_t: None,
-            timer_t: None,
-            notify_t: None,
             notifier_list: Arc::new(Mutex::new(Vec::new())),
         }
     }
@@ -89,24 +89,25 @@ impl StatsMgr {
             self.notifier_list.lock().unwrap().push(o);
         }
 
-        let (stat_tx, stat_rx) = sync_channel(256);
-        self.stat_sender = Some(stat_tx.clone());
-        let (notifier_tx, notifier_rx) = sync_channel(256);
+        let (stat_tx, stat_rx) = sync_channel(512);
+        STAT_SENDER.set(stat_tx).unwrap();
+        let (notifier_tx, notifier_rx) = sync_channel(512);
 
-        let stat_dict: Arc<Mutex<HashMap<String, Box<HostStat>>>> =
+        let stat_dict: Arc<Mutex<HashMap<String, Cow<HostStat>>>> =
             Arc::new(Mutex::new(HashMap::new()));
 
         // stat_rx thread
         let stat_dict_1 = stat_dict.clone();
         let notifier_tx_1 = notifier_tx.clone();
         let vnstat = cfg.vnstat;
-        self.stat_rx_t = Some(thread::spawn(move || loop {
-            while let Ok(stat) = stat_rx.recv() {
+        thread::spawn(move || loop {
+            while let Ok(mut stat) = stat_rx.recv() {
                 trace!("recv stat `{:?}", stat);
                 if let Some(info) = host_map.get_mut(&stat.name) {
                     let local_now = Local::now();
                     // 补齐
-                    let mut stat_t = stat; //.clone();
+                    let mut stat_c = stat;
+                    let mut stat_t = stat_c.to_mut();
                     stat_t.location = String::from(&info.location);
                     stat_t.host_type = String::from(&info.host_type);
                     stat_t.pos = info.pos;
@@ -149,21 +150,20 @@ impl StatsMgr {
                         if let Some(pre_stat) = host_stat_map.get(&info.name) {
                             if pre_stat.lastest_ts + OFFLINE_THRESHOLD < stat_t.lastest_ts {
                                 // node up notify
-                                notifier_tx_1
-                                    .send((crate::notifier::Event::NodeUp, stat_t.clone()));
+                                notifier_tx_1.send((Event::NodeUp, stat_c.to_owned()));
                             }
                         } else {
                             // node up notify
-                            notifier_tx_1.send((crate::notifier::Event::NodeUp, stat_t.clone()));
+                            notifier_tx_1.send((Event::NodeUp, stat_c.to_owned()));
                         }
-                        host_stat_map.insert(String::from(&info.name), Box::new(stat_t));
-                        //info!("{:?}", host_stat_map);
+                        host_stat_map.insert(String::from(&info.name), stat_c.to_owned());
+                        //trace!("{:?}", host_stat_map);
                     }
                 } else {
                     error!("invalid stat `{:?}", stat);
                 }
             }
-        }));
+        });
 
         // timer thread
         let resp_json = self.resp_json.clone();
@@ -171,15 +171,16 @@ impl StatsMgr {
         let notifier_tx_2 = notifier_tx.clone();
         let mut latest_notify_ts: u64 = 0;
         let mut latest_save_ts: u64 = 0;
-        self.timer_t = Some(thread::spawn(move || loop {
+        thread::spawn(move || loop {
             let mut resp = StatsResp::new();
             let mut notified = false;
             {
-                let host_stat_map = stat_dict_2.lock().unwrap();
-                for (_, v) in &*host_stat_map {
-                    let mut o = (**v).clone();
+                let mut host_stat_map = stat_dict_2.lock().unwrap();
+                for (_, mut stat) in host_stat_map.iter_mut() {
+                    let mut stat_c = stat.borrow_mut();
+                    let o = stat_c.to_mut();
                     // 10s 下线
-                    if v.lastest_ts + OFFLINE_THRESHOLD < resp.updated {
+                    if o.lastest_ts + OFFLINE_THRESHOLD < resp.updated {
                         o.online4 = false;
                         o.online6 = false;
                     }
@@ -187,14 +188,14 @@ impl StatsMgr {
                     // notify check /30 s
                     if latest_notify_ts + NOTIFY_INTERVAL < resp.updated {
                         if o.online4 || o.online6 {
-                            notifier_tx_2.send((crate::notifier::Event::Custom, o.clone()));
+                            notifier_tx_2.send((Event::Custom, stat_c.to_owned()));
                         } else {
-                            notifier_tx_2.send((crate::notifier::Event::NodeDown, o.clone()));
+                            notifier_tx_2.send((Event::NodeDown, stat_c.to_owned()));
                         }
                         notified = true;
                     }
 
-                    resp.servers.push(o);
+                    resp.servers.push(stat_c.to_owned().into_owned());
                 }
                 resp.servers.sort_by(|a, b| a.pos.cmp(&b.pos));
                 if notified {
@@ -204,9 +205,8 @@ impl StatsMgr {
             {
                 let mut o = resp_json.lock().unwrap();
                 *o = serde_json::to_string(&resp).unwrap();
-                // info!("{}", *o);
             }
-            // save last_network_in/out /60s
+            // last_network_in/out save /60s
             if latest_save_ts + SAVE_INTERVAL < resp.updated {
                 latest_save_ts = resp.updated;
                 if (resp.servers.len() > 0) {
@@ -221,12 +221,12 @@ impl StatsMgr {
             }
 
             thread::sleep(Duration::from_millis(500))
-        }));
+        });
 
         // notify thread
         *NOTIFIER_HANDLE.lock().unwrap() = Some(Handle::current().clone());
         let notifier_list = self.notifier_list.clone();
-        self.notify_t = Some(thread::spawn(move || loop {
+        thread::spawn(move || loop {
             while let Ok(msg) = notifier_rx.recv() {
                 let (e, stat) = msg;
                 let notifiers = &*notifier_list.lock().unwrap();
@@ -235,7 +235,7 @@ impl StatsMgr {
                     notifier.do_notify(&e, &stat);
                 }
             }
-        }));
+        });
 
         Ok(())
     }
@@ -245,12 +245,15 @@ impl StatsMgr {
     }
 
     pub fn report(&self, data: serde_json::Value) -> Result<()> {
+        lazy_static! {
+            static ref SENDER: SyncSender<Cow<'static, HostStat>> =
+                STAT_SENDER.get().unwrap().clone();
+        }
+
         match serde_json::from_value(data) {
             Ok(stat) => {
-                if let Some(ref sender) = self.stat_sender {
-                    trace!("send stat => {:?} ", stat);
-                    sender.send(stat);
-                }
+                trace!("send stat => {:?} ", stat);
+                SENDER.send(Cow::Owned(stat));
             }
             Err(err) => {
                 error!("report error => {:?}", err);

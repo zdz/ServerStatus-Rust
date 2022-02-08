@@ -4,6 +4,7 @@ use log::{error, info, trace};
 use minijinja::{context, Environment};
 use reqwest;
 use serde_json;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use tokio::time::Duration;
 
@@ -40,7 +41,7 @@ impl WeChat<'_> {
         o
     }
 
-    fn do_custom_notify(&self, stat: &HostStat) -> Result<()> {
+    fn do_custom_notify(&self, stat: &Cow<HostStat>) -> Result<()> {
         trace!("do_custom_notify => {:?}", stat);
         let tmpl = self.jinja_env.get_template("tpl").unwrap();
         match tmpl.render(context!(host => stat)) {
@@ -130,7 +131,7 @@ impl WeChat<'_> {
 }
 
 impl crate::notifier::Notifier for WeChat<'_> {
-    fn do_notify(&self, e: &Event, stat: &HostStat) -> Result<()> {
+    fn do_notify(&self, e: &Event, stat: &Cow<HostStat>) -> Result<()> {
         trace!("WeChat do_notify {:?} => {:?}", e, stat);
         match e {
             &Event::NodeUp => {

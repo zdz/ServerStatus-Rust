@@ -10,7 +10,7 @@ use rust_embed::RustEmbed;
 use std::collections::HashMap;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::sync::Arc;
+use std::process;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 
@@ -24,19 +24,18 @@ use hyper::{header, Body, Method, Request, Response, Server, StatusCode};
 type GenericError = Box<dyn std::error::Error + Send + Sync>;
 type Result<T> = std::result::Result<T, GenericError>;
 
-static G_CONFIG: OnceCell<crate::config::Config> = OnceCell::new();
 static NOTFOUND: &[u8] = b"Not Found";
 static UNAUTHORIZED: &[u8] = b"Unauthorized";
+
+static G_CONFIG: OnceCell<crate::config::Config> = OnceCell::new();
+static G_STATS_MGR: OnceCell<crate::stats::StatsMgr> = OnceCell::new();
 
 #[derive(RustEmbed)]
 #[folder = "../web"]
 #[prefix = "/"]
 struct Asset;
 
-async fn stats_report(
-    req: Request<Body>,
-    stats_mgr: &Arc<stats::StatsMgr>,
-) -> Result<Response<Body>> {
+async fn stats_report(req: Request<Body>) -> Result<Response<Body>> {
     // auth
     let mut auth_ok = false;
     if let Some(auth) = req.headers().get(hyper::header::AUTHORIZATION) {
@@ -63,7 +62,9 @@ async fn stats_report(
     let json_data: serde_json::Value = serde_json::from_reader(whole_body.reader())?;
 
     // report
-    stats_mgr.report(json_data).unwrap();
+    {
+        G_STATS_MGR.get().unwrap().report(json_data).unwrap();
+    }
 
     let mut resp = HashMap::new();
     resp.insert(&"code", serde_json::Value::from(0 as i32));
@@ -76,19 +77,16 @@ async fn stats_report(
     Ok(response)
 }
 
-async fn get_stats_json(stats_mgr: &Arc<stats::StatsMgr>) -> Result<Response<Body>> {
+async fn get_stats_json() -> Result<Response<Body>> {
     let res = Response::builder()
         .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from(stats_mgr.get_stats_json()))
+        .body(Body::from(G_STATS_MGR.get().unwrap().get_stats_json()))
         .unwrap();
     Ok(res)
 }
 
 #[allow(unused)]
-async fn proc_admin_cmd(
-    req: Request<Body>,
-    stats_mgr: &Arc<stats::StatsMgr>,
-) -> Result<Response<Body>> {
+async fn proc_admin_cmd(req: Request<Body>) -> Result<Response<Body>> {
     // TODO
     return Ok(Response::builder()
         .status(StatusCode::UNAUTHORIZED)
@@ -96,15 +94,12 @@ async fn proc_admin_cmd(
         .unwrap());
 }
 
-async fn main_service_func(
-    req: Request<Body>,
-    stats_mgr: Arc<stats::StatsMgr>,
-) -> Result<Response<Body>> {
+async fn main_service_func(req: Request<Body>) -> Result<Response<Body>> {
     let req_path = req.uri().path();
     match (req.method(), req_path) {
-        (&Method::POST, "/report") => stats_report(req, &stats_mgr).await,
-        (&Method::GET, "/json/stats.json") => get_stats_json(&stats_mgr).await,
-        (&Method::POST, "/admin") => proc_admin_cmd(req, &stats_mgr).await,
+        (&Method::POST, "/report") => stats_report(req).await,
+        (&Method::GET, "/json/stats.json") => get_stats_json().await,
+        (&Method::POST, "/admin") => proc_admin_cmd(req).await,
         (&Method::GET, "/") | (&Method::GET, "/index.html") => {
             let body = Body::from(Asset::get("/index.html").unwrap().data);
             Ok(Response::builder()
@@ -116,8 +111,8 @@ async fn main_service_func(
             match req.method() {
                 &Method::GET => {
                     if req_path.starts_with("/js/")
-                        | req_path.starts_with("/css/")
-                        | req_path.starts_with("/img/")
+                        || req_path.starts_with("/css/")
+                        || req_path.starts_with("/img/")
                     {
                         if let Some(data) = Asset::get(&req_path) {
                             let ct = mime_guess::from_path(req_path);
@@ -157,7 +152,7 @@ struct Args {
     config: String,
 }
 
-async fn serv_tcp(stats_mgr: Arc<stats::StatsMgr>) -> Result<()> {
+async fn serv_tcp() -> Result<()> {
     let addr = &*G_CONFIG.get().unwrap().tcp_addr;
     let listener = TcpListener::bind(addr).await.unwrap();
     println!("Listening on tcp://{}", addr);
@@ -165,7 +160,7 @@ async fn serv_tcp(stats_mgr: Arc<stats::StatsMgr>) -> Result<()> {
     loop {
         let (mut socket, _) = listener.accept().await?;
         let mut auth_ok = false;
-        let mgr = stats_mgr.clone();
+
         tokio::spawn(async move {
             if socket.write(b"Authentication required\n").await.is_err() {
                 return;
@@ -177,14 +172,14 @@ async fn serv_tcp(stats_mgr: Arc<stats::StatsMgr>) -> Result<()> {
                     // Return value of `Ok(0)` signifies that the remote has closed
                     Ok(0) => return,
                     Ok(n) => {
-                        dbg!(&n);
+                        debug!("read buf size `{}", n);
                         let mut reader = BufReader::new(&*buf);
                         let mut line = String::new();
                         let ln = reader.read_line(&mut line).unwrap();
                         if ln < 1 {
                             continue;
                         }
-                        dbg!(&line);
+                        debug!("read line `{}", line);
                         let stat: serde_json::Value = serde_json::from_str(&line).unwrap();
                         let frame = stat["frame"].as_str().unwrap();
 
@@ -193,7 +188,7 @@ async fn serv_tcp(stats_mgr: Arc<stats::StatsMgr>) -> Result<()> {
                             if !auth_ok {
                                 return;
                             }
-                            mgr.report(stat).unwrap();
+                            G_STATS_MGR.get().unwrap().report(stat).unwrap();
                         } else if frame.eq("auth") {
                             let user = stat["user"].as_str().unwrap();
                             let pass = stat["pass"].as_str().unwrap();
@@ -227,33 +222,26 @@ async fn main() -> Result<()> {
     pretty_env_logger::init();
     let args = Args::parse();
 
-    let cfg = crate::config::parse_config(&args.config);
+    let cfg = crate::config::from_file(&args.config);
     debug!("{:?}", cfg);
     G_CONFIG.set(cfg).unwrap();
 
-    let mut stats_mgr_ = stats::StatsMgr::new();
-    stats_mgr_.init(G_CONFIG.get().unwrap()).unwrap();
-    let stats_mgr = Arc::new(stats_mgr_);
+    let mut mgr = crate::stats::StatsMgr::new();
+    mgr.init(G_CONFIG.get().unwrap()).unwrap();
+    if G_STATS_MGR.set(mgr).is_err() {
+        error!("can't set G_STATS_MGR");
+        process::exit(1);
+    }
+
+    tokio::spawn(async move {
+        let _ = serv_tcp().await;
+    });
+
+    let http_service = make_service_fn(move |_| async {
+        Ok::<_, GenericError>(service_fn(move |req| main_service_func(req)))
+    });
 
     let http_addr = G_CONFIG.get().unwrap().http_addr.parse().unwrap();
-
-    let stats_mgr_1 = stats_mgr.clone();
-    tokio::spawn(async move {
-        //
-        let _ = serv_tcp(stats_mgr_1).await;
-    });
-
-    let http_service = make_service_fn(move |_| {
-        // Move a clone into the `service_fn`.
-        let stats_mgr = stats_mgr.clone();
-        async {
-            Ok::<_, GenericError>(service_fn(move |req| {
-                // Clone again to ensure that client outlives this closure.
-                main_service_func(req, stats_mgr.clone())
-            }))
-        }
-    });
-
     println!("Listening on http://{}", http_addr);
     let server = Server::bind(&http_addr).serve(http_service);
     let graceful = server.with_graceful_shutdown(shutdown_signal());
