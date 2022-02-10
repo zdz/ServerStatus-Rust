@@ -69,7 +69,7 @@ pub struct HostStat {
 
     // user data
     #[serde(skip_deserializing)]
-    pub lastest_ts: u64,
+    pub latest_ts: u64,
 
     #[serde(skip_serializing, skip_deserializing)]
     pub pos: usize,

@@ -1,5 +1,5 @@
 [Unit]
-Description=Server Status Server
+Description=ServerStatus-Rust Client
 After=network.target
 
 [Service]

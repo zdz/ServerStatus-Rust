@@ -107,11 +107,11 @@ impl StatsMgr {
                     // 补齐
                     let mut stat_c = stat;
                     let mut stat_t = stat_c.to_mut();
-                    stat_t.location = String::from(&info.location);
-                    stat_t.host_type = String::from(&info.host_type);
+                    stat_t.location = info.location.to_string();
+                    stat_t.host_type = info.host_type.to_owned();
                     stat_t.pos = info.pos;
                     stat_t.disabled = false;
-                    stat_t.lastest_ts = SystemTime::now()
+                    stat_t.latest_ts = SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .unwrap()
                         .as_secs();
@@ -148,12 +148,12 @@ impl StatsMgr {
                     {
                         let mut host_stat_map = stat_dict_1.lock().unwrap();
                         if let Some(pre_stat) = host_stat_map.get(&info.name) {
-                            if pre_stat.lastest_ts + OFFLINE_THRESHOLD < stat_t.lastest_ts {
+                            if pre_stat.latest_ts + OFFLINE_THRESHOLD < stat_t.latest_ts {
                                 // node up notify
                                 notifier_tx_1.send((Event::NodeUp, stat_c.to_owned()));
                             }
                         }
-                        host_stat_map.insert(String::from(&info.name), stat_c.to_owned());
+                        host_stat_map.insert(String::from(&info.name), stat_c);
                         //trace!("{:?}", host_stat_map);
                     }
                 } else {
@@ -182,7 +182,7 @@ impl StatsMgr {
                     let mut stat_c = stat.borrow_mut();
                     let o = stat_c.to_mut();
                     // 10s 下线
-                    if o.lastest_ts + OFFLINE_THRESHOLD < resp.updated {
+                    if o.latest_ts + OFFLINE_THRESHOLD < resp.updated {
                         o.online4 = false;
                         o.online6 = false;
                     }
