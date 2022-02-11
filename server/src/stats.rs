@@ -110,6 +110,7 @@ impl StatsMgr {
                     stat_t.location = info.location.to_string();
                     stat_t.host_type = info.host_type.to_owned();
                     stat_t.pos = info.pos;
+                    stat_t.alias = info.alias.to_owned();
                     stat_t.disabled = false;
                     stat_t.latest_ts = SystemTime::now()
                         .duration_since(UNIX_EPOCH)

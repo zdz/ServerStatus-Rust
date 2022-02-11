@@ -111,7 +111,7 @@ function uptime() {
 			}
 
 			// Name
-			TableRow.children["name"].innerHTML = result.servers[i].name;
+			TableRow.children["name"].innerHTML = result.servers[i].alias;
 
 			// Type
 			TableRow.children["type"].innerHTML = result.servers[i].type;

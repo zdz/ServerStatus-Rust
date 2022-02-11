@@ -9,6 +9,8 @@ fn default_as_true() -> bool {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct HostStat {
     pub name: String,
+    #[serde(default = "Default::default", skip_deserializing)]
+    pub alias: String,
     #[serde(rename = "type", skip_deserializing)]
     pub host_type: String,
     #[serde(skip_deserializing)]

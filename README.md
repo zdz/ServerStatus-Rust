@@ -13,7 +13,6 @@
 - 支持 `systemd`, 开机自启
 - 更小 `docker` 镜像
 
-
 ### [Release下载](https://github.com/zdz/ServerStatus-Rust/releases)
 
 ## 快速安装
@@ -28,7 +27,7 @@ bash -ex one-touch.sh
 
 ## 服务端
 
-配置文件 `config.toml`
+### 配置文件 `config.toml`
 ```toml
 tcp_addr = "0.0.0.0:34512"
 http_addr = "0.0.0.0:8080"
@@ -38,12 +37,11 @@ notify_interval = 30
 # 使用vnstat来更精准统计月流量，开启参考下面 vnstat 一节
 vnstat = false
 
-# name 不可重复，代替原来的 ClientID
+# name 不可重复，代替原来的 ClientID, alias 为展示名
 hosts = [
-  {name = "h1", password = "p1", location = "🇨🇳", type = "kvm", monthstart = 1},
-  {name = "h2", password = "p2", location = "us", type = "kvm", monthstart = 1},
+  {name = "h1", password = "p1", alias = "n1", location = "🇨🇳", type = "kvm", monthstart = 1},
+  {name = "h2", password = "p2", alias = "n2", location = "🇺🇸", type = "kvm", monthstart = 1},
 ]
-
 
 # https://core.telegram.org/bots/api
 # https://jinja.palletsprojects.com/en/3.0.x/templates/#if
@@ -76,10 +74,9 @@ custom_tpl = """
 ❗{{ host.name }} 主机硬盘使用率超80%
 {% endif %}
 """
-
 ```
 
-
+### 服务端运行
 ```bash
 # docker
 wget --no-check-certificate -qO docker-compose.yml 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/docker-compose.yml'
@@ -104,7 +101,7 @@ systemctl start stat_server
 
 ```
 
-## 客户端
+## 客户端运行
 ```bash
 # Rust 版本 Client
 ./stat_client -h

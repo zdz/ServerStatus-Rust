@@ -24,8 +24,10 @@ pub struct WeChat {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Host {
     pub name: String,
-    pub location: String,
     pub password: String,
+    #[serde(default = "Default::default")]
+    pub alias: String,
+    pub location: String,
     #[serde(rename = "type")]
     pub host_type: String,
     pub monthstart: u32,
@@ -77,9 +79,12 @@ pub fn from_file(cfg: &String) -> Option<Config> {
             let mut o: Config = toml::from_str(&contents).unwrap();
             o.auth_map = HashMap::new();
             for (idx, host) in o.hosts.iter_mut().enumerate() {
+                host.pos = idx;
+                if host.alias.is_empty() {
+                    host.alias = host.name.to_owned();
+                }
                 o.auth_map
                     .insert(String::from(&host.name), String::from(&host.password));
-                host.pos = idx;
             }
             if o.notify_interval < 30 {
                 o.notify_interval = 30;
