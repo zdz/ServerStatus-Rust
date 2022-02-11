@@ -3,8 +3,6 @@
 extern crate log;
 extern crate pretty_env_logger;
 use clap::Parser;
-use reqwest;
-use serde_json;
 use std::collections::HashMap;
 use std::net::ToSocketAddrs;
 use std::thread;
@@ -206,8 +204,8 @@ fn do_http_report(
     args: &Args,
     stat_base: &mut HashMap<&'static str, serde_json::Value>,
 ) -> Result<()> {
-    let mut domain = args.addr.split("/").collect::<Vec<&str>>()[2].to_owned();
-    if !domain.contains(":") {
+    let mut domain = args.addr.split('/').collect::<Vec<&str>>()[2].to_owned();
+    if !domain.contains(':') {
         if args.addr.contains("https") {
             domain = format!("{}:443", domain);
         } else {

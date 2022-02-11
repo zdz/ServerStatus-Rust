@@ -67,7 +67,7 @@ async fn stats_report(req: Request<Body>) -> Result<Response<Body>> {
     }
 
     let mut resp = HashMap::new();
-    resp.insert(&"code", serde_json::Value::from(0 as i32));
+    resp.insert(&"code", serde_json::Value::from(0_i32));
     let resp_str = serde_json::to_string(&resp)?;
 
     let response = Response::builder()
@@ -88,10 +88,10 @@ async fn get_stats_json() -> Result<Response<Body>> {
 #[allow(unused)]
 async fn proc_admin_cmd(req: Request<Body>) -> Result<Response<Body>> {
     // TODO
-    return Ok(Response::builder()
+    Ok(Response::builder()
         .status(StatusCode::UNAUTHORIZED)
         .body(UNAUTHORIZED.into())
-        .unwrap());
+        .unwrap())
 }
 
 async fn main_service_func(req: Request<Body>) -> Result<Response<Body>> {
@@ -104,36 +104,32 @@ async fn main_service_func(req: Request<Body>) -> Result<Response<Body>> {
             let body = Body::from(Asset::get("/index.html").unwrap().data);
             Ok(Response::builder()
                 .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
-                .body(Body::from(body))
+                .body(body)
                 .unwrap())
         }
         _ => {
-            match req.method() {
-                &Method::GET => {
-                    if req_path.starts_with("/js/")
-                        || req_path.starts_with("/css/")
-                        || req_path.starts_with("/img/")
-                    {
-                        if let Some(data) = Asset::get(&req_path) {
-                            let ct = mime_guess::from_path(req_path);
-                            let resp = Response::builder()
-                                .header(header::CONTENT_TYPE, ct.first_raw().unwrap())
-                                .body(Body::from(data.data))
-                                .unwrap();
-                            return Ok(resp);
-                        } else {
-                            error!("can't get => {:?}", req_path);
-                        }
-                    }
+            if req.method() == Method::GET
+                && (req_path.starts_with("/js/")
+                    || req_path.starts_with("/css/")
+                    || req_path.starts_with("/img/"))
+            {
+                if let Some(data) = Asset::get(req_path) {
+                    let ct = mime_guess::from_path(req_path);
+                    let resp = Response::builder()
+                        .header(header::CONTENT_TYPE, ct.first_raw().unwrap())
+                        .body(Body::from(data.data))
+                        .unwrap();
+                    return Ok(resp);
+                } else {
+                    error!("can't get => {:?}", req_path);
                 }
-                _ => {}
             }
 
             // Return 404 not found response.
-            return Ok(Response::builder()
+            Ok(Response::builder()
                 .status(StatusCode::NOT_FOUND)
                 .body(NOTFOUND.into())
-                .unwrap());
+                .unwrap())
         }
     }
 }
@@ -194,7 +190,7 @@ async fn serv_tcp() -> Result<()> {
                         } else if frame.eq("auth") {
                             let user = stat["user"].as_str().unwrap();
                             let pass = stat["pass"].as_str().unwrap();
-                            if !G_CONFIG.get().unwrap().auth(&user, &pass) {
+                            if !G_CONFIG.get().unwrap().auth(user, pass) {
                                 return;
                             }
                             auth_ok = true;
@@ -243,9 +239,8 @@ async fn main() -> Result<()> {
         let _ = serv_tcp().await;
     });
 
-    let http_service = make_service_fn(move |_| async {
-        Ok::<_, GenericError>(service_fn(move |req| main_service_func(req)))
-    });
+    let http_service =
+        make_service_fn(|_| async { Ok::<_, GenericError>(service_fn(main_service_func)) });
 
     let http_addr = G_CONFIG.get().unwrap().http_addr.parse().unwrap();
     println!("Listening on http://{}", http_addr);

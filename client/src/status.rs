@@ -2,7 +2,6 @@
 use chrono::{Datelike, Local};
 use lazy_static::lazy_static;
 use regex::Regex;
-use serde_json;
 use std::collections::HashMap;
 use std::collections::LinkedList;
 use std::fs;
@@ -31,18 +30,18 @@ static CM: &str = "cm.tz.cloudcpp.com:80";
 
 pub fn get_uptime() -> u64 {
     fs::read_to_string("/proc/uptime")
-        .and_then(|contents| {
-            for s in contents.split(".") {
-                return Ok(s.parse::<u64>().unwrap_or(0));
+        .map(|contents| {
+            if let Some(s) = contents.split('.').next() {
+                return s.parse::<u64>().unwrap_or(0);
             }
-            Ok(0)
+            0
         })
         .unwrap()
 }
 
 pub fn get_loadavg() -> (f64, f64, f64) {
     fs::read_to_string("/proc/loadavg")
-        .and_then(|contents| {
+        .map(|contents| {
             let vec = contents.split_whitespace().collect::<Vec<_>>();
             // dbg!(&vec);
             if vec.len() >= 3 {
@@ -51,9 +50,9 @@ pub fn get_loadavg() -> (f64, f64, f64) {
                     .map(|v| v.parse::<f64>().unwrap())
                     .collect::<Vec<f64>>();
 
-                return Ok((a[0], a[1], a[2]));
+                return (a[0], a[1], a[2]);
             }
-            Ok((0.0, 0.0, 0.0))
+            (0.0, 0.0, 0.0)
         })
         .unwrap()
 }
@@ -68,13 +67,12 @@ pub fn get_memory() -> (u64, u64, u64, u64) {
     let mut res_dict = HashMap::new();
     for line in buf_reader.lines() {
         let l = line.unwrap();
-        MEMORY_REGEX_RE.captures(&l).and_then(|caps| {
+        if let Some(caps) = MEMORY_REGEX_RE.captures(&l) {
             res_dict.insert(
                 caps["key"].to_string(),
                 caps["value"].parse::<u64>().unwrap(),
             );
-            Some(())
-        });
+        };
     }
 
     let mem_total = res_dict["MemTotal"];
@@ -120,10 +118,10 @@ pub fn get_vnstat_traffic() -> (u64, u64, u64, u64) {
         .expect("failed to execute vnstat")
         .stdout;
     let b = str::from_utf8(&a).unwrap();
-    let j: HashMap<&str, serde_json::Value> = serde_json::from_str(&b).unwrap();
+    let j: HashMap<&str, serde_json::Value> = serde_json::from_str(b).unwrap();
     for iface in j["interfaces"].as_array().unwrap() {
         let name = iface["name"].as_str().unwrap();
-        if IFACE_IGNORE_VEC.into_iter().any(|sk| name.contains(*sk)) {
+        if IFACE_IGNORE_VEC.iter().any(|sk| name.contains(*sk)) {
             continue;
         }
         let total_o = iface["traffic"]["total"].as_object().unwrap();
@@ -160,7 +158,7 @@ pub fn get_sys_traffic() -> (u64, u64) {
         TRAFFIC_REGEX_RE.captures(&l).and_then(|caps| {
             // println!("caps[0]=>{:?}", caps.get(0).unwrap().as_str());
             let name = caps.get(1).unwrap().as_str();
-            if IFACE_IGNORE_VEC.into_iter().any(|sk| name.contains(*sk)) {
+            if IFACE_IGNORE_VEC.iter().any(|sk| name.contains(*sk)) {
                 return None;
             }
             let net_in = caps.get(2).unwrap().as_str().parse::<u64>().unwrap();
@@ -183,15 +181,14 @@ pub fn get_hdd() -> (u64, u64) {
         .output()
         .expect("failed to execute df")
         .stdout;
-    let _ = str::from_utf8(a).and_then(|s| {
-        s.trim().split("\n").last().and_then(|s| {
+    let _ = str::from_utf8(a).map(|s| {
+        s.trim().split('\n').last().map(|s| {
             let vec: Vec<&str> = s.split_whitespace().collect();
             // dbg!(&vec);
             hdd_total = vec[2].parse::<u64>().unwrap();
             hdd_used = vec[3].parse::<u64>().unwrap();
             Some(())
         });
-        Ok(())
     });
 
     (hdd_total, hdd_used)
@@ -213,17 +210,17 @@ lazy_static! {
 
 pub fn start_net_speed_t() {
     thread::spawn(|| loop {
-        let _ = File::open("/proc/net/dev").and_then(|file| {
+        let _ = File::open("/proc/net/dev").map(|file| {
             let buf_reader = BufReader::new(file);
             let (mut avgrx, mut avgtx) = (0, 0);
             for line in buf_reader.lines() {
                 let l = line.unwrap();
-                let v: Vec<&str> = l.split(":").collect();
+                let v: Vec<&str> = l.split(':').collect();
                 if v.len() < 2 {
                     continue;
                 }
 
-                if IFACE_IGNORE_VEC.into_iter().any(|sk| v[0].contains(*sk)) {
+                if IFACE_IGNORE_VEC.iter().any(|sk| v[0].contains(*sk)) {
                     continue;
                 }
                 let v1: Vec<&str> = v[1].split_whitespace().collect();
@@ -246,8 +243,6 @@ pub fn start_net_speed_t() {
 
                 // dbg!(&t);
             }
-
-            Ok(())
         });
         thread::sleep(Duration::from_millis(SAMPLE_PERIOD));
     });
@@ -259,10 +254,10 @@ lazy_static! {
 pub fn start_cpu_percent_collect_t() {
     let mut pre_cpu: Vec<u64> = vec![0, 0, 0, 0];
     thread::spawn(move || loop {
-        let _ = File::open("/proc/stat").and_then(|file| {
+        let _ = File::open("/proc/stat").map(|file| {
             let mut buf_reader = BufReader::new(file);
             let mut buf = String::new();
-            let _ = buf_reader.read_line(&mut buf).and_then(|_| {
+            let _ = buf_reader.read_line(&mut buf).map(|_| {
                 let cur_cpu = buf
                     .split_whitespace()
                     .enumerate()
@@ -287,10 +282,7 @@ pub fn start_cpu_percent_collect_t() {
                 let cpu_percent = &mut *G_CPU_PERCENT.lock().unwrap();
                 *cpu_percent = res.round();
                 // dbg!(cpu_percent);
-                Ok(())
             });
-
-            Ok(())
         });
 
         thread::sleep(Duration::from_millis(SAMPLE_PERIOD));
@@ -301,21 +293,18 @@ pub fn get_network() -> (bool, bool) {
     let mut network: [bool; 2] = [false, false];
     let addrs = vec![IPV4_ADDR, IPV6_ADDR];
     for (idx, probe_addr) in addrs.into_iter().enumerate() {
-        let _ = probe_addr.to_socket_addrs().and_then(|mut iter| {
-            iter.next().and_then(|addr| {
+        let _ = probe_addr.to_socket_addrs().map(|mut iter| {
+            if let Some(addr) = iter.next() {
                 info!("{} => {}", probe_addr, addr);
                 let _ = TcpStream::connect_timeout(&addr, Duration::from_millis(TIMEOUT_MS))
-                    .and_then(|s| {
+                    .map(|s| {
                         network[idx] = true;
-                        Ok(s)
+                        s
                     })
-                    .and_then(|s| {
+                    .map(|s| {
                         let _ = s.shutdown(Shutdown::Both);
-                        Ok(())
                     });
-                Some(())
-            });
-            Ok(())
+            };
         });
     }
 
@@ -358,15 +347,13 @@ fn start_ping_thread_t(data: &Arc<Mutex<PingData>>) {
         .next()
         .expect("can't get addr info");
     info!("{} => {:?}", pt.probe_uri, addr);
-    drop(pt);
 
     let ping_data = data.clone();
     thread::spawn(move || loop {
-        if package_list.len() > 100 {
-            if package_list.pop_front().unwrap() == 0 {
-                package_lost -= 1;
-            }
+        if package_list.len() > 100 && package_list.pop_front().unwrap() == 0 {
+            package_lost -= 1;
         }
+
         let st = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()

@@ -4,7 +4,6 @@ use log::{error, info, trace};
 use minijinja::{context, Environment};
 use reqwest;
 use serde_json;
-use std::borrow::Cow;
 use std::collections::HashMap;
 use tokio::time::Duration;
 
@@ -41,19 +40,19 @@ impl WeChat<'_> {
         o
     }
 
-    fn do_custom_notify(&self, stat: &Cow<HostStat>) -> Result<()> {
+    fn do_custom_notify(&self, stat: &HostStat) -> Result<()> {
         trace!("do_custom_notify => {:?}", stat);
         let tmpl = self.jinja_env.get_template("tpl").unwrap();
         match tmpl.render(context!(host => stat)) {
             Ok(content) => {
                 info!("tmpl.render => {}", content);
                 let s = content
-                    .split("\n")
+                    .split('\n')
                     .map(|t| t.trim())
                     .filter(|&t| !t.is_empty())
                     .collect::<Vec<&str>>()
                     .join("\n");
-                if s.len() > 0 {
+                if !s.is_empty() {
                     let _ = self.send_wechat_msg(format!("❗Server Status\n{}", s));
                 }
             }
@@ -131,18 +130,18 @@ impl WeChat<'_> {
 }
 
 impl crate::notifier::Notifier for WeChat<'_> {
-    fn do_notify(&self, e: &Event, stat: &Cow<HostStat>) -> Result<()> {
+    fn do_notify(&self, e: &Event, stat: &HostStat) -> Result<()> {
         trace!("WeChat do_notify {:?} => {:?}", e, stat);
-        match e {
-            &Event::NodeUp => {
+        match *e {
+            Event::NodeUp => {
                 let content = format!("❗Server Status\n❗ {} 主机上线 🟢", stat.name);
                 let _ = self.send_wechat_msg(content);
             }
-            &Event::NodeDown => {
+            Event::NodeDown => {
                 let content = format!("❗Server Status\n❗ {} 主机下线 🔴", stat.name);
                 let _ = self.send_wechat_msg(content);
             }
-            &Event::Custom => {
+            Event::Custom => {
                 let _ = self.do_custom_notify(stat);
             }
         }

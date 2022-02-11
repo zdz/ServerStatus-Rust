@@ -1,5 +1,4 @@
 use once_cell::sync::Lazy;
-use std::borrow::Cow;
 use std::sync::Mutex;
 use tokio::runtime::Handle;
 
@@ -19,5 +18,5 @@ pub enum Event {
 }
 
 pub trait Notifier {
-    fn do_notify(&self, e: &Event, stat: &Cow<HostStat>) -> Result<()>;
+    fn do_notify(&self, e: &Event, stat: &HostStat) -> Result<()>;
 }

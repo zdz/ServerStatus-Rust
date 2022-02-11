@@ -213,7 +213,7 @@ impl StatsMgr {
             // last_network_in/out save /60s
             if latest_save_ts + SAVE_INTERVAL < resp.updated {
                 latest_save_ts = resp.updated;
-                if (resp.servers.len() > 0) {
+                if (!resp.servers.is_empty()) {
                     if let Ok(mut file) = File::create("stats.json") {
                         file.write(serde_json::to_string(&resp).unwrap().as_bytes());
                         file.flush();
@@ -228,7 +228,7 @@ impl StatsMgr {
         });
 
         // notify thread
-        *NOTIFIER_HANDLE.lock().unwrap() = Some(Handle::current().clone());
+        *NOTIFIER_HANDLE.lock().unwrap() = Some(Handle::current());
         let notifier_list = self.notifier_list.clone();
         thread::spawn(move || loop {
             while let Ok(msg) = notifier_rx.recv() {
@@ -236,7 +236,7 @@ impl StatsMgr {
                 let notifiers = &*notifier_list.lock().unwrap();
                 trace!("recv notify => {}, {:?}, {:?}", notifiers.len(), e, stat);
                 for notifier in notifiers {
-                    notifier.do_notify(&e, &stat);
+                    notifier.do_notify(&e, stat.borrow());
                 }
             }
         });

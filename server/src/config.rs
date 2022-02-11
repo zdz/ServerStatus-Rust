@@ -69,13 +69,13 @@ impl Config {
         if let Some(o) = self.auth_map.get(user) {
             return pass.eq(o);
         }
-        return false;
+        false
     }
 }
 
-pub fn from_file(cfg: &String) -> Option<Config> {
+pub fn from_file(cfg: &str) -> Option<Config> {
     fs::read_to_string(cfg)
-        .and_then(|contents| {
+        .map(|contents| {
             let mut o: Config = toml::from_str(&contents).unwrap();
             o.auth_map = HashMap::new();
             for (idx, host) in o.hosts.iter_mut().enumerate() {
@@ -90,7 +90,7 @@ pub fn from_file(cfg: &String) -> Option<Config> {
                 o.notify_interval = 30;
             }
 
-            Ok(o)
+            o
         })
         .ok()?
         .into()
