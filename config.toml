@@ -1,6 +1,6 @@
 http_addr = "0.0.0.0:8080"
 tcp_addr = "0.0.0.0:34512"
-# sec
+# 告警间隔 s
 notify_interval = 30
 
 # 使用vnstat来更精准统计月流量，开启参考下面 vnstat 一节
@@ -12,6 +12,7 @@ hosts = [
   {name = "h2", password = "p2", alias = "n2", location = "🇺🇸", type = "kvm", monthstart = 1},
 ]
 
+# 不开启告警，可省略后面配置
 # https://core.telegram.org/bots/api
 # https://jinja.palletsprojects.com/en/3.0.x/templates/#if
 [tgbot]
