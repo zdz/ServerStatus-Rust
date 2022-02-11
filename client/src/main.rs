@@ -6,6 +6,7 @@ use clap::Parser;
 use reqwest;
 use serde_json;
 use std::collections::HashMap;
+use std::net::ToSocketAddrs;
 use std::thread;
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -102,9 +103,24 @@ fn sample(stat: &mut HashMap<&'static str, serde_json::Value>, vnstat: bool) {
 
 async fn do_tcp_report(
     args: &Args,
-    stat_base: &HashMap<&'static str, serde_json::Value>,
+    stat_base: &mut HashMap<&'static str, serde_json::Value>,
 ) -> Result<()> {
-    let tcp_addr = args.addr.replace("tcp://", ""); // "127.0.0.1:34512";
+    // "127.0.0.1:34512";
+    let tcp_addr = args
+        .addr
+        .replace("tcp://", "")
+        .to_socket_addrs()?
+        .next()
+        .unwrap();
+    let (ipv4, ipv6) = (tcp_addr.is_ipv4(), tcp_addr.is_ipv6());
+    if ipv4 {
+        stat_base.insert("online4", serde_json::Value::from(ipv4));
+    }
+    if ipv6 {
+        stat_base.insert("online6", serde_json::Value::from(ipv6));
+    }
+    // dbg!(&stat_base);
+
     loop {
         let result = TcpStream::connect(&tcp_addr).await;
         if result.is_err() {
@@ -160,7 +176,7 @@ async fn do_tcp_report(
         loop {
             let mut stat = stat_base.clone();
             stat.insert(
-                "lastest_ts",
+                "latest_ts",
                 serde_json::Value::from(
                     SystemTime::now()
                         .duration_since(UNIX_EPOCH)
@@ -186,13 +202,33 @@ async fn do_tcp_report(
     }
 }
 
-fn do_http_report(args: &Args, stat_base: &HashMap<&'static str, serde_json::Value>) {
+fn do_http_report(
+    args: &Args,
+    stat_base: &mut HashMap<&'static str, serde_json::Value>,
+) -> Result<()> {
+    let mut domain = args.addr.split("/").collect::<Vec<&str>>()[2].to_owned();
+    if !domain.contains(":") {
+        if args.addr.contains("https") {
+            domain = format!("{}:443", domain);
+        } else {
+            domain = format!("{}:80", domain);
+        }
+    }
+    let tcp_addr = domain.to_socket_addrs()?.next().unwrap();
+    let (ipv4, ipv6) = (tcp_addr.is_ipv4(), tcp_addr.is_ipv6());
+    if ipv4 {
+        stat_base.insert("online4", serde_json::Value::from(ipv4));
+    }
+    if ipv6 {
+        stat_base.insert("online6", serde_json::Value::from(ipv6));
+    }
+    // dbg!(&stat_base);
+
     let http_client = reqwest::Client::new();
     loop {
-        //
         let mut stat = stat_base.clone();
         stat.insert(
-            "lastest_ts",
+            "latest_ts",
             serde_json::Value::from(
                 SystemTime::now()
                     .duration_since(UNIX_EPOCH)
@@ -251,9 +287,10 @@ async fn main() -> Result<()> {
     stat_base.insert("frame", serde_json::Value::from("data"));
 
     if args.addr.starts_with("http") {
-        do_http_report(&args, &stat_base);
+        let result = do_http_report(&args, &mut stat_base);
+        dbg!(&result);
     } else if args.addr.starts_with("tcp://") {
-        let result = do_tcp_report(&args, &stat_base).await;
+        let result = do_tcp_report(&args, &mut stat_base).await;
         dbg!(&result);
     } else {
         eprint!("invalid addr scheme!");

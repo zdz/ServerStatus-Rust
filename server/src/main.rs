@@ -160,6 +160,8 @@ async fn serv_tcp() -> Result<()> {
     loop {
         let (mut socket, _) = listener.accept().await?;
         let mut auth_ok = false;
+        let peer_addr = socket.peer_addr().unwrap();
+        trace!("accept conn {:?}", peer_addr);
 
         tokio::spawn(async move {
             if socket.write(b"Authentication required\n").await.is_err() {

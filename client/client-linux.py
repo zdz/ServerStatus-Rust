@@ -432,6 +432,17 @@ def get_vnstat_traffic():
 
     return (network_in, network_out, m_network_in, m_network_out)
 
+def get_target_network(url):
+    ipv4, ipv6 = False, False
+    arr = url.split("/")
+    for response in socket.getaddrinfo(arr[2], arr[0].replace(":", "")):
+        family, _, _, _, sockaddr = response
+        print(family, sockaddr)
+        if family == socket.AddressFamily.AF_INET:
+            ipv4 = True
+        elif family == socket.AddressFamily.AF_INET6:
+            ipv6 = True
+    return ipv4, ipv6
 
 def http_report(addr, username, password, vnstat=False):
     socket.setdefaulttimeout(30)
@@ -439,6 +450,11 @@ def http_report(addr, username, password, vnstat=False):
 
     online4 = get_network(4)
     online6 = get_network(6)
+
+    if not all([online4, online6]):
+        ipv4, ipv6 = get_target_network(addr)
+        online4 = ipv4
+        online6 = ipv6
 
     auth = HTTPBasicAuth(username, password)
     sess = requests.Session()
