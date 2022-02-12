@@ -13,7 +13,8 @@
 - 支持 `systemd`, 开机自启
 - 更小 `docker` 镜像
 
-### [Release下载](https://github.com/zdz/ServerStatus-Rust/releases)
+#### 在线：https://tz-rust.vercel.app
+#### 下载：[Release](https://github.com/zdz/ServerStatus-Rust/releases)
 
 ## 快速安装
 ```bash
