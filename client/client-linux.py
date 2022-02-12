@@ -451,7 +451,7 @@ def http_report(addr, username, password, vnstat=False):
     online4 = get_network(4)
     online6 = get_network(6)
 
-    if not all([online4, online6]):
+    if not any([online4, online6]):
         ipv4, ipv6 = get_target_network(addr)
         online4 = ipv4
         online6 = ipv6
