@@ -222,7 +222,15 @@ fn do_http_report(
     }
     // dbg!(&stat_base);
 
-    let http_client = reqwest::Client::new();
+    let http_client = reqwest::Client::builder()
+        .pool_max_idle_per_host(1)
+        .connect_timeout(Duration::from_secs(5))
+        .user_agent(format!(
+            "{}/{}",
+            env!("CARGO_BIN_NAME"),
+            env!("CARGO_PKG_VERSION")
+        ))
+        .build()?;
     loop {
         let mut stat = stat_base.clone();
         stat.insert(
