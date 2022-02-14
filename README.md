@@ -105,6 +105,8 @@ systemctl start stat_server
 
 ## 客户端运行
 ```bash
+# 公网环境建议走 https, 使用 nginx 对 server 套 ssl 和自定义 location /report
+
 # Rust 版本 Client
 ./stat_client -h
 ./stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1
@@ -142,6 +144,7 @@ sudo yum install -y vnstat
 sudo apt install -y vnstat
 
 # 修改 /etc/vnstat.conf
+# BandwidthDetection 0
 # MaxBandwidth 0
 systemctl restart vnstat
 
