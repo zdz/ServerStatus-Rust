@@ -3,8 +3,20 @@
 [![Docker](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml)
 [![Release](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml)
 
-### 介绍
-基于 `cppla` 版本 `ServerStatus`，特性如下：
+- [ServerStatus - Rust](#serverstatus---rust)
+    - [1.介绍](#1介绍)
+      - [演示：https://tz-rust.vercel.app](#演示httpstz-rustvercelapp)
+      - [下载：Release](#下载release)
+  - [2.快速部署](#2快速部署)
+  - [3.服务端说明](#3服务端说明)
+    - [3.1 配置文件 `config.toml`](#31-配置文件-configtoml)
+    - [3.2 服务端运行](#32-服务端运行)
+  - [4.客户端说明](#4客户端说明)
+  - [5.开启 `vnstat` 支持](#5开启-vnstat-支持)
+  - [6.感谢](#6感谢)
+
+### 1.介绍
+基于 `cppla/ServerStatus`，保持轻量和简化部署，特性如下：
 
 - `rust` 版本 `server`, `client`，单个执行文件部署
 - 支持上下线和简单自定义规则告警 (`telegram`, `wechat`)
@@ -13,22 +25,23 @@
 - 支持 `systemd`, 开机自启
 - 更小 `docker` 镜像
 
-#### 在线：https://tz-rust.vercel.app
+#### 演示：https://tz-rust.vercel.app
 #### 下载：[Release](https://github.com/zdz/ServerStatus-Rust/releases)
 
-## 快速安装
+## 2.快速部署
 ```bash
 # for x86_64
 mkdir -p /opt/ServerStatus && cd /opt/ServerStatus
 # apt install -y unzip / yum install -y unzip
 wget --no-check-certificate -qO one-touch.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/one-touch.sh'
 bash -ex one-touch.sh
-# open http://127.0.0.1:8080/
+# 部署完毕，打开 http://127.0.0.1:8080/ 或 http://<你的IP>:8080/
+# 自定义部署可参照 one-touch.sh 脚本
 ```
 
-## 服务端
+## 3.服务端说明
 
-### 配置文件 `config.toml`
+### 3.1 配置文件 `config.toml`
 ```toml
 tcp_addr = "0.0.0.0:34512"
 http_addr = "0.0.0.0:8080"
@@ -78,8 +91,12 @@ custom_tpl = """
 """
 ```
 
-### 服务端运行
+### 3.2 服务端运行
 ```bash
+## systemd 方式， 参照 one-touch.sh 脚本 (推荐)
+systemctl enable stat_server
+systemctl start stat_server
+
 # docker
 wget --no-check-certificate -qO docker-compose.yml 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/docker-compose.yml'
 wget --no-check-certificate -qO config.toml 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/config.toml'
@@ -96,16 +113,11 @@ cargo build --release
 ./stat_server -c config.toml
 或
 RUST_BACKTRACE=1 RUST_LOG=trace ./stat_server -c config.toml
-
-## systemd
-systemctl enable stat_server
-systemctl start stat_server
-
 ```
 
-## 客户端运行
+## 4.客户端说明
 ```bash
-# 公网环境建议走 https, 使用 nginx 对 server 套 ssl 和自定义 location /report
+# 公网环境建议 nebula 组网或走 https, 使用 nginx 对 server 套 ssl 和自定义 location /report
 
 # Rust 版本 Client
 ./stat_client -h
@@ -128,12 +140,12 @@ python3 client-linux.py -h
 python3 client-linux.py -a "tcp://127.0.0.1:34512" -u h1 -p p1
 python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
 
-## systemd
+## systemd 方式， 参照 one-touch.sh 脚本 (推荐)
 systemctl enable stat_client
 systemctl start stat_client
 ```
 
-## 开启 `vnstat` 支持
+## 5.开启 `vnstat` 支持
 [vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux下一个流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量，优点是重启不丢流量数据，数据更准确。
 ```bash
 # 在client端安装 vnstat
@@ -163,7 +175,7 @@ vnstat = true
 python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1 -n
 ```
 
-
-## 参考
+## 6.感谢
 - https://github.com/cppla/ServerStatus
+- https://github.com/BotoX/ServerStatus
 

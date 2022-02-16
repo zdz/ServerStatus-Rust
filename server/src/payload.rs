@@ -13,8 +13,8 @@ pub struct HostStat {
     pub alias: String,
     #[serde(rename = "type", skip_deserializing)]
     pub host_type: String,
-    #[serde(skip_deserializing)]
-    pub host: String,
+    // #[serde(skip_deserializing)]
+    // pub host: String,
     #[serde(skip_deserializing)]
     pub location: String,
 
