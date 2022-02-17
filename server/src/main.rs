@@ -70,23 +70,21 @@ async fn stats_report(req: Request<Body>) -> Result<Response<Body>> {
     resp.insert(&"code", serde_json::Value::from(0_i32));
     let resp_str = serde_json::to_string(&resp)?;
 
-    let response = Response::builder()
+    Ok(Response::builder()
         .status(StatusCode::OK)
         .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from(resp_str))?;
-    Ok(response)
+        .body(Body::from(resp_str))?)
 }
 
 async fn get_stats_json() -> Result<Response<Body>> {
-    let res = Response::builder()
+    Ok(Response::builder()
         .header(header::CONTENT_TYPE, "application/json")
         .body(Body::from(G_STATS_MGR.get().unwrap().get_stats_json()))
-        .unwrap();
-    Ok(res)
+        .unwrap())
 }
 
 #[allow(unused)]
-async fn proc_admin_cmd(req: Request<Body>) -> Result<Response<Body>> {
+async fn handle_admin_cmd(req: Request<Body>) -> Result<Response<Body>> {
     // TODO
     Ok(Response::builder()
         .status(StatusCode::UNAUTHORIZED)
@@ -99,7 +97,7 @@ async fn main_service_func(req: Request<Body>) -> Result<Response<Body>> {
     match (req.method(), req_path) {
         (&Method::POST, "/report") => stats_report(req).await,
         (&Method::GET, "/json/stats.json") => get_stats_json().await,
-        (&Method::POST, "/admin") => proc_admin_cmd(req).await,
+        (&Method::POST, "/admin") => handle_admin_cmd(req).await,
         (&Method::GET, "/") | (&Method::GET, "/index.html") => {
             let body = Body::from(Asset::get("/index.html").unwrap().data);
             Ok(Response::builder()
@@ -165,12 +163,13 @@ async fn serv_tcp() -> Result<()> {
             }
 
             loop {
-                let mut buf = vec![0; 1024];
+                let mut buf = vec![0; 1460];
                 match socket.read(&mut buf).await {
                     // Return value of `Ok(0)` signifies that the remote has closed
                     Ok(0) => return,
                     Ok(n) => {
                         debug!("read buf size `{}", n);
+
                         let mut reader = BufReader::new(&*buf);
                         let mut line = String::new();
                         let ln = reader.read_line(&mut line).unwrap();
@@ -178,28 +177,35 @@ async fn serv_tcp() -> Result<()> {
                             continue;
                         }
                         debug!("read line `{}", line);
-                        let stat: serde_json::Value = serde_json::from_str(&line).unwrap();
-                        let frame = stat["frame"].as_str().unwrap();
-
-                        // dbg!(&stat);
-                        if frame.eq("data") {
-                            if !auth_ok {
-                                return;
+                        match serde_json::from_str::<serde_json::Value>(&line) {
+                            Ok(stat) => {
+                                let frame = stat["frame"].as_str().unwrap();
+                                // dbg!(&stat);
+                                if frame.eq("data") {
+                                    if !auth_ok {
+                                        return;
+                                    }
+                                    G_STATS_MGR.get().unwrap().report(stat).unwrap();
+                                } else if frame.eq("auth") {
+                                    let user = stat["user"].as_str().unwrap();
+                                    let pass = stat["pass"].as_str().unwrap();
+                                    if !G_CONFIG.get().unwrap().auth(user, pass) {
+                                        return;
+                                    }
+                                    auth_ok = true;
+                                    if socket
+                                        .write_all(b"Authentication successful. Access granted.")
+                                        .await
+                                        .is_err()
+                                    {
+                                        // Unexpected socket error.
+                                        return;
+                                    }
+                                }
                             }
-                            G_STATS_MGR.get().unwrap().report(stat).unwrap();
-                        } else if frame.eq("auth") {
-                            let user = stat["user"].as_str().unwrap();
-                            let pass = stat["pass"].as_str().unwrap();
-                            if !G_CONFIG.get().unwrap().auth(user, pass) {
-                                return;
-                            }
-                            auth_ok = true;
-                            if socket
-                                .write_all(b"Authentication successful. Access granted.")
-                                .await
-                                .is_err()
-                            {
-                                // Unexpected socket error.
+                            Err(e) => {
+                                error!("serde_json::from_str err `{:?}", e);
+                                error!("invalid data line `{}", line);
                                 return;
                             }
                         }
