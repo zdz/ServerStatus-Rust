@@ -10,15 +10,28 @@ fn commit_hash() -> Option<String> {
         .map(|hash| hash.trim().into())
 }
 
-fn main() {
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
+fn build_ts() -> Option<String> {
+    Command::new("date")
+        .args(&["+%Y-%m-%d %H:%M:%S %Z"])
+        .output()
+        .ok()
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|hash| hash.trim().into())
+}
 
+fn main() {
     let mut app_version = String::from(env!("CARGO_PKG_VERSION"));
     if let Some(commit_hash) = commit_hash() {
-        app_version = format!("v{} (GIT:{}, BUILD:{})", app_version, commit_hash, now);
+        app_version = format!(
+            "v{} GIT:{}, BUILD:{}",
+            app_version,
+            commit_hash,
+            build_ts().unwrap_or_else(|| SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs()
+                .to_string())
+        );
     }
     println!("cargo:rustc-env=APP_VERSION={}", app_version);
 }

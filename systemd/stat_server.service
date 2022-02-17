@@ -5,6 +5,7 @@ After=network.target
 [Service]
 #User=nobody
 #Group=nobody
+Environment="RUST_BACKTRACE=1"
 WorkingDirectory=/opt/ServerStatus
 ExecStart=/opt/ServerStatus/stat_server -c /opt/ServerStatus/config.toml
 ExecReload=/bin/kill -HUP $MAINPID

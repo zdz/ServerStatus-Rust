@@ -5,6 +5,7 @@ After=network.target
 [Service]
 User=root
 Group=root
+Environment="RUST_BACKTRACE=1"
 WorkingDirectory=/opt/ServerStatus
 ExecStart=/opt/ServerStatus/stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1
 ExecReload=/bin/kill -HUP $MAINPID
