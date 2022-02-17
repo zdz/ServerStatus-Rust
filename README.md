@@ -45,8 +45,8 @@ bash -ex one-touch.sh
 ```toml
 tcp_addr = "0.0.0.0:34512"
 http_addr = "0.0.0.0:8080"
-# 告警间隔 s
-notify_interval = 30
+# 默认30s无上报判断下线
+offline_threshold = 30
 
 # 使用vnstat来更精准统计月流量，开启参考下面 vnstat 一节
 vnstat = false
@@ -58,6 +58,8 @@ hosts = [
 ]
 
 # 不开启告警，可省略后面配置
+# 告警间隔 s
+notify_interval = 30
 # https://core.telegram.org/bots/api
 # https://jinja.palletsprojects.com/en/3.0.x/templates/#if
 [tgbot]

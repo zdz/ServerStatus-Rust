@@ -50,6 +50,8 @@ pub struct Config {
     pub tcp_addr: String,
     #[serde(default = "Default::default")]
     pub notify_interval: u64,
+    #[serde(default = "Default::default")]
+    pub offline_threshold: u64,
     // pub admin_user: String,
     // pub admin_pass: String,
     #[serde(default = "bool::default")]
@@ -88,6 +90,9 @@ pub fn from_file(cfg: &str) -> Option<Config> {
             }
             if o.notify_interval < 30 {
                 o.notify_interval = 30;
+            }
+            if o.offline_threshold < 30 {
+                o.offline_threshold = 30;
             }
 
             o

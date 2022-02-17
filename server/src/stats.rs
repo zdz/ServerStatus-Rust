@@ -25,7 +25,6 @@ use crate::notifier::NOTIFIER_HANDLE;
 use crate::notifier::{Event, Notifier};
 use crate::payload::{HostStat, StatsResp};
 
-const OFFLINE_THRESHOLD: u64 = 10; // 10s 下线
 const SAVE_INTERVAL: u64 = 60;
 
 static STAT_SENDER: OnceCell<SyncSender<Cow<HostStat>>> = OnceCell::new();
@@ -99,6 +98,7 @@ impl StatsMgr {
         let stat_dict_1 = stat_dict.clone();
         let notifier_tx_1 = notifier_tx.clone();
         let vnstat = cfg.vnstat;
+        let offline_threshold = cfg.offline_threshold;
         thread::spawn(move || loop {
             while let Ok(mut stat) = stat_rx.recv() {
                 trace!("recv stat `{:?}", stat);
@@ -149,7 +149,7 @@ impl StatsMgr {
                     {
                         let mut host_stat_map = stat_dict_1.lock().unwrap();
                         if let Some(pre_stat) = host_stat_map.get(&info.name) {
-                            if pre_stat.latest_ts + OFFLINE_THRESHOLD < stat_t.latest_ts {
+                            if pre_stat.latest_ts + offline_threshold < stat_t.latest_ts {
                                 // node up notify
                                 notifier_tx_1.send((Event::NodeUp, stat_c.to_owned()));
                             }
@@ -170,6 +170,7 @@ impl StatsMgr {
         let mut latest_notify_ts: u64 = 0;
         let mut latest_save_ts: u64 = 0;
         let notify_interval: u64 = cfg.notify_interval;
+        let offline_threshold = cfg.offline_threshold;
         thread::spawn(move || loop {
             let mut resp = StatsResp::new();
             let mut notified = false;
@@ -182,8 +183,8 @@ impl StatsMgr {
                     }
                     let mut stat_c = stat.borrow_mut();
                     let o = stat_c.to_mut();
-                    // 10s 下线
-                    if o.latest_ts + OFFLINE_THRESHOLD < resp.updated {
+                    // 30s 下线
+                    if o.latest_ts + offline_threshold < resp.updated {
                         o.online4 = false;
                         o.online6 = false;
                     }
