@@ -1,10 +1,11 @@
 #!/bin/bash
 set -ex
-WORKSPACE=/opt/ServerStatus
 
-# 下载
+WORKSPACE=/opt/ServerStatus
 mkdir -p ${WORKSPACE}
 cd ${WORKSPACE}
+
+# 下载, arm 机器替换 x86_64 为 aarch64
 wget --no-check-certificate -qO ServerStatus-x86_64-unknown-linux-musl.zip  "https://github.com/zdz/ServerStatus-Rust/releases/download/latest/ServerStatus-x86_64-unknown-linux-musl.zip"
 unzip -o ServerStatus-x86_64-unknown-linux-musl.zip
 
@@ -26,4 +27,11 @@ systemctl status stat_client
 # systemctl enable stat_server
 # systemctl enable stat_client
 
-# 修改 /etc/systemd/system/stat_client.service 文件，将IP改为你服务器的IP
+# 停止
+# systemctl stop stat_server
+# systemctl stop stat_client
+
+# https://fedoraproject.org/wiki/Systemd/zh-cn
+# https://docs.fedoraproject.org/en-US/quick-docs/understanding-and-administering-systemd/index.html
+
+# 修改 /etc/systemd/system/stat_client.service 文件，将IP改为你服务器的IP或你的域名

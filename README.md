@@ -45,13 +45,14 @@ bash -ex one-touch.sh
 ```toml
 tcp_addr = "0.0.0.0:34512"
 http_addr = "0.0.0.0:8080"
-# 默认30s无上报判断下线
+# 默认30s无上报判定下线
 offline_threshold = 30
 
 # 使用vnstat来更精准统计月流量，开启参考下面 vnstat 一节
 vnstat = false
 
-# name 不可重复，代替原来的 ClientID, alias 为展示名
+# name 主机唯一标识，不可重复，alias 为展示名
+# 批量部署时可以用主机 hostname 作为 name，统一密码
 hosts = [
   {name = "h1", password = "p1", alias = "n1", location = "🇨🇳", type = "kvm", monthstart = 1},
   {name = "h2", password = "p2", alias = "n2", location = "🇺🇸", type = "kvm", monthstart = 1},
@@ -95,7 +96,7 @@ custom_tpl = """
 
 ### 3.2 服务端运行
 ```bash
-## systemd 方式， 参照 one-touch.sh 脚本 (推荐)
+# systemd 方式， 参照 one-touch.sh 脚本 (推荐)
 systemctl enable stat_server
 systemctl start stat_server
 
@@ -103,6 +104,8 @@ systemctl start stat_server
 wget --no-check-certificate -qO docker-compose.yml 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/docker-compose.yml'
 wget --no-check-certificate -qO config.toml 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/config.toml'
 touch stats.json
+docker network create traefik_gw
+# 默认使用 watchtower 自动更新，不需要可以去除
 docker-compose up -d
 
 # 源码编译
@@ -148,7 +151,7 @@ systemctl start stat_client
 ```
 
 ## 5.开启 `vnstat` 支持
-[vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux下一个流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量，优点是重启不丢流量数据，数据更准确。
+[vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux下一个流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量和总流量，优点是重启不丢流量数据，数据更准确。
 ```bash
 # 在client端安装 vnstat
 ## Centos

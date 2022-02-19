@@ -6,7 +6,8 @@ offline_threshold = 30
 # 使用vnstat来更精准统计月流量，开启参考下面 vnstat 一节
 vnstat = false
 
-# name 不可重复，代替原来的 ClientID, alias 为展示名
+# name 主机唯一标识，不可重复，alias 为展示名
+# 批量部署时可以用主机 hostname 作为 name，统一密码
 hosts = [
   {name = "h1", password = "p1", alias = "n1", location = "🇨🇳", type = "kvm", monthstart = 1},
   {name = "h2", password = "p2", alias = "n2", location = "🇺🇸", type = "kvm", monthstart = 1},
