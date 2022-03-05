@@ -20,7 +20,7 @@
 
 - `rust` 版本 `server`, `client`，单个执行文件部署
 - 支持上下线和简单自定义规则告警 (`telegram`, `wechat`)
-- 支持 `vnstat` 更精准统计月流量
+- 支持 `vnstat` 统计月流量，重启不丢流量数据
 - 支持 `tcp`, `http` 协议上报
 - 支持 `systemd`, 开机自启
 - 更小 `docker` 镜像
@@ -59,7 +59,7 @@ hosts = [
 ]
 
 # 不开启告警，可省略后面配置
-# 告警间隔 s
+# 告警间隔默认为30s
 notify_interval = 30
 # https://core.telegram.org/bots/api
 # https://jinja.palletsprojects.com/en/3.0.x/templates/#if
@@ -67,7 +67,7 @@ notify_interval = 30
 enabled = false
 bot_token = "<tg bot token>"
 chat_id = "<chat id>"
-# host参见payload文件HostStat结构，模板置空则停用自定义告警
+# host 可用字段参见 payload.rs 文件 HostStat 结构，模板置空则停用自定义告警，只保留上下线通知
 custom_tpl = """
 {% if host.memory_used / host.memory_total > 0.5  %}
 <pre>❗{{ host.name }} 主机内存使用率超50%, 当前{{ (100 * host.memory_used / host.memory_total) | round }}%  </pre>
@@ -105,7 +105,7 @@ wget --no-check-certificate -qO docker-compose.yml 'https://raw.githubuserconten
 wget --no-check-certificate -qO config.toml 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/config.toml'
 touch stats.json
 docker network create traefik_gw
-# 默认使用 watchtower 自动更新，不需要可以去除
+# 默认使用 watchtower 自动更新，不需要可以去掉
 docker-compose up -d
 
 # 源码编译
@@ -123,6 +123,10 @@ RUST_BACKTRACE=1 RUST_LOG=trace ./stat_server -c config.toml
 ## 4.客户端说明
 ```bash
 # 公网环境建议 nebula 组网或走 https, 使用 nginx 对 server 套 ssl 和自定义 location /report
+
+## systemd 方式， 参照 one-touch.sh 脚本 (推荐)
+systemctl enable stat_client
+systemctl start stat_client
 
 # Rust 版本 Client
 ./stat_client -h
@@ -145,13 +149,10 @@ python3 client-linux.py -h
 python3 client-linux.py -a "tcp://127.0.0.1:34512" -u h1 -p p1
 python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
 
-## systemd 方式， 参照 one-touch.sh 脚本 (推荐)
-systemctl enable stat_client
-systemctl start stat_client
 ```
 
 ## 5.开启 `vnstat` 支持
-[vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux下一个流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量和总流量，优点是重启不丢流量数据，数据更准确。
+[vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux下一个流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量和总流量，优点是重启不丢流量数据。
 ```bash
 # 在client端安装 vnstat
 ## Centos

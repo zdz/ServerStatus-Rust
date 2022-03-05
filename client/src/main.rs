@@ -120,10 +120,11 @@ async fn do_tcp_report(
     // dbg!(&stat_base);
 
     loop {
+        thread::sleep(Duration::from_millis(INTERVAL_MS));
+
         let result = TcpStream::connect(&tcp_addr).await;
         if result.is_err() {
             error!("{:?}", result);
-            thread::sleep(Duration::from_millis(INTERVAL_MS));
             continue;
         }
         let mut socket = result.unwrap();
@@ -140,7 +141,6 @@ async fn do_tcp_report(
         if result.is_err() {
             error!("{:?}", result);
             drop(socket);
-            thread::sleep(Duration::from_millis(INTERVAL_MS));
             continue;
         }
 
@@ -154,7 +154,6 @@ async fn do_tcp_report(
         if result.is_err() {
             error!("{:?}", result);
             drop(socket);
-            thread::sleep(Duration::from_millis(INTERVAL_MS));
             continue;
         }
 
@@ -167,7 +166,6 @@ async fn do_tcp_report(
             dbg!(&result);
             error!("Authentication failed!");
             drop(socket);
-            thread::sleep(Duration::from_millis(INTERVAL_MS));
             continue;
         }
 
@@ -281,8 +279,8 @@ async fn main() -> Result<()> {
     let args = Args::parse();
     dbg!(&args);
 
-    status::start_net_speed_t();
-    status::start_all_ping_t();
+    status::start_net_speed_collect_t();
+    status::start_all_ping_collect_t();
     status::start_cpu_percent_collect_t();
     let (ipv4, ipv6) = status::get_network();
 

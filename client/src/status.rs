@@ -208,7 +208,7 @@ lazy_static! {
     pub static ref G_NET_SPEED: Arc<Mutex<NetSpeed>> = Arc::new(Default::default());
 }
 
-pub fn start_net_speed_t() {
+pub fn start_net_speed_collect_t() {
     thread::spawn(|| loop {
         let _ = File::open("/proc/net/dev").map(|file| {
             let buf_reader = BufReader::new(file);
@@ -336,7 +336,7 @@ lazy_static! {
     }));
 }
 
-fn start_ping_thread_t(data: &Arc<Mutex<PingData>>) {
+fn start_ping_collect_t(data: &Arc<Mutex<PingData>>) {
     let mut package_list: LinkedList<i32> = LinkedList::new();
     let mut package_lost: u32 = 0;
     let pt = &*data.lock().unwrap();
@@ -390,8 +390,8 @@ fn start_ping_thread_t(data: &Arc<Mutex<PingData>>) {
     });
 }
 
-pub fn start_all_ping_t() {
-    start_ping_thread_t(&G_PING_10010);
-    start_ping_thread_t(&G_PING_189);
-    start_ping_thread_t(&G_PING_10086);
+pub fn start_all_ping_collect_t() {
+    start_ping_collect_t(&G_PING_10010);
+    start_ping_collect_t(&G_PING_189);
+    start_ping_collect_t(&G_PING_10086);
 }
