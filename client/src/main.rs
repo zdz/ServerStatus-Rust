@@ -28,9 +28,11 @@ struct Args {
     pass: String,
     #[clap(short = 'n', long, help = "enable vnstat, default:false")]
     vnstat: bool,
+    #[clap(short = 'd', long, help = "disable t/u/p/d, default:false")]
+    disable_tupd: bool,
 }
 
-fn sample(stat: &mut HashMap<&'static str, serde_json::Value>, vnstat: bool) {
+fn sample(stat: &mut HashMap<&'static str, serde_json::Value>, args: &Args) {
     let (load_1, load_5, load_15) = status::get_loadavg();
     stat.insert("load_1", serde_json::Value::from(load_1));
     stat.insert("load_5", serde_json::Value::from(load_5));
@@ -45,13 +47,17 @@ fn sample(stat: &mut HashMap<&'static str, serde_json::Value>, vnstat: bool) {
     stat.insert("swap_total", serde_json::Value::from(swap_total));
     stat.insert("swap_used", serde_json::Value::from(swap_total - swap_free));
 
-    let (t, u, p, d) = status::tupd();
+    let (t, u, p, d) = if args.disable_tupd {
+        (0, 0, 0, 0)
+    } else {
+        status::tupd()
+    };
     stat.insert("tcp", serde_json::Value::from(t));
     stat.insert("udp", serde_json::Value::from(u));
     stat.insert("process", serde_json::Value::from(p));
     stat.insert("thread", serde_json::Value::from(d));
 
-    if vnstat {
+    if args.vnstat {
         let (network_in, network_out, m_network_in, m_network_out) = status::get_vnstat_traffic();
         stat.insert("network_in", serde_json::Value::from(network_in));
         stat.insert("network_out", serde_json::Value::from(network_out));
@@ -181,7 +187,7 @@ async fn do_tcp_report(
                 ),
             );
 
-            sample(&mut stat, args.vnstat);
+            sample(&mut stat, &args);
             let json_str = serde_json::to_string(&stat).unwrap();
             trace!("json_str => {:?}", json_str);
 
@@ -241,7 +247,7 @@ fn do_http_report(
             ),
         );
 
-        sample(&mut stat, args.vnstat);
+        sample(&mut stat, &args);
         let json_str = serde_json::to_string(&stat).unwrap();
         trace!("json_str => {:?}", json_str);
 
