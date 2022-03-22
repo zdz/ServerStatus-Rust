@@ -1,19 +1,23 @@
 # ServerStatus - Rust
 
+Rust 版 ServerStatus 云探针。
+
 [![Docker](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml)
 [![Release](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml)
 
 - [ServerStatus - Rust](#serverstatus---rust)
     - [1.介绍](#1介绍)
       - [演示：https://tz-rust.vercel.app](#演示httpstz-rustvercelapp)
-      - [下载：Release](#下载release)
+      - [下载：Releases](#下载releases)
+      - [反馈：Discussions](#反馈discussions)
   - [2.快速部署](#2快速部署)
   - [3.服务端说明](#3服务端说明)
     - [3.1 配置文件 `config.toml`](#31-配置文件-configtoml)
     - [3.2 服务端运行](#32-服务端运行)
   - [4.客户端说明](#4客户端说明)
   - [5.开启 `vnstat` 支持](#5开启-vnstat-支持)
-  - [6.感谢](#6感谢)
+  - [6.FAQ](#6faq)
+  - [7.感谢](#7感谢)
 
 ### 1.介绍
 基于 `cppla/ServerStatus`，保持轻量和简化部署，特性如下：
@@ -26,7 +30,8 @@
 - 更小 `docker` 镜像
 
 #### 演示：https://tz-rust.vercel.app
-#### 下载：[Release](https://github.com/zdz/ServerStatus-Rust/releases)
+#### 下载：[Releases](https://github.com/zdz/ServerStatus-Rust/releases)
+#### 反馈：[Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
 
 ## 2.快速部署
 ```bash
@@ -121,6 +126,7 @@ RUST_BACKTRACE=1 RUST_LOG=trace ./stat_server -c config.toml
 ```
 
 ## 4.客户端说明
+
 ```bash
 # 公网环境建议 nebula 组网或走 https, 使用 nginx 对 server 套 ssl 和自定义 location /report
 
@@ -131,6 +137,7 @@ systemctl start stat_client
 # Rust 版本 Client
 ./stat_client -h
 ./stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1
+或
 ./stat_client -a "http://127.0.0.1:8080/report" -u h1 -p p1
 
 # Python 版本 Client 依赖安装
@@ -147,9 +154,11 @@ sudo python3 -m pip install psutil requests
 wget --no-check-certificate -qO client-linux.py 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/client/client-linux.py'
 python3 client-linux.py -h
 python3 client-linux.py -a "tcp://127.0.0.1:34512" -u h1 -p p1
+或
 python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
 
 ```
+
 
 ## 5.开启 `vnstat` 支持
 [vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux下一个流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量和总流量，优点是重启不丢流量数据。
@@ -166,9 +175,9 @@ sudo apt install -y vnstat
 # MaxBandwidth 0
 systemctl restart vnstat
 
-# 确保 version >=2.6
+# 确保 version >= 2.6
 vnstat --version
-# 测试查看月流量
+# 测试查看月流量 (刚安装可能需等一小段时间来采集数据)
 vnstat -m
 vnstat --json m
 
@@ -181,7 +190,39 @@ vnstat = true
 python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1 -n
 ```
 
-## 6.感谢
+## 6.FAQ
+
+<details>
+  <summary>使用自定义修改主题</summary>
+
+```nginx
+server {
+  # ssl,domain 等其它配置
+
+  # 只代理转发 json 数据请求
+  location = /json/stats.json {
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host  $host;
+    proxy_set_header X-Forwarded-Port  $server_port;
+
+    proxy_pass http://127.0.0.1:8080/json/stats.json;
+  }
+
+  # 其它 html,js,css 等，走本地文本
+  location / {
+      root   /opt/ServerStatus/web; # web文件目录
+      index  index.html index.htm;
+  }
+}
+```
+
+</details>
+
+
+## 7.感谢
 - https://github.com/cppla/ServerStatus
 - https://github.com/BotoX/ServerStatus
 
