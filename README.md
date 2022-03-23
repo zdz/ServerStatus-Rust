@@ -1,6 +1,6 @@
 # ServerStatus - Rust
 
-Rust 版 ServerStatus 云探针。
+Rust 版 ServerStatus 云探针
 
 [![Docker](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml)
 [![Release](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml)
@@ -199,7 +199,18 @@ python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1 -n
 server {
   # ssl,domain 等其它配置
 
-  # 只代理转发 json 数据请求
+  # 代理 /report 请求
+  location = /report {
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host  $host;
+    proxy_set_header X-Forwarded-Port  $server_port;
+
+    proxy_pass http://127.0.0.1:8080/report;
+  }
+  # 代理转发 json 数据请求
   location = /json/stats.json {
     proxy_set_header Host              $host;
     proxy_set_header X-Real-IP         $remote_addr;
@@ -213,8 +224,8 @@ server {
 
   # 其它 html,js,css 等，走本地文本
   location / {
-      root   /opt/ServerStatus/web; # web文件目录
-      index  index.html index.htm;
+    root   /opt/ServerStatus/web; # web文件目录
+    index  index.html index.htm;
   }
 }
 ```
