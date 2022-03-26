@@ -3,7 +3,7 @@ name: Docker
 on:
   push:
     tags:
-      - '*'
+      - 'v*'
 
 env:
   APP_NAME: stat_server
