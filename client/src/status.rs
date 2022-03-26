@@ -296,14 +296,14 @@ pub fn get_network() -> (bool, bool) {
         let _ = probe_addr.to_socket_addrs().map(|mut iter| {
             if let Some(addr) = iter.next() {
                 info!("{} => {}", probe_addr, addr);
-                let _ = TcpStream::connect_timeout(&addr, Duration::from_millis(TIMEOUT_MS))
-                    .map(|s| {
+
+                let r =
+                    TcpStream::connect_timeout(&addr, Duration::from_millis(TIMEOUT_MS)).map(|s| {
                         network[idx] = true;
-                        s
-                    })
-                    .map(|s| {
-                        let _ = s.shutdown(Shutdown::Both);
+                        s.shutdown(Shutdown::Both)
                     });
+
+                info!("{:?}", r);
             };
         });
     }

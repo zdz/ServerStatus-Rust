@@ -11,6 +11,8 @@ use std::collections::HashMap;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::process;
+use std::sync::Arc;
+use std::sync::Mutex;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 
@@ -39,7 +41,7 @@ async fn stats_report(req: Request<Body>) -> Result<Response<Body>> {
     // auth
     let mut auth_ok = false;
     if let Some(auth) = req.headers().get(hyper::header::AUTHORIZATION) {
-        let auth_header_value = String::from(auth.to_str()?);
+        let auth_header_value = auth.to_str()?.to_string();
         if let Ok(credentials) = Credentials::from_header(auth_header_value) {
             if G_CONFIG
                 .get()
@@ -53,8 +55,7 @@ async fn stats_report(req: Request<Body>) -> Result<Response<Body>> {
     if !auth_ok {
         return Ok(Response::builder()
             .status(StatusCode::UNAUTHORIZED)
-            .body(UNAUTHORIZED.into())
-            .unwrap());
+            .body(UNAUTHORIZED.into())?);
     }
     // auth end
 
@@ -63,7 +64,7 @@ async fn stats_report(req: Request<Body>) -> Result<Response<Body>> {
 
     // report
     {
-        G_STATS_MGR.get().unwrap().report(json_data).unwrap();
+        G_STATS_MGR.get().unwrap().report(json_data)?;
     }
 
     let mut resp = HashMap::new();
@@ -79,8 +80,7 @@ async fn stats_report(req: Request<Body>) -> Result<Response<Body>> {
 async fn get_stats_json() -> Result<Response<Body>> {
     Ok(Response::builder()
         .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from(G_STATS_MGR.get().unwrap().get_stats_json()))
-        .unwrap())
+        .body(Body::from(G_STATS_MGR.get().unwrap().get_stats_json()))?)
 }
 
 #[allow(unused)]
@@ -88,8 +88,7 @@ async fn handle_admin_cmd(req: Request<Body>) -> Result<Response<Body>> {
     // TODO
     Ok(Response::builder()
         .status(StatusCode::UNAUTHORIZED)
-        .body(UNAUTHORIZED.into())
-        .unwrap())
+        .body(UNAUTHORIZED.into())?)
 }
 
 async fn main_service_func(req: Request<Body>) -> Result<Response<Body>> {
@@ -102,8 +101,7 @@ async fn main_service_func(req: Request<Body>) -> Result<Response<Body>> {
             let body = Body::from(Asset::get("/index.html").unwrap().data);
             Ok(Response::builder()
                 .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
-                .body(body)
-                .unwrap())
+                .body(body)?)
         }
         _ => {
             if req.method() == Method::GET
@@ -113,11 +111,9 @@ async fn main_service_func(req: Request<Body>) -> Result<Response<Body>> {
             {
                 if let Some(data) = Asset::get(req_path) {
                     let ct = mime_guess::from_path(req_path);
-                    let resp = Response::builder()
+                    return Ok(Response::builder()
                         .header(header::CONTENT_TYPE, ct.first_raw().unwrap())
-                        .body(Body::from(data.data))
-                        .unwrap();
-                    return Ok(resp);
+                        .body(Body::from(data.data))?);
                 } else {
                     error!("can't get => {:?}", req_path);
                 }
@@ -126,8 +122,7 @@ async fn main_service_func(req: Request<Body>) -> Result<Response<Body>> {
             // Return 404 not found response.
             Ok(Response::builder()
                 .status(StatusCode::NOT_FOUND)
-                .body(NOTFOUND.into())
-                .unwrap())
+                .body(NOTFOUND.into())?)
         }
     }
 }
@@ -148,13 +143,13 @@ struct Args {
 
 async fn serv_tcp() -> Result<()> {
     let addr = &*G_CONFIG.get().unwrap().tcp_addr;
-    let listener = TcpListener::bind(addr).await.unwrap();
+    let listener = TcpListener::bind(addr).await?;
     println!("Listening on tcp://{}", addr);
 
     loop {
         let (mut socket, _) = listener.accept().await?;
         let mut auth_ok = false;
-        let peer_addr = socket.peer_addr().unwrap();
+        let peer_addr = socket.peer_addr()?;
         trace!("accept conn {:?}", peer_addr);
 
         tokio::spawn(async move {
@@ -226,6 +221,7 @@ async fn main() -> Result<()> {
     pretty_env_logger::init();
     let args = Args::parse();
 
+    // config load
     if let Some(cfg) = crate::config::from_file(&args.config) {
         debug!("{:?}", cfg);
         G_CONFIG.set(cfg).unwrap();
@@ -234,8 +230,21 @@ async fn main() -> Result<()> {
         process::exit(1);
     }
 
+    let cfg = G_CONFIG.get().unwrap();
+    let notifier_list: Arc<Mutex<Vec<Box<dyn notifier::Notifier + Send>>>> =
+        Arc::new(Mutex::new(Vec::new()));
+    // init notifier
+    if cfg.tgbot.enabled {
+        let o = Box::new(notifier::tgbot::TGBot::new(&cfg.tgbot));
+        notifier_list.lock().unwrap().push(o);
+    }
+    if cfg.wechat.enabled {
+        let o = Box::new(notifier::wechat::WeChat::new(&cfg.wechat));
+        notifier_list.lock().unwrap().push(o);
+    }
+
     let mut mgr = crate::stats::StatsMgr::new();
-    mgr.init(G_CONFIG.get().unwrap()).unwrap();
+    mgr.init(G_CONFIG.get().unwrap(), notifier_list)?;
     if G_STATS_MGR.set(mgr).is_err() {
         error!("can't set G_STATS_MGR");
         process::exit(1);
@@ -248,7 +257,7 @@ async fn main() -> Result<()> {
     let http_service =
         make_service_fn(|_| async { Ok::<_, GenericError>(service_fn(main_service_func)) });
 
-    let http_addr = G_CONFIG.get().unwrap().http_addr.parse().unwrap();
+    let http_addr = G_CONFIG.get().unwrap().http_addr.parse()?;
     println!("Listening on http://{}", http_addr);
     let server = Server::bind(&http_addr).serve(http_service);
     let graceful = server.with_graceful_shutdown(shutdown_signal());

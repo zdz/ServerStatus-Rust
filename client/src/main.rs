@@ -187,7 +187,7 @@ async fn do_tcp_report(
                 ),
             );
 
-            sample(&mut stat, &args);
+            sample(&mut stat, args);
             let json_str = serde_json::to_string(&stat).unwrap();
             trace!("json_str => {:?}", json_str);
 
@@ -247,7 +247,7 @@ fn do_http_report(
             ),
         );
 
-        sample(&mut stat, &args);
+        sample(&mut stat, args);
         let json_str = serde_json::to_string(&stat).unwrap();
         trace!("json_str => {:?}", json_str);
 

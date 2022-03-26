@@ -1,4 +1,5 @@
 #![allow(unused)]
+use anyhow::Result;
 use chrono::{Datelike, Local, Timelike};
 use lazy_static::lazy_static;
 use once_cell::sync::OnceCell;
@@ -19,8 +20,6 @@ use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::runtime::Handle;
 
-use crate::Result;
-
 use crate::notifier::NOTIFIER_HANDLE;
 use crate::notifier::{Event, Notifier};
 use crate::payload::{HostStat, StatsResp};
@@ -31,21 +30,23 @@ static STAT_SENDER: OnceCell<SyncSender<Cow<HostStat>>> = OnceCell::new();
 
 pub struct StatsMgr {
     resp_json: Arc<Mutex<String>>,
-    notifier_list: Arc<Mutex<Vec<Box<dyn Notifier + Send>>>>,
 }
 
 impl StatsMgr {
     pub fn new() -> Self {
         Self {
-            resp_json: Arc::new(Mutex::new(String::from("{}"))),
-            notifier_list: Arc::new(Mutex::new(Vec::new())),
+            resp_json: Arc::new(Mutex::new("{}".to_string())),
         }
     }
 
-    pub fn init(&mut self, cfg: &'static crate::config::Config) -> Result<()> {
+    pub fn init(
+        &mut self,
+        cfg: &'static crate::config::Config,
+        notifies: Arc<Mutex<Vec<Box<dyn Notifier + Send>>>>,
+    ) -> Result<()> {
         let mut host_map = HashMap::new();
         for host in &cfg.hosts {
-            host_map.insert(String::from(&host.name), host.clone());
+            host_map.insert(host.name.to_string(), host.clone());
         }
 
         // load last_network_in/out
@@ -75,16 +76,6 @@ impl StatsMgr {
                 }
                 trace!("load stats.json succ!");
             }
-        }
-
-        // init notifier, // 坑已挖，待填 ?plugins system?
-        if cfg.tgbot.enabled {
-            let o = Box::new(crate::notifier::tgbot::TGBot::new(&cfg.tgbot));
-            self.notifier_list.lock().unwrap().push(o);
-        }
-        if cfg.wechat.enabled {
-            let o = Box::new(crate::notifier::wechat::WeChat::new(&cfg.wechat));
-            self.notifier_list.lock().unwrap().push(o);
         }
 
         let (stat_tx, stat_rx) = sync_channel(512);
@@ -154,7 +145,7 @@ impl StatsMgr {
                                 notifier_tx_1.send((Event::NodeUp, stat_c.to_owned()));
                             }
                         }
-                        host_stat_map.insert(String::from(&info.name), stat_c);
+                        host_stat_map.insert(info.name.to_string(), stat_c);
                         //trace!("{:?}", host_stat_map);
                     }
                 } else {
@@ -230,14 +221,13 @@ impl StatsMgr {
 
         // notify thread
         *NOTIFIER_HANDLE.lock().unwrap() = Some(Handle::current());
-        let notifier_list = self.notifier_list.clone();
         thread::spawn(move || loop {
             while let Ok(msg) = notifier_rx.recv() {
                 let (e, stat) = msg;
-                let notifiers = &*notifier_list.lock().unwrap();
-                trace!("recv notify => {}, {:?}, {:?}", notifiers.len(), e, stat);
+                let notifiers = &*notifies.lock().unwrap();
+                trace!("recv notify => {:?}, {:?}", e, stat);
                 for notifier in notifiers {
-                    notifier.do_notify(&e, stat.borrow());
+                    notifier.notify(&e, stat.borrow());
                 }
             }
         });
@@ -246,7 +236,7 @@ impl StatsMgr {
     }
 
     pub fn get_stats_json(&self) -> String {
-        String::from(self.resp_json.lock().unwrap().as_str())
+        self.resp_json.lock().unwrap().to_string()
     }
 
     pub fn report(&self, data: serde_json::Value) -> Result<()> {

@@ -1,67 +1,62 @@
 #![deny(warnings)]
+use anyhow::Result;
+use log::{error, info, trace};
 use reqwest;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tokio::time::Duration;
 
-use log::{error, info, trace};
-use minijinja::{context, Environment};
-
+use crate::notifier;
 use crate::notifier::Event;
 use crate::notifier::HostStat;
-use crate::notifier::Result;
+use crate::notifier::Notifier;
 use crate::notifier::NOTIFIER_HANDLE;
 
-pub struct TGBot<'a> {
-    pub bot_token: &'static String,
-    chat_id: &'static String,
-    custom_tpl: &'static String,
-    jinja_env: Environment<'a>,
+const KIND: &str = "tgbot";
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+pub struct Config {
+    pub enabled: bool,
+    pub bot_token: String,
+    pub chat_id: String,
+    pub custom_tpl: String,
+}
+
+pub struct TGBot {
+    config: &'static Config,
     tg_url: String,
     http_client: reqwest::Client,
 }
 
-impl TGBot<'_> {
-    pub fn new(cfg: &'static crate::config::TGBot) -> Self {
-        let mut o = Self {
-            bot_token: &cfg.bot_token,
-            chat_id: &cfg.chat_id,
-            custom_tpl: &cfg.custom_tpl,
-            jinja_env: Environment::new(),
+impl TGBot {
+    pub fn new(cfg: &'static Config) -> Self {
+        let o = Self {
+            config: cfg,
             tg_url: format!("https://api.telegram.org/bot{}/sendMessage", &cfg.bot_token),
             http_client: reqwest::Client::new(),
         };
 
-        o.jinja_env.add_template("tpl", o.custom_tpl).unwrap();
+        notifier::add_template(KIND, o.config.custom_tpl.as_str()).unwrap();
         o
     }
 
-    fn do_custom_notify(&self, stat: &HostStat) -> Result<()> {
-        trace!("do_custom_notify => {:?}", stat);
-        let tmpl = self.jinja_env.get_template("tpl").unwrap();
-        match tmpl.render(context!(host => stat)) {
-            Ok(content) => {
-                info!("tmpl.render => {}", content);
-                let s = content
-                    .split('\n')
-                    .map(|t| t.trim())
-                    .filter(|&t| !t.is_empty())
-                    .collect::<Vec<&str>>()
-                    .join("\n");
-                if !s.is_empty() {
-                    let _ = self.send_tg_msg(format!("❗<b>Server Status</b>\n{}", s));
-                }
-            }
-            Err(err) => {
-                error!("tmpl.render err => {:?}", err);
-            }
-        }
+    fn custom_notify(&self, stat: &HostStat) -> Result<()> {
+        trace!("{} custom_notify => {:?}", self.kind(), stat);
 
-        Ok(())
+        notifier::render_template(KIND, stat).map(|content| {
+            info!("tmpl.render => {}", content);
+            if !content.is_empty() {
+                self.send_msg(format!("❗<b>Server Status</b>\n{}", content))
+                    .unwrap_or_else(|err| {
+                        error!("send_msg err => {:?}", err);
+                    });
+            }
+        })
     }
 
-    fn send_tg_msg(&self, html_content: String) -> Result<()> {
+    fn send_msg(&self, html_content: String) -> Result<()> {
         let mut data = HashMap::new();
-        data.insert("chat_id", self.chat_id.to_string());
+        data.insert("chat_id", self.config.chat_id.to_string());
         data.insert("parse_mode", "HTML".to_string());
         data.insert("text", html_content);
 
@@ -89,20 +84,24 @@ impl TGBot<'_> {
     }
 }
 
-impl crate::notifier::Notifier for TGBot<'_> {
-    fn do_notify(&self, e: &Event, stat: &HostStat) -> Result<()> {
-        trace!("TGBot do_notify {:?} => {:?}", e, stat);
+impl crate::notifier::Notifier for TGBot {
+    fn kind(&self) -> &'static str {
+        KIND
+    }
+
+    fn notify(&self, e: &Event, stat: &HostStat) -> Result<()> {
+        trace!("{} notify {:?} => {:?}", self.kind(), e, stat);
         match *e {
             Event::NodeUp => {
                 let content = format!("❗<b>Server Status</b>\n❗ {} 主机上线 🟢", stat.name);
-                let _ = self.send_tg_msg(content);
+                let _ = self.send_msg(content);
             }
             Event::NodeDown => {
                 let content = format!("❗<b>Server Status</b>\n❗ {} 主机下线 🔴", stat.name);
-                let _ = self.send_tg_msg(content);
+                let _ = self.send_msg(content);
             }
             Event::Custom => {
-                let _ = self.do_custom_notify(stat);
+                let _ = self.custom_notify(stat);
             }
         }
 

@@ -1,78 +1,71 @@
 #![deny(warnings)]
-
+use anyhow::Result;
 use log::{error, info, trace};
-use minijinja::{context, Environment};
 use reqwest;
+use serde::{Deserialize, Serialize};
 use serde_json;
 use std::collections::HashMap;
 use tokio::time::Duration;
 
+use crate::notifier;
 use crate::notifier::Event;
 use crate::notifier::HostStat;
-use crate::notifier::Result;
+use crate::notifier::Notifier;
 use crate::notifier::NOTIFIER_HANDLE;
 
 // https://qydev.weixin.qq.com/wiki/index.php?title=%E4%B8%BB%E5%8A%A8%E8%B0%83%E7%94%A8
 // https://qydev.weixin.qq.com/wiki/index.php?title=%E5%8F%91%E9%80%81%E6%8E%A5%E5%8F%A3%E8%AF%B4%E6%98%8E
 static TOKEN_URL: &str = "https://qyapi.weixin.qq.com/cgi-bin/gettoken";
+const KIND: &str = "wechat";
 
-pub struct WeChat<'a> {
-    corp_id: &'static String,
-    corp_secret: &'static String,
-    agent_id: &'static String,
-    custom_tpl: &'static String,
-    jinja_env: Environment<'a>,
+#[derive(Debug, Default, Deserialize, Serialize)]
+pub struct Config {
+    pub enabled: bool,
+    pub corp_id: String,
+    pub corp_secret: String,
+    pub agent_id: String,
+    pub custom_tpl: String,
+}
+
+pub struct WeChat {
+    config: &'static Config,
     http_client: reqwest::Client,
 }
 
-impl WeChat<'_> {
-    pub fn new(cfg: &'static crate::config::WeChat) -> Self {
-        let mut o = Self {
-            corp_id: &cfg.corp_id,
-            corp_secret: &cfg.corp_secret,
-            agent_id: &cfg.agent_id,
-            custom_tpl: &cfg.custom_tpl,
-            jinja_env: Environment::new(),
+impl WeChat {
+    pub fn new(cfg: &'static Config) -> Self {
+        let o = Self {
+            config: cfg,
             http_client: reqwest::Client::new(),
         };
 
-        o.jinja_env.add_template("tpl", o.custom_tpl).unwrap();
+        notifier::add_template(KIND, o.config.custom_tpl.as_str()).unwrap();
         o
     }
 
-    fn do_custom_notify(&self, stat: &HostStat) -> Result<()> {
-        trace!("do_custom_notify => {:?}", stat);
-        let tmpl = self.jinja_env.get_template("tpl").unwrap();
-        match tmpl.render(context!(host => stat)) {
-            Ok(content) => {
-                info!("tmpl.render => {}", content);
-                let s = content
-                    .split('\n')
-                    .map(|t| t.trim())
-                    .filter(|&t| !t.is_empty())
-                    .collect::<Vec<&str>>()
-                    .join("\n");
-                if !s.is_empty() {
-                    let _ = self.send_wechat_msg(format!("❗Server Status\n{}", s));
-                }
-            }
-            Err(err) => {
-                error!("tmpl.render err => {:?}", err);
-            }
-        }
+    fn custom_notify(&self, stat: &HostStat) -> Result<()> {
+        trace!("{} custom_notify => {:?}", self.kind(), stat);
 
-        Ok(())
+        notifier::render_template(KIND, stat).map(|content| {
+            info!("tmpl.render => {}", content);
+            if !content.is_empty() {
+                self.send_msg(format!("❗Server Status\n{}", content))
+                    .unwrap_or_else(|err| {
+                        error!("send_msg err => {:?}", err);
+                    });
+            }
+        })
     }
 
-    fn send_wechat_msg(&self, text_content: String) -> Result<()> {
+    fn send_msg(&self, text_content: String) -> Result<()> {
         // get access_token
         let mut data = HashMap::new();
-        data.insert("corpid", self.corp_id.to_string());
-        data.insert("corpsecret", self.corp_secret.to_string());
+        data.insert("corpid", self.config.corp_id.to_string());
+        data.insert("corpsecret", self.config.corp_secret.to_string());
 
         let http_client = self.http_client.clone();
         let handle = NOTIFIER_HANDLE.lock().unwrap().as_ref().unwrap().clone();
-        let agent_id = self.agent_id.to_string();
+        let agent_id = self.config.agent_id.to_string();
         handle.spawn(async move {
             match http_client
                 .post(TOKEN_URL)
@@ -88,9 +81,9 @@ impl WeChat<'_> {
                         if let Some(access_token) = json_data.get("access_token") {
                             if let Some(token) = access_token.as_str() {
                                 let req_url = format!(
-                                "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={}",
-                                token
-                            );
+                                    "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={}",
+                                    token
+                                );
                                 let req_data = serde_json::json!({
                                     "touser": "@all",
                                     "agentid": agent_id,
@@ -129,20 +122,23 @@ impl WeChat<'_> {
     }
 }
 
-impl crate::notifier::Notifier for WeChat<'_> {
-    fn do_notify(&self, e: &Event, stat: &HostStat) -> Result<()> {
-        trace!("WeChat do_notify {:?} => {:?}", e, stat);
+impl crate::notifier::Notifier for WeChat {
+    fn kind(&self) -> &'static str {
+        KIND
+    }
+    fn notify(&self, e: &Event, stat: &HostStat) -> Result<()> {
+        trace!("{} notify {:?} => {:?}", self.kind(), e, stat);
         match *e {
             Event::NodeUp => {
                 let content = format!("❗Server Status\n❗ {} 主机上线 🟢", stat.name);
-                let _ = self.send_wechat_msg(content);
+                let _ = self.send_msg(content);
             }
             Event::NodeDown => {
                 let content = format!("❗Server Status\n❗ {} 主机下线 🔴", stat.name);
-                let _ = self.send_wechat_msg(content);
+                let _ = self.send_msg(content);
             }
             Event::Custom => {
-                let _ = self.do_custom_notify(stat);
+                let _ = self.custom_notify(stat);
             }
         }
 

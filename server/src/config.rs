@@ -1,25 +1,9 @@
 #![deny(warnings)]
-
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 
-#[derive(Debug, Default, Deserialize, Serialize)]
-pub struct TGBot {
-    pub enabled: bool,
-    pub bot_token: String,
-    pub chat_id: String,
-    pub custom_tpl: String,
-}
-
-#[derive(Debug, Default, Deserialize, Serialize)]
-pub struct WeChat {
-    pub enabled: bool,
-    pub corp_id: String,
-    pub corp_secret: String,
-    pub agent_id: String,
-    pub custom_tpl: String,
-}
+use crate::notifier;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Host {
@@ -57,9 +41,9 @@ pub struct Config {
     #[serde(default = "bool::default")]
     pub vnstat: bool,
     #[serde(default = "Default::default")]
-    pub tgbot: TGBot,
+    pub tgbot: notifier::tgbot::Config,
     #[serde(default = "Default::default")]
-    pub wechat: WeChat,
+    pub wechat: notifier::wechat::Config,
     pub hosts: Vec<Host>,
 
     #[serde(skip_deserializing)]
@@ -86,7 +70,7 @@ pub fn from_file(cfg: &str) -> Option<Config> {
                     host.alias = host.name.to_owned();
                 }
                 o.auth_map
-                    .insert(String::from(&host.name), String::from(&host.password));
+                    .insert(host.name.to_owned(), host.password.to_owned());
             }
             if o.notify_interval < 30 {
                 o.notify_interval = 30;
