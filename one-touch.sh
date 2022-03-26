@@ -6,7 +6,8 @@ mkdir -p ${WORKSPACE}
 cd ${WORKSPACE}
 
 # 下载, arm 机器替换 x86_64 为 aarch64
-wget --no-check-certificate -qO ServerStatus-x86_64-unknown-linux-musl.zip  "https://github.com/zdz/ServerStatus-Rust/releases/download/latest/ServerStatus-x86_64-unknown-linux-musl.zip"
+latest_version=$(curl -m 10 -sL "https://api.github.com/repos/zdz/ServerStatus-Rust/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
+wget --no-check-certificate -qO ServerStatus-x86_64-unknown-linux-musl.zip  "https://github.com/zdz/ServerStatus-Rust/releases/download/${latest_version}/ServerStatus-x86_64-unknown-linux-musl.zip"
 unzip -o ServerStatus-x86_64-unknown-linux-musl.zip
 
 # systemd service
