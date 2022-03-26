@@ -20,7 +20,7 @@ clap = {version = "3.0", features = ["derive"]}
 lazy_static = "1.4"
 log = "0.4"
 pretty_env_logger = "0.4"
-regex = "1.5.4"
+regex = "1.5.5"
 reqwest = {version = "0.11", features = ["json", "rustls-tls", "brotli", "gzip", "deflate", "stream", "socks"], default-features = false}
 serde = {version = "1.0", default-features = false, features = ["derive", "alloc"]}
 serde_json = {version = "1.0", default-features = false, features = ["alloc"]}
