@@ -84,7 +84,6 @@ custom_tpl = """
 """
 
 # wechat, email 等其它通知方式 配置详细见 config.toml
-"""
 ```
 
 ### 3.2 服务端运行
