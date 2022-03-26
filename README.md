@@ -1,11 +1,11 @@
-# ServerStatus - Rust
-
-Rust 版 ServerStatus 云探针
+# Rust 版 ServerStatus 云探针
 
 [![Docker](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml)
 [![Release](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/zdz/ServerStatus-Rust)](https://github.com/zdz/ServerStatus-Rust/releases)
+[![GitHub all releases](https://img.shields.io/github/downloads/zdz/ServerStatus-Rust/total)](https://github.com/zdz/ServerStatus-Rust/releases)
 
-- [ServerStatus - Rust](#serverstatus---rust)
+- [Rust 版 ServerStatus 云探针](#rust-版-serverstatus-云探针)
     - [1.介绍](#1介绍)
       - [演示：https://tz-rust.vercel.app](#演示httpstz-rustvercelapp)
       - [下载：Releases](#下载releases)
@@ -119,9 +119,9 @@ cargo build --release
 
 # 运行
 ./stat_server
-或
+# 或
 ./stat_server -c config.toml
-或
+# 或
 RUST_BACKTRACE=1 RUST_LOG=trace ./stat_server -c config.toml
 ```
 
@@ -137,7 +137,7 @@ systemctl start stat_client
 # Rust 版本 Client
 ./stat_client -h
 ./stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1
-或
+# 或
 ./stat_client -a "http://127.0.0.1:8080/report" -u h1 -p p1
 
 # Python 版本 Client 依赖安装
@@ -154,7 +154,7 @@ sudo python3 -m pip install psutil requests
 wget --no-check-certificate -qO client-linux.py 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/client/client-linux.py'
 python3 client-linux.py -h
 python3 client-linux.py -a "tcp://127.0.0.1:34512" -u h1 -p p1
-或
+# 或
 python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
 
 ```
@@ -186,7 +186,7 @@ vnstat = true
 
 # client 使用 -n 参数开启 vnstat 统计
 ./stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1 -n
-或
+# 或
 python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1 -n
 ```
 
