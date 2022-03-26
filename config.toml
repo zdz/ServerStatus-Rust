@@ -47,3 +47,20 @@ custom_tpl = """
 ❗{{ host.name }} 主机硬盘使用率超80%
 {% endif %}
 """
+
+[email]
+enabled = false
+server = "smtp.gmail.com"
+username = "user@email.com"
+password = "***"
+to = "user1@email.com;user2@email.com"
+subject = "ServerStatus Notification"
+custom_tpl = """
+{% if host.memory_used / host.memory_total > 0.8  %}
+<pre>❗{{ host.name }} 主机内存使用率超80%, 当前{{ (100 * host.memory_used / host.memory_total) | round }}%  </pre>
+{% endif %}
+
+{% if host.hdd_used / host.hdd_total  > 0.8  %}
+<pre>❗{{ host.name }} 主机硬盘使用率超80%, 当前{{ (100 * host.hdd_used / host.hdd_total) | round }}% </pre>
+{% endif %}
+"""

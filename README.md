@@ -23,7 +23,7 @@
 基于 `cppla/ServerStatus`，保持轻量和简化部署，特性如下：
 
 - `rust` 版本 `server`, `client`，单个执行文件部署
-- 支持上下线和简单自定义规则告警 (`telegram`, `wechat`)
+- 支持上下线和简单自定义规则告警 (`telegram`, `wechat`, `email`)
 - 支持 `vnstat` 统计月流量，重启不丢流量数据
 - 支持 `tcp`, `http` 协议上报
 - 支持 `systemd`, 开机自启
@@ -83,19 +83,7 @@ custom_tpl = """
 {% endif %}
 """
 
-[wechat]
-enabled = false
-corp_id = "<corp id>"
-corp_secret = "<corp secret>"
-agent_id = "<agent id>"
-custom_tpl = """
-{% if host.memory_used / host.memory_total > 0.8  %}
-❗{{ host.name }} 主机内存使用率超80%
-{% endif %}
-
-{% if host.hdd_used / host.hdd_total  > 0.8  %}
-❗{{ host.name }} 主机硬盘使用率超80%
-{% endif %}
+# wechat, email 等其它通知方式 配置详细见 config.toml
 """
 ```
 

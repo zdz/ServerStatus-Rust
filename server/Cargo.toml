@@ -1,7 +1,7 @@
 [package]
 edition = "2021"
 name = "stat_server"
-version = "1.3.0"
+version = "1.3.1"
 
 authors = ["doge <doge.py@gmail.com>"]
 categories = ["monitoring-tools"]
@@ -23,11 +23,12 @@ futures-util = {version = "0.3", default-features = false}
 http-auth-basic = "0.3"
 hyper = {version = "0.14", features = ["full"]}
 lazy_static = "1.4"
+lettre = {version = "0.10.0-rc.4", default-features = false, features = ["smtp-transport", "pool", "hostname", "builder", "rustls-tls", "tokio1-rustls-tls"]}
 log = "0.4"
 mime = "0.3.16"
 mime_guess = "2.0"
 minijinja = "0.15"
-once_cell = "1.10"
+once_cell = "1"
 pretty_env_logger = "0.4"
 reqwest = {version = "0.11", features = ["json", "rustls-tls"], default-features = false}
 rust-embed = "6.3"

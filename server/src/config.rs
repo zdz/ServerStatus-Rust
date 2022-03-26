@@ -44,6 +44,8 @@ pub struct Config {
     pub tgbot: notifier::tgbot::Config,
     #[serde(default = "Default::default")]
     pub wechat: notifier::wechat::Config,
+    #[serde(default = "Default::default")]
+    pub email: notifier::email::Config,
     pub hosts: Vec<Host>,
 
     #[serde(skip_deserializing)]

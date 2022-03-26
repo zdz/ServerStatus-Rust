@@ -231,20 +231,25 @@ async fn main() -> Result<()> {
     }
 
     let cfg = G_CONFIG.get().unwrap();
-    let notifier_list: Arc<Mutex<Vec<Box<dyn notifier::Notifier + Send>>>> =
+    let notifies: Arc<Mutex<Vec<Box<dyn notifier::Notifier + Send>>>> =
         Arc::new(Mutex::new(Vec::new()));
     // init notifier
     if cfg.tgbot.enabled {
         let o = Box::new(notifier::tgbot::TGBot::new(&cfg.tgbot));
-        notifier_list.lock().unwrap().push(o);
+        notifies.lock().unwrap().push(o);
     }
     if cfg.wechat.enabled {
         let o = Box::new(notifier::wechat::WeChat::new(&cfg.wechat));
-        notifier_list.lock().unwrap().push(o);
+        notifies.lock().unwrap().push(o);
+    }
+    if cfg.email.enabled {
+        let o = Box::new(notifier::email::Email::new(&cfg.email));
+        notifies.lock().unwrap().push(o);
     }
 
+    // init mgr
     let mut mgr = crate::stats::StatsMgr::new();
-    mgr.init(G_CONFIG.get().unwrap(), notifier_list)?;
+    mgr.init(G_CONFIG.get().unwrap(), notifies)?;
     if G_STATS_MGR.set(mgr).is_err() {
         error!("can't set G_STATS_MGR");
         process::exit(1);
