@@ -101,8 +101,13 @@ docker network create traefik_gw
 docker-compose up -d
 
 # 源码编译
+## 按提示安装 rust 编译器
+curl https://sh.rustup.rs -sSf | sh
 yum install -y openssl-devel
+git clone https://github.com/zdz/ServerStatus-Rust.git
+cd ServerStatus-Rust
 cargo build --release
+# 编译好的文件目录 target/release
 
 # 运行
 ./stat_server
@@ -211,14 +216,27 @@ server {
 
   # 其它 html,js,css 等，走本地文本
   location / {
-    root   /opt/ServerStatus/web; # web文件目录
+    root   /opt/ServerStatus/web; # 你自己修改的web主题文件目录
     index  index.html index.htm;
   }
 }
 ```
-
 </details>
 
+
+<details>
+  <summary>如何源码编译</summary>
+
+```bash
+## 按提示安装 rust 编译器
+curl https://sh.rustup.rs -sSf | sh
+yum install -y openssl-devel
+git clone https://github.com/zdz/ServerStatus-Rust.git
+cd ServerStatus-Rust
+cargo build --release
+# 编译好的文件目录 target/release
+```
+</details>
 
 ## 7.感谢
 - https://github.com/cppla/ServerStatus
