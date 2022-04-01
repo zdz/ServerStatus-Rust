@@ -28,8 +28,10 @@ struct Args {
     pass: String,
     #[clap(short = 'n', long, help = "enable vnstat, default:false")]
     vnstat: bool,
-    #[clap(short = 'd', long, help = "disable t/u/p/d, default:false")]
+    #[clap(long = "disable-tupd", help = "disable t/u/p/d, default:false")]
     disable_tupd: bool,
+    #[clap(long = "disable-ping", help = "disable ping, default:false")]
+    disable_ping: bool,
 }
 
 fn sample(stat: &mut HashMap<&'static str, serde_json::Value>, args: &Args) {
@@ -285,9 +287,11 @@ async fn main() -> Result<()> {
     let args = Args::parse();
     dbg!(&args);
 
-    status::start_net_speed_collect_t();
-    status::start_all_ping_collect_t();
     status::start_cpu_percent_collect_t();
+    status::start_net_speed_collect_t();
+    if !args.disable_ping {
+        status::start_all_ping_collect_t();
+    }
     let (ipv4, ipv6) = status::get_network();
 
     let mut stat_base: HashMap<&str, serde_json::Value> = HashMap::new();
