@@ -45,7 +45,6 @@ jobs:
         llvm-strip target/${{ matrix.target }}/release/stat_server
         llvm-strip target/${{ matrix.target }}/release/stat_client
         cp config.toml target/${{ matrix.target }}/release/
-        cp docker-compose.yml target/${{ matrix.target }}/release/
         cp systemd/stat_server.service target/${{ matrix.target }}/release/
         cp systemd/stat_client.service target/${{ matrix.target }}/release/
 
@@ -69,7 +68,6 @@ jobs:
           target/${{ matrix.target }}/release/stat_server
           target/${{ matrix.target }}/release/stat_client
           target/${{ matrix.target }}/release/config.toml
-          target/${{ matrix.target }}/release/docker-compose.yml
           target/${{ matrix.target }}/release/stat_server.service
           target/${{ matrix.target }}/release/stat_client.service
 
@@ -85,7 +83,6 @@ jobs:
           config.toml
           stat_server.service
           stat_client.service
-          docker-compose.yml
 
     - name: Publish
       uses: softprops/action-gh-release@v1
