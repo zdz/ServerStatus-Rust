@@ -1,5 +1,5 @@
 use anyhow::Result;
-use minijinja::{context, Environment, Source};
+use minijinja::{value::Value, Environment, Source};
 use once_cell::sync::Lazy;
 use std::sync::Mutex;
 use tokio::runtime::Handle;
@@ -42,7 +42,7 @@ fn add_template<
     kind: K,
     tag: T,
     tpl: S,
-) -> Result<()> {
+) {
     let tpl_name = format!("{}.{}", kind, tag);
     JINJA_ENV
         .lock()
@@ -53,17 +53,15 @@ fn add_template<
             env.set_source(s);
         })
         .unwrap();
-
-    Ok(())
 }
 
-fn render_template(kind: &'static str, tag: &'static str, stat: &HostStat) -> Result<String> {
+fn render_template(kind: &'static str, tag: &'static str, ctx: Value) -> Result<String> {
     let tpl_name = format!("{}.{}", kind, tag);
     Ok(JINJA_ENV
         .lock()
         .map(|e| {
             e.get_template(tpl_name.as_str()).map(|tmpl| {
-                tmpl.render(context!(host => stat))
+                tmpl.render(ctx)
                     .map(|content| {
                         content
                             .split('\n')

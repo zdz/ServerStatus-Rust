@@ -73,16 +73,17 @@ enabled = false
 bot_token = "<tg bot token>"
 chat_id = "<chat id>"
 # host 可用字段参见 payload.rs 文件 HostStat 结构
-online_tpl = "❗<b>Server Status</b>\n❗ {{ host.location }} 地区的 {{ host.name }} 主机恢复上线 🟢"
-offline_tpl = "❗<b>Server Status</b>\n❗ {{ host.location }} 地区的 {{ host.name }} 主机已经下线 🔴"
+title = "❗<b>Server Status</b>"
+online_tpl = "{{config.title}}  \n😆 {{ host.location }} 的 {{ host.name }} 主机恢复上线啦"
+offline_tpl = "{{config.title}} \n😱 {{ host.location }} 的 {{ host.name }} 主机已经掉线啦"
 # 模板置空则停用自定义告警，只保留上下线通知
 custom_tpl = """
 {% if host.memory_used / host.memory_total > 0.5  %}
-<pre>❗{{ host.name }} 主机内存使用率超50%, 当前{{ (100 * host.memory_used / host.memory_total) | round }}%  </pre>
+<pre>😲{{ host.name }} 主机内存使用率超50%, 当前{{ (100 * host.memory_used / host.memory_total) | round }}%  </pre>
 {% endif %}
 
 {% if host.hdd_used / host.hdd_total  > 0.5  %}
-<pre>❗{{ host.name }} 主机硬盘使用率超50%, 当前{{ (100 * host.hdd_used / host.hdd_total) | round }}% </pre>
+<pre>😲{{ host.name }} 主机硬盘使用率超50%, 当前{{ (100 * host.hdd_used / host.hdd_total) | round }}% </pre>
 {% endif %}
 """
 
@@ -242,7 +243,7 @@ cargo build --release
 # 例如自定义移动探测地址，用 --cm 指定地址
 ./stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1 --cm=cm.tz.cloudcpp.com:80
 
-# 电信移动参数可以使用 -h 命令查看
+# 电信联通参数可以使用 -h 命令查看
 ./stat_client -h
 # rust client 可用参数
 OPTIONS:

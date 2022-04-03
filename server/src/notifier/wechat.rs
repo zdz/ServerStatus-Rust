@@ -1,6 +1,7 @@
 #![deny(warnings)]
 use anyhow::Result;
 use log::{error, info};
+use minijinja::context;
 use reqwest;
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -20,6 +21,7 @@ pub struct Config {
     pub corp_id: String,
     pub corp_secret: String,
     pub agent_id: String,
+    pub title: String,
     pub online_tpl: String,
     pub offline_tpl: String,
     pub custom_tpl: String,
@@ -40,20 +42,18 @@ impl WeChat {
             KIND,
             get_tag(&Event::NodeUp),
             o.config.online_tpl.to_string(),
-        )
-        .unwrap();
+        );
         add_template(
             KIND,
             get_tag(&Event::NodeDown),
             o.config.offline_tpl.to_string(),
-        )
-        .unwrap();
+        );
         add_template(
             KIND,
             get_tag(&Event::Custom),
             o.config.custom_tpl.to_string(),
-        )
-        .unwrap();
+        );
+
         o
     }
 
@@ -133,13 +133,22 @@ impl crate::notifier::Notifier for WeChat {
 
     fn notify(&self, e: &Event, stat: &HostStat) -> Result<()> {
         match *e {
-            Event::NodeUp | Event::NodeDown => render_template(KIND, get_tag(e), stat)
-                .map(|content| self.send_msg(content))
-                .unwrap(),
-            Event::Custom => render_template(KIND, get_tag(e), stat).map(|content| {
+            Event::NodeUp | Event::NodeDown => render_template(
+                KIND,
+                get_tag(e),
+                context!(host => stat, config => self.config),
+            )
+            .map(|content| self.send_msg(content))
+            .unwrap(),
+            Event::Custom => render_template(
+                KIND,
+                get_tag(e),
+                context!(host => stat, config => self.config),
+            )
+            .map(|content| {
                 info!("tmpl.render => {}", content);
                 if !content.is_empty() {
-                    self.send_msg(format!("❗Server Status\n{}", content))
+                    self.send_msg(format!("{}\n{}", self.config.title, content))
                         .unwrap_or_else(|err| {
                             error!("send_msg err => {:?}", err);
                         });
