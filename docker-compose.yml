@@ -21,18 +21,3 @@ services:
     environment:
       - RUST_BACKTRACE=1
       - RUST_LOG=trace
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
-
-  # 需配合 vnstat 使用
-  watchtower:
-    container_name: watchtower
-    image: containrrr/watchtower:latest
-    networks:
-      - traefik
-    volumes:
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: --cleanup --label-enable --schedule "0 0 5 * * *"
-    restart: unless-stopped
