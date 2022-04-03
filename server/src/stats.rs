@@ -220,13 +220,13 @@ impl StatsMgr {
         });
 
         // notify thread
-        *NOTIFIER_HANDLE.lock().unwrap() = Some(Handle::current());
         thread::spawn(move || loop {
             while let Ok(msg) = notifier_rx.recv() {
                 let (e, stat) = msg;
                 let notifiers = &*notifies.lock().unwrap();
                 trace!("recv notify => {:?}, {:?}", e, stat);
                 for notifier in notifiers {
+                    trace!("{} notify {:?} => {:?}", notifier.kind(), e, stat);
                     notifier.notify(&e, stat.borrow());
                 }
             }

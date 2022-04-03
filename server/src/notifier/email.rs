@@ -5,7 +5,7 @@ use lettre::{
     transport::smtp::authentication::Credentials,
     AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
 };
-use log::{error, info, trace};
+use log::{error, info};
 use serde::{Deserialize, Serialize};
 
 use crate::notifier::{add_template, get_tag, render_template, Event, HostStat, NOTIFIER_HANDLE};
@@ -106,8 +106,11 @@ impl crate::notifier::Notifier for Email {
         KIND
     }
 
+    fn notify_test(&self) -> Result<()> {
+        self.send_msg("❗ServerStatus test msg".to_string())
+    }
+
     fn notify(&self, e: &Event, stat: &HostStat) -> Result<()> {
-        trace!("{} notify {:?} => {:?}", self.kind(), e, stat);
         match *e {
             Event::NodeUp | Event::NodeDown => render_template(KIND, get_tag(e), stat)
                 .map(|content| self.send_msg(content))

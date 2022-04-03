@@ -15,6 +15,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
+use tokio::runtime::Handle;
 
 mod config;
 mod notifier;
@@ -139,6 +140,8 @@ async fn shutdown_signal() {
 struct Args {
     #[clap(short, long, default_value = "config.toml")]
     config: String,
+    #[clap(long = "notify-test", help = "test notify, default:false")]
+    notify_test: bool,
 }
 
 async fn serv_tcp() -> Result<()> {
@@ -215,7 +218,8 @@ async fn serv_tcp() -> Result<()> {
         });
     }
 }
-
+use std::thread;
+use std::time::Duration;
 #[tokio::main]
 async fn main() -> Result<()> {
     pretty_env_logger::init();
@@ -230,10 +234,11 @@ async fn main() -> Result<()> {
         process::exit(1);
     }
 
+    // init notifier
+    *notifier::NOTIFIER_HANDLE.lock().unwrap() = Some(Handle::current());
     let cfg = G_CONFIG.get().unwrap();
     let notifies: Arc<Mutex<Vec<Box<dyn notifier::Notifier + Send>>>> =
         Arc::new(Mutex::new(Vec::new()));
-    // init notifier
     if cfg.tgbot.enabled {
         let o = Box::new(notifier::tgbot::TGBot::new(&cfg.tgbot));
         notifies.lock().unwrap().push(o);
@@ -245,6 +250,18 @@ async fn main() -> Result<()> {
     if cfg.email.enabled {
         let o = Box::new(notifier::email::Email::new(&cfg.email));
         notifies.lock().unwrap().push(o);
+    }
+    // init notifier end
+
+    // notify test
+    if args.notify_test {
+        for notifier in &*notifies.lock().unwrap() {
+            eprintln!("send test message to {}", notifier.kind());
+            notifier.notify_test().unwrap();
+        }
+        thread::sleep(Duration::from_millis(7000)); // TODO: wait
+        eprintln!("Please check for notifications");
+        process::exit(0);
     }
 
     // init mgr

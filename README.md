@@ -73,8 +73,8 @@ enabled = false
 bot_token = "<tg bot token>"
 chat_id = "<chat id>"
 # host 可用字段参见 payload.rs 文件 HostStat 结构
-online_tpl = "❗<b>Server Status</b>\n❗ {{ host.name }} 主机上线 🟢"
-offline_tpl = "❗<b>Server Status</b>\n❗ {{ host.name }} 主机下线 🔴"
+online_tpl = "❗<b>Server Status</b>\n❗ {{ host.location }} 地区的 {{ host.name }} 主机恢复上线 🟢"
+offline_tpl = "❗<b>Server Status</b>\n❗ {{ host.location }} 地区的 {{ host.name }} 主机已经下线 🔴"
 # 模板置空则停用自定义告警，只保留上下线通知
 custom_tpl = """
 {% if host.memory_used / host.memory_total > 0.5  %}
@@ -100,15 +100,18 @@ wget --no-check-certificate -qO docker-compose.yml 'https://raw.githubuserconten
 wget --no-check-certificate -qO config.toml 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/config.toml'
 touch stats.json
 docker network create traefik_gw
-# 默认使用 watchtower 自动更新，不需要可以去掉
 docker-compose up -d
 
+./stat_server -h
 # 手动运行
 ./stat_server
 # 或
 ./stat_server -c config.toml
 # 或
 RUST_BACKTRACE=1 RUST_LOG=trace ./stat_server -c config.toml
+
+# 测试通知是否生效
+./stat_server -c config.toml --notify-test
 ```
 
 ## 4.客户端说明

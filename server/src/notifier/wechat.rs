@@ -1,6 +1,6 @@
 #![deny(warnings)]
 use anyhow::Result;
-use log::{error, info, trace};
+use log::{error, info};
 use reqwest;
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -127,8 +127,11 @@ impl crate::notifier::Notifier for WeChat {
         KIND
     }
 
+    fn notify_test(&self) -> Result<()> {
+        self.send_msg("❗ServerStatus test msg".to_string())
+    }
+
     fn notify(&self, e: &Event, stat: &HostStat) -> Result<()> {
-        trace!("{} notify {:?} => {:?}", self.kind(), e, stat);
         match *e {
             Event::NodeUp | Event::NodeDown => render_template(KIND, get_tag(e), stat)
                 .map(|content| self.send_msg(content))

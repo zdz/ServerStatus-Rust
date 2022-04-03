@@ -1,5 +1,5 @@
 use anyhow::Result;
-use minijinja::{context, Environment};
+use minijinja::{context, Environment, Source};
 use once_cell::sync::Lazy;
 use std::sync::Mutex;
 use tokio::runtime::Handle;
@@ -23,6 +23,7 @@ pub enum Event {
 pub trait Notifier {
     fn kind(&self) -> &'static str;
     fn notify(&self, e: &Event, stat: &HostStat) -> Result<()>;
+    fn notify_test(&self) -> Result<()>;
 }
 
 fn get_tag(e: &Event) -> &'static str {
@@ -47,7 +48,7 @@ fn add_template<
         .lock()
         .as_mut()
         .map(|env| {
-            let mut s = env.source().unwrap().to_owned();
+            let mut s = env.source().unwrap_or(&Source::new()).to_owned();
             s.add_template(tpl_name, tpl).unwrap();
             env.set_source(s);
         })
