@@ -25,15 +25,43 @@ pub trait Notifier {
     fn notify(&self, e: &Event, stat: &HostStat) -> Result<()>;
 }
 
-fn add_template(kind: &'static str, tpl: &'static str) -> Result<()> {
-    Ok(JINJA_ENV.lock().unwrap().add_template(kind, tpl)?)
+fn get_tag(e: &Event) -> &'static str {
+    match *e {
+        Event::NodeUp => "online",
+        Event::NodeDown => "offline",
+        Event::Custom => "custom",
+    }
 }
 
-fn render_template(kind: &'static str, stat: &HostStat) -> Result<String> {
+fn add_template<
+    K: Into<String> + std::fmt::Display,
+    T: Into<String> + std::fmt::Display,
+    S: Into<String>,
+>(
+    kind: K,
+    tag: T,
+    tpl: S,
+) -> Result<()> {
+    let tpl_name = format!("{}.{}", kind, tag);
+    JINJA_ENV
+        .lock()
+        .as_mut()
+        .map(|env| {
+            let mut s = env.source().unwrap().to_owned();
+            s.add_template(tpl_name, tpl).unwrap();
+            env.set_source(s);
+        })
+        .unwrap();
+
+    Ok(())
+}
+
+fn render_template(kind: &'static str, tag: &'static str, stat: &HostStat) -> Result<String> {
+    let tpl_name = format!("{}.{}", kind, tag);
     Ok(JINJA_ENV
         .lock()
         .map(|e| {
-            e.get_template(kind).map(|tmpl| {
+            e.get_template(tpl_name.as_str()).map(|tmpl| {
                 tmpl.render(context!(host => stat))
                     .map(|content| {
                         content

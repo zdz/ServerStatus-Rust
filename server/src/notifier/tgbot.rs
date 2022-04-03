@@ -6,11 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tokio::time::Duration;
 
-use crate::notifier;
-use crate::notifier::Event;
-use crate::notifier::HostStat;
-use crate::notifier::Notifier;
-use crate::notifier::NOTIFIER_HANDLE;
+use crate::notifier::{add_template, get_tag, render_template, Event, HostStat, NOTIFIER_HANDLE};
 
 const KIND: &str = "tgbot";
 
@@ -19,6 +15,8 @@ pub struct Config {
     pub enabled: bool,
     pub bot_token: String,
     pub chat_id: String,
+    pub online_tpl: String,
+    pub offline_tpl: String,
     pub custom_tpl: String,
 }
 
@@ -36,22 +34,26 @@ impl TGBot {
             http_client: reqwest::Client::new(),
         };
 
-        notifier::add_template(KIND, o.config.custom_tpl.as_str()).unwrap();
+        add_template(
+            KIND,
+            get_tag(&Event::NodeUp),
+            o.config.online_tpl.to_string(),
+        )
+        .unwrap();
+        add_template(
+            KIND,
+            get_tag(&Event::NodeDown),
+            o.config.offline_tpl.to_string(),
+        )
+        .unwrap();
+        add_template(
+            KIND,
+            get_tag(&Event::Custom),
+            o.config.custom_tpl.to_string(),
+        )
+        .unwrap();
+
         o
-    }
-
-    fn custom_notify(&self, stat: &HostStat) -> Result<()> {
-        trace!("{} custom_notify => {:?}", self.kind(), stat);
-
-        notifier::render_template(KIND, stat).map(|content| {
-            info!("tmpl.render => {}", content);
-            if !content.is_empty() {
-                self.send_msg(format!("❗<b>Server Status</b>\n{}", content))
-                    .unwrap_or_else(|err| {
-                        error!("send_msg err => {:?}", err);
-                    });
-            }
-        })
     }
 
     fn send_msg(&self, html_content: String) -> Result<()> {
@@ -92,19 +94,18 @@ impl crate::notifier::Notifier for TGBot {
     fn notify(&self, e: &Event, stat: &HostStat) -> Result<()> {
         trace!("{} notify {:?} => {:?}", self.kind(), e, stat);
         match *e {
-            Event::NodeUp => {
-                let content = format!("❗<b>Server Status</b>\n❗ {} 主机上线 🟢", stat.name);
-                let _ = self.send_msg(content);
-            }
-            Event::NodeDown => {
-                let content = format!("❗<b>Server Status</b>\n❗ {} 主机下线 🔴", stat.name);
-                let _ = self.send_msg(content);
-            }
-            Event::Custom => {
-                let _ = self.custom_notify(stat);
-            }
+            Event::NodeUp | Event::NodeDown => render_template(KIND, get_tag(e), stat)
+                .map(|content| self.send_msg(content))
+                .unwrap(),
+            Event::Custom => render_template(KIND, get_tag(e), stat).map(|content| {
+                info!("tmpl.render => {}", content);
+                if !content.is_empty() {
+                    self.send_msg(format!("❗<b>Server Status</b>\n{}", content))
+                        .unwrap_or_else(|err| {
+                            error!("send_msg err => {:?}", err);
+                        });
+                }
+            }),
         }
-
-        Ok(())
     }
 }

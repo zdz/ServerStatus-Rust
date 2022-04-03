@@ -7,11 +7,7 @@ use serde_json;
 use std::collections::HashMap;
 use tokio::time::Duration;
 
-use crate::notifier;
-use crate::notifier::Event;
-use crate::notifier::HostStat;
-use crate::notifier::Notifier;
-use crate::notifier::NOTIFIER_HANDLE;
+use crate::notifier::{add_template, get_tag, render_template, Event, HostStat, NOTIFIER_HANDLE};
 
 // https://qydev.weixin.qq.com/wiki/index.php?title=%E4%B8%BB%E5%8A%A8%E8%B0%83%E7%94%A8
 // https://qydev.weixin.qq.com/wiki/index.php?title=%E5%8F%91%E9%80%81%E6%8E%A5%E5%8F%A3%E8%AF%B4%E6%98%8E
@@ -24,6 +20,8 @@ pub struct Config {
     pub corp_id: String,
     pub corp_secret: String,
     pub agent_id: String,
+    pub online_tpl: String,
+    pub offline_tpl: String,
     pub custom_tpl: String,
 }
 
@@ -38,23 +36,25 @@ impl WeChat {
             config: cfg,
             http_client: reqwest::Client::new(),
         };
-
-        notifier::add_template(KIND, o.config.custom_tpl.as_str()).unwrap();
+        add_template(
+            KIND,
+            get_tag(&Event::NodeUp),
+            o.config.online_tpl.to_string(),
+        )
+        .unwrap();
+        add_template(
+            KIND,
+            get_tag(&Event::NodeDown),
+            o.config.offline_tpl.to_string(),
+        )
+        .unwrap();
+        add_template(
+            KIND,
+            get_tag(&Event::Custom),
+            o.config.custom_tpl.to_string(),
+        )
+        .unwrap();
         o
-    }
-
-    fn custom_notify(&self, stat: &HostStat) -> Result<()> {
-        trace!("{} custom_notify => {:?}", self.kind(), stat);
-
-        notifier::render_template(KIND, stat).map(|content| {
-            info!("tmpl.render => {}", content);
-            if !content.is_empty() {
-                self.send_msg(format!("❗Server Status\n{}", content))
-                    .unwrap_or_else(|err| {
-                        error!("send_msg err => {:?}", err);
-                    });
-            }
-        })
     }
 
     fn send_msg(&self, text_content: String) -> Result<()> {
@@ -126,22 +126,22 @@ impl crate::notifier::Notifier for WeChat {
     fn kind(&self) -> &'static str {
         KIND
     }
+
     fn notify(&self, e: &Event, stat: &HostStat) -> Result<()> {
         trace!("{} notify {:?} => {:?}", self.kind(), e, stat);
         match *e {
-            Event::NodeUp => {
-                let content = format!("❗Server Status\n❗ {} 主机上线 🟢", stat.name);
-                let _ = self.send_msg(content);
-            }
-            Event::NodeDown => {
-                let content = format!("❗Server Status\n❗ {} 主机下线 🔴", stat.name);
-                let _ = self.send_msg(content);
-            }
-            Event::Custom => {
-                let _ = self.custom_notify(stat);
-            }
+            Event::NodeUp | Event::NodeDown => render_template(KIND, get_tag(e), stat)
+                .map(|content| self.send_msg(content))
+                .unwrap(),
+            Event::Custom => render_template(KIND, get_tag(e), stat).map(|content| {
+                info!("tmpl.render => {}", content);
+                if !content.is_empty() {
+                    self.send_msg(format!("❗Server Status\n{}", content))
+                        .unwrap_or_else(|err| {
+                            error!("send_msg err => {:?}", err);
+                        });
+                }
+            }),
         }
-
-        Ok(())
     }
 }

@@ -72,7 +72,10 @@ notify_interval = 30
 enabled = false
 bot_token = "<tg bot token>"
 chat_id = "<chat id>"
-# host 可用字段参见 payload.rs 文件 HostStat 结构，模板置空则停用自定义告警，只保留上下线通知
+# host 可用字段参见 payload.rs 文件 HostStat 结构
+online_tpl = "❗<b>Server Status</b>\n❗ {{ host.name }} 主机上线 🟢"
+offline_tpl = "❗<b>Server Status</b>\n❗ {{ host.name }} 主机下线 🔴"
+# 模板置空则停用自定义告警，只保留上下线通知
 custom_tpl = """
 {% if host.memory_used / host.memory_total > 0.5  %}
 <pre>❗{{ host.name }} 主机内存使用率超50%, 当前{{ (100 * host.memory_used / host.memory_total) | round }}%  </pre>
@@ -139,9 +142,7 @@ python3 client-linux.py -h
 python3 client-linux.py -a "tcp://127.0.0.1:34512" -u h1 -p p1
 # 或
 python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
-
 ```
-
 
 ## 5.开启 `vnstat` 支持
 [vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux下一个流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量和总流量，优点是重启不丢流量数据。
@@ -238,8 +239,21 @@ cargo build --release
 # 例如自定义移动探测地址，用 --cm 指定地址
 ./stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1 --cm=cm.tz.cloudcpp.com:80
 
-# 电信移动参数可以使用一下命令查看
+# 电信移动参数可以使用 -h 命令查看
 ./stat_client -h
+# rust client 可用参数
+OPTIONS:
+    -a, --addr <ADDR>     [default: http://127.0.0.1:8080/report]
+        --cm <CM_ADDR>    China Mobile probe addr [default: cm.tz.cloudcpp.com:80]
+        --ct <CT_ADDR>    China Telecom probe addr [default: ct.tz.cloudcpp.com:80]
+        --cu <CU_ADDR>    China Unicom probe addr [default: cu.tz.cloudcpp.com:80]
+        --disable-ping    disable ping, default:false
+        --disable-tupd    disable t/u/p/d, default:false
+    -h, --help            Print help information
+    -n, --vnstat          enable vnstat, default:false
+    -p, --pass <PASS>     password [default: p1]
+    -u, --user <USER>     username [default: h1]
+    -V, --version         Print version information
 ```
 </details>
 

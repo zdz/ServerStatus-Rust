@@ -22,7 +22,10 @@ notify_interval = 30
 enabled = false
 bot_token = "<tg bot token>"
 chat_id = "<chat id>"
-# host 可用字段参见 payload.rs 文件 HostStat 结构，模板置空则停用自定义告警，只保留上下线通知
+# host 可用字段参见 payload.rs 文件 HostStat 结构
+online_tpl = "❗<b>Server Status</b>\n❗ {{ host.name }} 主机上线 🟢"
+offline_tpl = "❗<b>Server Status</b>\n❗ {{ host.name }} 主机下线 🔴"
+# 模板置空则停用自定义告警，只保留上下线通知
 custom_tpl = """
 {% if host.memory_used / host.memory_total > 0.5  %}
 <pre>❗{{ host.name }} 主机内存使用率超50%, 当前{{ (100 * host.memory_used / host.memory_total) | round }}%  </pre>
@@ -38,6 +41,8 @@ enabled = false
 corp_id = "<corp id>"
 corp_secret = "<corp secret>"
 agent_id = "<agent id>"
+online_tpl = "❗Server Status\n❗ {{ host.name }} 主机上线 🟢"
+offline_tpl = "❗Server Status\n❗ {{ host.name }} 主机下线 🔴"
 custom_tpl = """
 {% if host.memory_used / host.memory_total > 0.8  %}
 ❗{{ host.name }} 主机内存使用率超80%
@@ -55,6 +60,8 @@ username = "user@email.com"
 password = "***"
 to = "user1@email.com;user2@email.com"
 subject = "ServerStatus Notification"
+online_tpl = "❗<b>Server Status</b><br/>❗ {{ host.name }} 主机上线 🟢"
+offline_tpl = "❗<b>Server Status</b><br/>❗ {{ host.name }} 主机下线 🔴"
 custom_tpl = """
 {% if host.memory_used / host.memory_total > 0.8  %}
 <pre>❗{{ host.name }} 主机内存使用率超80%, 当前{{ (100 * host.memory_used / host.memory_total) | round }}%  </pre>
