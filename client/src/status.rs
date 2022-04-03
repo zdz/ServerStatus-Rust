@@ -1,6 +1,7 @@
 // #![allow(unused)]
 use chrono::{Datelike, Local};
 use lazy_static::lazy_static;
+use once_cell::sync::OnceCell;
 use regex::Regex;
 use std::collections::HashMap;
 use std::collections::LinkedList;
@@ -19,14 +20,12 @@ use std::thread;
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use crate::Args;
+
 const SAMPLE_PERIOD: u64 = 1000; //ms
 const TIMEOUT_MS: u64 = 1000;
 static IPV4_ADDR: &str = "ipv4.google.com:80";
 static IPV6_ADDR: &str = "ipv6.google.com:80";
-
-static CU: &str = "cu.tz.cloudcpp.com:80";
-static CT: &str = "ct.tz.cloudcpp.com:80";
-static CM: &str = "cm.tz.cloudcpp.com:80";
 
 pub fn get_uptime() -> u64 {
     fs::read_to_string("/proc/uptime")
@@ -313,27 +312,9 @@ pub fn get_network() -> (bool, bool) {
 
 #[derive(Debug, Default)]
 pub struct PingData {
-    pub probe_uri: &'static str,
+    pub probe_uri: String,
     pub lost_rate: u32,
     pub ping_time: u32,
-}
-
-lazy_static! {
-    pub static ref G_PING_10010: Arc<Mutex<PingData>> = Arc::new(Mutex::new(PingData {
-        probe_uri: CU,
-        lost_rate: 0,
-        ping_time: 0
-    }));
-    pub static ref G_PING_189: Arc<Mutex<PingData>> = Arc::new(Mutex::new(PingData {
-        probe_uri: CT,
-        lost_rate: 0,
-        ping_time: 0
-    }));
-    pub static ref G_PING_10086: Arc<Mutex<PingData>> = Arc::new(Mutex::new(PingData {
-        probe_uri: CM,
-        lost_rate: 0,
-        ping_time: 0
-    }));
 }
 
 fn start_ping_collect_t(data: &Arc<Mutex<PingData>>) {
@@ -390,8 +371,36 @@ fn start_ping_collect_t(data: &Arc<Mutex<PingData>>) {
     });
 }
 
-pub fn start_all_ping_collect_t() {
-    start_ping_collect_t(&G_PING_10010);
-    start_ping_collect_t(&G_PING_189);
-    start_ping_collect_t(&G_PING_10086);
+pub static G_PING_10010: OnceCell<Arc<Mutex<PingData>>> = OnceCell::new();
+pub static G_PING_189: OnceCell<Arc<Mutex<PingData>>> = OnceCell::new();
+pub static G_PING_10086: OnceCell<Arc<Mutex<PingData>>> = OnceCell::new();
+
+pub fn start_all_ping_collect_t(args: &Args) {
+    G_PING_10010
+        .set(Arc::new(Mutex::new(PingData {
+            probe_uri: args.cu_addr.to_owned(),
+            lost_rate: 0,
+            ping_time: 0,
+        })))
+        .unwrap();
+    G_PING_189
+        .set(Arc::new(Mutex::new(PingData {
+            probe_uri: args.ct_addr.to_owned(),
+            lost_rate: 0,
+            ping_time: 0,
+        })))
+        .unwrap();
+    G_PING_10086
+        .set(Arc::new(Mutex::new(PingData {
+            probe_uri: args.cm_addr.to_owned(),
+            lost_rate: 0,
+            ping_time: 0,
+        })))
+        .unwrap();
+
+    if !args.disable_ping {
+        start_ping_collect_t(G_PING_10010.get().unwrap());
+        start_ping_collect_t(G_PING_189.get().unwrap());
+        start_ping_collect_t(G_PING_10086.get().unwrap());
+    }
 }

@@ -16,10 +16,13 @@ type Result<T> = std::result::Result<T, GenericError>;
 mod status;
 
 const INTERVAL_MS: u64 = 1000;
+static CU: &str = "cu.tz.cloudcpp.com:80";
+static CT: &str = "ct.tz.cloudcpp.com:80";
+static CM: &str = "cm.tz.cloudcpp.com:80";
 
 #[derive(Parser, Debug)]
 #[clap(author, version = env!("APP_VERSION"), about, long_about = None)]
-struct Args {
+pub struct Args {
     #[clap(short, long, default_value = "http://127.0.0.1:8080/report")]
     addr: String,
     #[clap(short, long, default_value = "h1", help = "username")]
@@ -32,6 +35,12 @@ struct Args {
     disable_tupd: bool,
     #[clap(long = "disable-ping", help = "disable ping, default:false")]
     disable_ping: bool,
+    #[clap( long = "ct", default_value = CT, help = "China Telecom probe addr")]
+    ct_addr: String,
+    #[clap(long = "cm", default_value = CM, help = "China Mobile probe addr")]
+    cm_addr: String,
+    #[clap(long = "cu", default_value = CU, help = "China Unicom probe addr")]
+    cu_addr: String,
 }
 
 fn sample(stat: &mut HashMap<&'static str, serde_json::Value>, args: &Args) {
@@ -91,17 +100,17 @@ fn sample(stat: &mut HashMap<&'static str, serde_json::Value>, args: &Args) {
         stat.insert("network_tx", serde_json::Value::from(o.nettx));
     }
     {
-        let o = &*status::G_PING_10010.lock().unwrap();
+        let o = &*status::G_PING_10010.get().unwrap().lock().unwrap();
         stat.insert("ping_10010", serde_json::Value::from(o.lost_rate));
         stat.insert("time_10010", serde_json::Value::from(o.ping_time));
     }
     {
-        let o = &*status::G_PING_189.lock().unwrap();
+        let o = &*status::G_PING_189.get().unwrap().lock().unwrap();
         stat.insert("ping_189", serde_json::Value::from(o.lost_rate));
         stat.insert("time_189", serde_json::Value::from(o.ping_time));
     }
     {
-        let o = &*status::G_PING_10086.lock().unwrap();
+        let o = &*status::G_PING_10086.get().unwrap().lock().unwrap();
         stat.insert("ping_10086", serde_json::Value::from(o.lost_rate));
         stat.insert("time_10086", serde_json::Value::from(o.ping_time));
     }
@@ -289,9 +298,7 @@ async fn main() -> Result<()> {
 
     status::start_cpu_percent_collect_t();
     status::start_net_speed_collect_t();
-    if !args.disable_ping {
-        status::start_all_ping_collect_t();
-    }
+    status::start_all_ping_collect_t(&args);
     let (ipv4, ipv6) = status::get_network();
 
     let mut stat_base: HashMap<&str, serde_json::Value> = HashMap::new();

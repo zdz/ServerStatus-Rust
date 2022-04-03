@@ -17,15 +17,15 @@
   - [4.客户端说明](#4客户端说明)
   - [5.开启 `vnstat` 支持](#5开启-vnstat-支持)
   - [6.FAQ](#6faq)
-  - [7.感谢](#7感谢)
+  - [7.相关项目](#7相关项目)
 
 ### 1.介绍
 基于 `cppla/ServerStatus`，保持轻量和简化部署，特性如下：
 
-- `rust` 版本 `server`, `client`，单个执行文件部署
+- 使用 `rust` 完全重写 `server`, `client`，单个执行文件部署
 - 支持上下线和简单自定义规则告警 (`telegram`, `wechat`, `email`)
 - 支持 `vnstat` 统计月流量，重启不丢流量数据
-- 支持 `tcp`, `http` 协议上报
+- 支持 `http` 协议上报，可配合 `CF` 等优化上报链路
 - 支持 `systemd`, 开机自启
 - 更小 `docker` 镜像
 
@@ -92,7 +92,7 @@ custom_tpl = """
 systemctl enable stat_server
 systemctl start stat_server
 
-# docker
+# docker 方式
 wget --no-check-certificate -qO docker-compose.yml 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/docker-compose.yml'
 wget --no-check-certificate -qO config.toml 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/config.toml'
 touch stats.json
@@ -100,16 +100,7 @@ docker network create traefik_gw
 # 默认使用 watchtower 自动更新，不需要可以去掉
 docker-compose up -d
 
-# 源码编译
-## 按提示安装 rust 编译器
-curl https://sh.rustup.rs -sSf | sh
-yum install -y openssl-devel
-git clone https://github.com/zdz/ServerStatus-Rust.git
-cd ServerStatus-Rust
-cargo build --release
-# 编译好的文件目录 target/release
-
-# 运行
+# 手动运行
 ./stat_server
 # 或
 ./stat_server -c config.toml
@@ -142,7 +133,7 @@ sudo python3 -m pip install psutil requests
 sudo apt -y install python3-pip
 sudo python3 -m pip install psutil requests
 
-## 运行
+## 手动运行
 wget --no-check-certificate -qO client-linux.py 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/client/client-linux.py'
 python3 client-linux.py -h
 python3 client-linux.py -a "tcp://127.0.0.1:34512" -u h1 -p p1
@@ -165,6 +156,9 @@ sudo apt install -y vnstat
 # 修改 /etc/vnstat.conf
 # BandwidthDetection 0
 # MaxBandwidth 0
+# 默认不是 eth0 网口的需要置空 Interface 来自动选择网口
+# 没报错一般不需要改
+# Interface ""
 systemctl restart vnstat
 
 # 确保 version >= 2.6
@@ -185,7 +179,7 @@ python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1 -n
 ## 6.FAQ
 
 <details>
-  <summary>使用自定义修改主题</summary>
+  <summary>如何使用自定义主题</summary>
 
 ```nginx
 server {
@@ -216,19 +210,18 @@ server {
 
   # 其它 html,js,css 等，走本地文本
   location / {
-    root   /opt/ServerStatus/web; # 你自己修改的web主题文件目录
+    root   /opt/ServerStatus/web; # 你自己修改的主题目录
     index  index.html index.htm;
   }
 }
 ```
 </details>
 
-
 <details>
   <summary>如何源码编译</summary>
 
 ```bash
-## 按提示安装 rust 编译器
+# 按提示安装 rust 编译器
 curl https://sh.rustup.rs -sSf | sh
 yum install -y openssl-devel
 git clone https://github.com/zdz/ServerStatus-Rust.git
@@ -238,7 +231,19 @@ cargo build --release
 ```
 </details>
 
-## 7.感谢
+<details>
+  <summary>如何自定义 ping 地址</summary>
+
+```bash
+# 例如自定义移动探测地址，用 --cm 指定地址
+./stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1 --cm=cm.tz.cloudcpp.com:80
+
+# 电信移动参数可以使用一下命令查看
+./stat_client -h
+```
+</details>
+
+## 7.相关项目
 - https://github.com/cppla/ServerStatus
 - https://github.com/BotoX/ServerStatus
 
