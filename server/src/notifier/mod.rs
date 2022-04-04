@@ -20,12 +20,6 @@ pub enum Event {
     Custom,
 }
 
-pub trait Notifier {
-    fn kind(&self) -> &'static str;
-    fn notify(&self, e: &Event, stat: &HostStat) -> Result<()>;
-    fn notify_test(&self) -> Result<()>;
-}
-
 fn get_tag(e: &Event) -> &'static str {
     match *e {
         Event::NodeUp => "online",
@@ -80,4 +74,14 @@ fn render_template(kind: &'static str, tag: &'static str, ctx: Value) -> Result<
             error!("render_template err => {:?}", err);
             Ok("".to_string())
         })?)
+}
+
+pub trait Notifier {
+    fn kind(&self) -> &'static str;
+    fn notify(&self, e: &Event, stat: &HostStat) -> Result<()>;
+    // send notify impl
+    fn send_notify(&self, content: String) -> Result<()>;
+    fn notify_test(&self) -> Result<()> {
+        self.send_notify("❗ServerStatus test msg".to_string())
+    }
 }

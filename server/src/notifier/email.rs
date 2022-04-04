@@ -51,8 +51,14 @@ impl Email {
         );
         o
     }
+}
 
-    fn send_msg(&self, html_content: String) -> Result<()> {
+impl crate::notifier::Notifier for Email {
+    fn kind(&self) -> &'static str {
+        KIND
+    }
+
+    fn send_notify(&self, html_content: String) -> Result<()> {
         let email = Message::builder()
             .from(
                 format!("ServerStatus <{}>", self.config.username)
@@ -98,40 +104,24 @@ impl Email {
 
         Ok(())
     }
-}
-
-impl crate::notifier::Notifier for Email {
-    fn kind(&self) -> &'static str {
-        KIND
-    }
-
-    fn notify_test(&self) -> Result<()> {
-        self.send_msg("❗ServerStatus test msg".to_string())
-    }
 
     fn notify(&self, e: &Event, stat: &HostStat) -> Result<()> {
-        match *e {
-            Event::NodeUp | Event::NodeDown => render_template(
-                KIND,
-                get_tag(e),
-                context!(host => stat, config => self.config),
-            )
-            .map(|content| self.send_msg(content))
-            .unwrap(),
-            Event::Custom => render_template(
-                KIND,
-                get_tag(e),
-                context!(host => stat, config => self.config),
-            )
-            .map(|content| {
-                info!("tmpl.render => {}", content);
+        render_template(
+            self.kind(),
+            get_tag(e),
+            context!(host => stat, config => self.config),
+        )
+        .map(|content| match *e {
+            Event::NodeUp | Event::NodeDown => self.send_notify(content).unwrap(),
+            Event::Custom => {
+                info!("render.custom.tpl => {}", content);
                 if !content.is_empty() {
-                    self.send_msg(format!("{}\n{}", self.config.title, content))
+                    self.send_notify(format!("{}\n{}", self.config.title, content))
                         .unwrap_or_else(|err| {
                             error!("send_msg err => {:?}", err);
                         });
                 }
-            }),
-        }
+            }
+        })
     }
 }
