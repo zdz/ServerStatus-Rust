@@ -63,7 +63,7 @@ hosts = [
   {name = "h2", password = "p2", alias = "n2", location = "🇺🇸", type = "kvm", monthstart = 1},
 ]
 
-# 不开启告警，可省略后面配置
+# 不开启告警，可忽略后面配置
 # 告警间隔默认为30s
 notify_interval = 30
 # https://core.telegram.org/bots/api
@@ -72,11 +72,12 @@ notify_interval = 30
 enabled = false
 bot_token = "<tg bot token>"
 chat_id = "<chat id>"
-# host 可用字段参见 payload.rs 文件 HostStat 结构
+# host 可用字段参见 payload.rs 文件 HostStat 结构, {{host.xxx}} 为占位变量
+# 例如 host.name 可替换为 host.alias，自己根据喜好来编写通知消息
 title = "❗<b>Server Status</b>"
-online_tpl = "{{config.title}}  \n😆 {{ host.location }} 的 {{ host.name }} 主机恢复上线啦"
-offline_tpl = "{{config.title}} \n😱 {{ host.location }} 的 {{ host.name }} 主机已经掉线啦"
-# 模板置空则停用自定义告警，只保留上下线通知
+online_tpl = "{{config.title}}  \n😆 {{host.location}} 的 {{host.name}} 主机恢复上线啦"
+offline_tpl = "{{config.title}} \n😱 {{host.location}} 的 {{host.name}} 主机已经掉线啦"
+# custom模板置空则停用自定义告警，只保留上下线通知
 custom_tpl = """
 {% if host.memory_used / host.memory_total > 0.5  %}
 <pre>😲{{ host.name }} 主机内存使用率超50%, 当前{{ (100 * host.memory_used / host.memory_total) | round }}%  </pre>
