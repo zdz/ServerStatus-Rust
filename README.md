@@ -26,6 +26,7 @@
 - 支持上下线和简单自定义规则告警 (`telegram`, `wechat`, `email`)
 - 支持 `vnstat` 统计月流量，重启不丢流量数据
 - 支持 `http` 协议上报，可配合 `CF` 等优化上报链路
+- 支持 `railway` 一键部署
 - 支持 `systemd`, 开机自启
 - 更小 `docker` 镜像
 
@@ -159,6 +160,10 @@ python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
 
 ## 5.开启 `vnstat` 支持
 [vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux下一个流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量和总流量，优点是重启不丢流量数据。
+
+<details>
+  <summary>开启 vnstat 设置</summary>
+
 ```bash
 # 在client端安装 vnstat
 ## Centos
@@ -189,6 +194,7 @@ vnstat = true
 # 或
 python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1 -n
 ```
+</details>
 
 ## 6.FAQ
 
