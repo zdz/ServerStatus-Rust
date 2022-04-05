@@ -48,6 +48,7 @@ bash -ex one-touch.sh
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/kzT46l?referralCode=pJYbdU)
 
+不想配置 `Nginx`，`SSL` ？了解一下
 [Railway 部署 Server 教程](https://github.com/zdz/ServerStatus-Rust/wiki/Railway)
 
 ## 3.服务端说明
@@ -113,7 +114,7 @@ systemctl start stat_server
 RUST_BACKTRACE=1 RUST_LOG=trace ./stat_server -c config.toml
 
 # 测试配置文件是否有效
-stat_server -c config.toml -t
+./stat_server -c config.toml -t
 # 根据配置发送测试消息，验证通知是否生效
 ./stat_server -c config.toml --notify-test
 

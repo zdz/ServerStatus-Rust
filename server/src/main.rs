@@ -242,10 +242,10 @@ async fn main() -> Result<()> {
     if let Some(cfg) = if args.cloud {
         // export SRV_CONF=$(cat config.toml)
         // echo "$SRV_CONF"
-        eprintln!("run cloud mode, load config from env");
+        eprintln!("run in cloud mode, load config from env");
         config::from_env()
     } else {
-        eprintln!("run normal mode, load config from env");
+        eprintln!("run in normal mode, load config from local file");
         config::from_file(&args.config)
     } {
         debug!("{:?}", cfg);
