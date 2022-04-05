@@ -34,6 +34,7 @@
 #### 反馈：[Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
 
 ## 2.快速部署
+
 ```bash
 # for x86_64
 mkdir -p /opt/ServerStatus && cd /opt/ServerStatus
@@ -43,6 +44,10 @@ bash -ex one-touch.sh
 # 部署完毕，打开 http://127.0.0.1:8080/ 或 http://<你的IP>:8080/
 # 自定义部署可参照 one-touch.sh 脚本
 ```
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/kzT46l?referralCode=pJYbdU)
+
+[Railway 部署 Server 教程](https://github.com/zdz/ServerStatus-Rust/wiki/Railway)
 
 ## 3.服务端说明
 
