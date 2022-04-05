@@ -1,6 +1,8 @@
 #![deny(warnings)]
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::env;
 use std::fs;
 
 use crate::notifier;
@@ -61,28 +63,44 @@ impl Config {
     }
 }
 
+pub fn test_from_file(cfg: &str) -> Result<Config> {
+    fs::read_to_string(cfg)
+        .map(|contents| toml::from_str::<Config>(&contents))
+        .unwrap()
+        .map_err(anyhow::Error::new)
+}
+
+pub fn from_str(content: &str) -> Option<Config> {
+    let mut o = toml::from_str::<Config>(content).unwrap();
+    o.auth_map = HashMap::new();
+    for (idx, host) in o.hosts.iter_mut().enumerate() {
+        host.pos = idx;
+        if host.alias.is_empty() {
+            host.alias = host.name.to_owned();
+        }
+        o.auth_map
+            .insert(host.name.to_owned(), host.password.to_owned());
+    }
+    if o.notify_interval < 30 {
+        o.notify_interval = 30;
+    }
+    if o.offline_threshold < 30 {
+        o.offline_threshold = 30;
+    }
+
+    Some(o)
+}
+
+pub fn from_env() -> Option<Config> {
+    from_str(
+        env::var("SRV_CONF")
+            .expect("can't load config from env")
+            .as_str(),
+    )
+}
+
 pub fn from_file(cfg: &str) -> Option<Config> {
     fs::read_to_string(cfg)
-        .map(|contents| {
-            let mut o: Config = toml::from_str(&contents).unwrap();
-            o.auth_map = HashMap::new();
-            for (idx, host) in o.hosts.iter_mut().enumerate() {
-                host.pos = idx;
-                if host.alias.is_empty() {
-                    host.alias = host.name.to_owned();
-                }
-                o.auth_map
-                    .insert(host.name.to_owned(), host.password.to_owned());
-            }
-            if o.notify_interval < 30 {
-                o.notify_interval = 30;
-            }
-            if o.offline_threshold < 30 {
-                o.offline_threshold = 30;
-            }
-
-            o
-        })
+        .map(|contents| from_str(contents.as_str()))
         .ok()?
-        .into()
 }

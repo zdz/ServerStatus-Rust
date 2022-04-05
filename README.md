@@ -77,7 +77,7 @@ chat_id = "<chat id>"
 title = "❗<b>Server Status</b>"
 online_tpl = "{{config.title}}  \n😆 {{host.location}} 的 {{host.name}} 主机恢复上线啦"
 offline_tpl = "{{config.title}} \n😱 {{host.location}} 的 {{host.name}} 主机已经掉线啦"
-# custom模板置空则停用自定义告警，只保留上下线通知
+# custom 模板置空则停用自定义告警，只保留上下线通知
 custom_tpl = """
 {% if host.memory_used / host.memory_total > 0.5  %}
 <pre>😲{{ host.name }} 主机内存使用率超50%, 当前{{ (100 * host.memory_used / host.memory_total) | round }}%  </pre>
@@ -97,13 +97,7 @@ custom_tpl = """
 systemctl enable stat_server
 systemctl start stat_server
 
-# docker 方式
-wget --no-check-certificate -qO docker-compose.yml 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/docker-compose.yml'
-wget --no-check-certificate -qO config.toml 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/config.toml'
-touch stats.json
-docker network create traefik_gw
-docker-compose up -d
-
+# 看看可用参数
 ./stat_server -h
 # 手动运行
 ./stat_server
@@ -112,8 +106,17 @@ docker-compose up -d
 # 或
 RUST_BACKTRACE=1 RUST_LOG=trace ./stat_server -c config.toml
 
-# 测试通知是否生效
+# 测试配置文件是否有效
+stat_server -c config.toml -t
+# 根据配置发送测试消息，验证通知是否生效
 ./stat_server -c config.toml --notify-test
+
+# docker 方式
+wget --no-check-certificate -qO docker-compose.yml 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/docker-compose.yml'
+wget --no-check-certificate -qO config.toml 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/config.toml'
+touch stats.json
+docker network create traefik_gw
+docker-compose up -d
 ```
 
 ## 4.客户端说明

@@ -13,6 +13,8 @@ use std::io::BufReader;
 use std::process;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::thread;
+use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 use tokio::runtime::Handle;
@@ -140,8 +142,12 @@ async fn shutdown_signal() {
 struct Args {
     #[clap(short, long, default_value = "config.toml")]
     config: String,
-    #[clap(long = "notify-test", help = "test notify, default:false")]
+    #[clap(short = 't', long, help = "config test, default:false")]
+    config_test: bool,
+    #[clap(long = "notify-test", help = "notify test, default:false")]
     notify_test: bool,
+    #[clap(long = "cloud", help = "cloud mode, load cfg from env var: SRV_CONF")]
+    cloud: bool,
 }
 
 async fn serv_tcp() -> Result<()> {
@@ -218,15 +224,30 @@ async fn serv_tcp() -> Result<()> {
         });
     }
 }
-use std::thread;
-use std::time::Duration;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     pretty_env_logger::init();
     let args = Args::parse();
 
+    // config test
+    if args.config_test {
+        config::test_from_file(&args.config).unwrap();
+        eprintln!("the configuration file {} syntax is ok", &args.config);
+        eprintln!("the configuration file {} test is successful", &args.config);
+        process::exit(0);
+    }
+
     // config load
-    if let Some(cfg) = crate::config::from_file(&args.config) {
+    if let Some(cfg) = if args.cloud {
+        // export SRV_CONF=$(cat config.toml)
+        // echo "$SRV_CONF"
+        eprintln!("run cloud mode, load config from env");
+        config::from_env()
+    } else {
+        eprintln!("run normal mode, load config from env");
+        config::from_file(&args.config)
+    } {
         debug!("{:?}", cfg);
         G_CONFIG.set(cfg).unwrap();
     } else {
@@ -272,10 +293,12 @@ async fn main() -> Result<()> {
         process::exit(1);
     }
 
+    // serv tcp
     tokio::spawn(async move {
         let _ = serv_tcp().await;
     });
 
+    // serv http
     let http_service =
         make_service_fn(|_| async { Ok::<_, GenericError>(service_fn(main_service_func)) });
 
