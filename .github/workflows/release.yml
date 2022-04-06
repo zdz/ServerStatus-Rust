@@ -72,7 +72,7 @@ jobs:
           target/${{ matrix.target }}/release/stat_client.service
 
     - name: Zip Release
-      uses: TheDoctor0/zip-release@0.6.1
+      uses: TheDoctor0/zip-release@0.6.2
       with:
         type: zip
         filename: ServerStatus-${{ matrix.target }}.zip
