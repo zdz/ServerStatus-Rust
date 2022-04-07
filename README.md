@@ -6,10 +6,7 @@
 [![GitHub all releases](https://img.shields.io/github/downloads/zdz/ServerStatus-Rust/total)](https://github.com/zdz/ServerStatus-Rust/releases)
 
 - [Rust 版 ServerStatus 云探针](#rust-版-serverstatus-云探针)
-    - [1.介绍](#1介绍)
-      - [演示：https://tz-rust.vercel.app](#演示httpstz-rustvercelapp)
-      - [下载：Releases](#下载releases)
-      - [反馈：Discussions](#反馈discussions)
+  - [1.介绍](#1介绍)
   - [2.快速部署](#2快速部署)
   - [3.服务端说明](#3服务端说明)
     - [3.1 配置文件 `config.toml`](#31-配置文件-configtoml)
@@ -19,20 +16,20 @@
   - [6.FAQ](#6faq)
   - [7.相关项目](#7相关项目)
 
-### 1.介绍
-基于 `cppla/ServerStatus`，保持轻量和简化部署，特性如下：
+## 1.介绍
+基于 `cppla/ServerStatus`，保持轻量和简化部署，主要特性如下：
 
 - 使用 `rust` 完全重写 `server`, `client`，单个执行文件部署
 - 支持上下线和简单自定义规则告警 (`telegram`, `wechat`, `email`)
 - 支持 `vnstat` 统计月流量，重启不丢流量数据
-- 支持 `http` 协议上报，可配合 `CF` 等优化上报链路
-- 支持 `railway` 一键部署
+- 支持 `http` 协议上报，可配合 `cf` 等优化上报链路
+- 支持 `railway` 快速部署
 - 支持 `systemd`, 开机自启
 - 更小 `docker` 镜像
 
-#### 演示：https://tz-rust.vercel.app
-#### 下载：[Releases](https://github.com/zdz/ServerStatus-Rust/releases)
-#### 反馈：[Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
+演示：https://tz-rust.vercel.app
+| 下载：[Releases](https://github.com/zdz/ServerStatus-Rust/releases)
+| 反馈：[Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
 
 ## 2.快速部署
 
@@ -48,8 +45,8 @@ bash -ex one-touch.sh
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/kzT46l?referralCode=pJYbdU)
 
-不想配置 `Nginx`，`SSL` ？了解一下
-[Railway 部署 Server 教程](https://github.com/zdz/ServerStatus-Rust/wiki/Railway)
+懒得配置 `Nginx`，`SSL` 证书？试试
+[在 Railway 部署 Server 教程](https://github.com/zdz/ServerStatus-Rust/wiki/Railway)
 
 ## 3.服务端说明
 
@@ -82,16 +79,16 @@ chat_id = "<chat id>"
 # host 可用字段参见 payload.rs 文件 HostStat 结构, {{host.xxx}} 为占位变量
 # 例如 host.name 可替换为 host.alias，自己根据喜好来编写通知消息
 title = "❗<b>Server Status</b>"
-online_tpl = "{{config.title}}  \n😆 {{host.location}} 的 {{host.name}} 主机恢复上线啦"
+online_tpl  = "{{config.title}} \n😆 {{host.location}} 的 {{host.name}} 主机恢复上线啦"
 offline_tpl = "{{config.title}} \n😱 {{host.location}} 的 {{host.name}} 主机已经掉线啦"
 # custom 模板置空则停用自定义告警，只保留上下线通知
 custom_tpl = """
 {% if host.memory_used / host.memory_total > 0.5  %}
-<pre>😲{{ host.name }} 主机内存使用率超50%, 当前{{ (100 * host.memory_used / host.memory_total) | round }}%  </pre>
+<pre>😲 {{host.name}} 主机内存使用率超50%, 当前{{ (100 * host.memory_used / host.memory_total) | round }}%  </pre>
 {% endif %}
 
 {% if host.hdd_used / host.hdd_total  > 0.5  %}
-<pre>😲{{ host.name }} 主机硬盘使用率超50%, 当前{{ (100 * host.hdd_used / host.hdd_total) | round }}% </pre>
+<pre>😲 {{host.name}} 主机硬盘使用率超50%, 当前{{ (100 * host.hdd_used / host.hdd_total) | round }}% </pre>
 {% endif %}
 """
 
