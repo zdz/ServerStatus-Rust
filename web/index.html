@@ -2,11 +2,11 @@
 <html>
 
 <head>
-	<title>云监控</title>
+	<title>ServerStatus-Rust版</title>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta name="description" content="云监控">
+	<meta name="description" content="ServerStatus-Rust ServerStatus 探针 云监控">
 	<meta name="author" content="BotoX">
 	<link rel="stylesheet" href="css/bootstrap.min.css">
 	<link rel="stylesheet" href="css/bootstrap-theme.min.css">
@@ -36,7 +36,7 @@
 						<span class="icon-bar"></span>
 						<span class="icon-bar"></span>
 					</button>
-					<a href="#" class="navbar-brand">云监控</a>
+					<a href="#" class="navbar-brand">ServerStatus</a>
 				</div>
 				<div class="navbar-collapse collapse">
 					<ul class="nav navbar-nav">
@@ -72,7 +72,7 @@
 					<th id="online_status" style="text-align: center;">协议</th>
 					<th id="month_traffic" style="text-align: center;">月流量 ↓|↑</th>
 					<th id="name">节点名</th>
-					<th id="type">虚拟化</th>
+					<th id="type">类型</th>
 					<th id="location">位置</th>
 					<th id="uptime">在线时间</th>
 					<th id="load">负载</th>
@@ -81,7 +81,7 @@
 					<th id="cpu">处理器</th>
 					<th id="ram">内存</th>
 					<th id="hdd">硬盘</th>
-					<th id="ping">丢包率(CU|CT|CM)</th>
+					<th id="ping">联通 | 电信 | 移动</th>
 				</tr>
 			</thead>
 			<tbody id="servers">
