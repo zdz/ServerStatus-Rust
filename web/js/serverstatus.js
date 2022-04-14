@@ -1,382 +1,212 @@
-// serverstatus.js. big data boom today.
-var error = 0;
-var d = 0;
-var server_status = new Array();
-
-function timeSince(date) {
-	if(date == 0)
-		return "从未.";
-
-	var seconds = Math.floor((new Date() - date) / 1000);
-	var interval = Math.floor(seconds / 60);
-	if (interval > 1)
-		return interval + " 分钟前.";
-	else
-		return "几秒前.";
-}
-
-function bytesToSize(bytes, precision, si)
-{
-	var ret;
-	si = typeof si !== 'undefined' ? si : 0;
-	if(si != 0) {
-		var megabyte = 1000 * 1000;
-		var gigabyte = megabyte * 1000;
-		var terabyte = gigabyte * 1000;
-	} else {
-		var megabyte = 1024 * 1024;
-		var gigabyte = megabyte * 1024;
-		var terabyte = gigabyte * 1024;
-	}
-
-	if ((bytes >= megabyte) && (bytes < gigabyte)) {
-		ret = (bytes / megabyte).toFixed(precision) + ' M';
-
-	} else if ((bytes >= gigabyte) && (bytes < terabyte)) {
-		ret = (bytes / gigabyte).toFixed(precision) + ' G';
-
-	} else if (bytes >= terabyte) {
-		ret = (bytes / terabyte).toFixed(precision) + ' T';
-
-	} else {
-		return bytes + ' B';
-	}
-	if(si != 0) {
-		return ret + 'B';
-	} else {
-		return ret + 'iB';
-	}
-}
-
-function uptime() {
-	$.getJSON("json/stats.json", function(result) {
-		$("#loading-notice").remove();
-		if(result.reload)
-			setTimeout(function() { location.reload() }, 1000);
-
-		for (var i = 0, rlen=result.servers.length; i < rlen; i++) {
-			var TableRow = $("#servers tr#r" + i);
-			var ExpandRow = $("#servers #rt" + i);
-			var hack; // fuck CSS for making me do this
-			if(i%2) hack="odd"; else hack="even";
-			if (!TableRow.length) {
-				$("#servers").append(
-					"<tr id=\"r" + i + "\" data-toggle=\"collapse\" data-target=\"#rt" + i + "\" class=\"accordion-toggle " + hack + "\">" +
-						"<td id=\"online_status\"><div class=\"progress\"><div style=\"width: 100%;\" class=\"progress-bar progress-bar-warning\"><small>加载中</small></div></div></td>" +
-						"<td id=\"month_traffic\"><div class=\"progress\"><div style=\"width: 100%;\" class=\"progress-bar progress-bar-warning\"><small>加载中</small></div></div></td>" +
-						"<td id=\"name\">加载中</td>" +
-						"<td id=\"type\">加载中</td>" +
-						"<td id=\"location\">加载中</td>" +
-						"<td id=\"uptime\">加载中</td>" +
-						"<td id=\"load\">加载中</td>" +
-						"<td id=\"network\">加载中</td>" +
-						"<td id=\"traffic\">加载中</td>" +
-						"<td id=\"cpu\"><div class=\"progress\"><div style=\"width: 100%;\" class=\"progress-bar progress-bar-warning\"><small>加载中</small></div></div></td>" +
-						"<td id=\"memory\"><div class=\"progress\"><div style=\"width: 100%;\" class=\"progress-bar progress-bar-warning\"><small>加载中</small></div></div></td>" +
-						"<td id=\"hdd\"><div class=\"progress\"><div style=\"width: 100%;\" class=\"progress-bar progress-bar-warning\"><small>加载中</small></div></div></td>" +
-						"<td id=\"ping\"><div class=\"progress\"><div style=\"width: 100%;\" class=\"progress-bar progress-bar-warning\"><small>加载中</small></div></div></td>" +
-					"</tr>" +
-					"<tr class=\"expandRow " + hack + "\"><td colspan=\"16\"><div class=\"accordian-body collapse\" id=\"rt" + i + "\">" +
-						"<div id=\"expand_mem\">加载中</div>" +
-						"<div id=\"expand_swap\">加载中</div>" +
-						"<div id=\"expand_hdd\">加载中</div>" +
-						"<div id=\"expand_tupd\">加载中</div>" +
-						"<div id=\"expand_ping\">加载中</div>" +
-						"<div id=\"expand_custom\">加载中</div>" +
-					"</div></td></tr>"
-				);
-				TableRow = $("#servers tr#r" + i);
-				ExpandRow = $("#servers #rt" + i);
-				server_status[i] = true;
-			}
-			TableRow = TableRow[0];
-			if(error) {
-				TableRow.setAttribute("data-target", "#rt" + i);
-				server_status[i] = true;
-			}
-
-			// online_status
-			if (result.servers[i].online4 && !result.servers[i].online6) {
-				TableRow.children["online_status"].children[0].children[0].className = "progress-bar progress-bar-success";
-				TableRow.children["online_status"].children[0].children[0].innerHTML = "<small>IPv4</small>";
-			} else if (result.servers[i].online4 && result.servers[i].online6) {
-				TableRow.children["online_status"].children[0].children[0].className = "progress-bar progress-bar-success";
-				TableRow.children["online_status"].children[0].children[0].innerHTML = "<small>双栈</small>";
-			} else if (!result.servers[i].online4 && result.servers[i].online6) {
-			    TableRow.children["online_status"].children[0].children[0].className = "progress-bar progress-bar-success";
-				TableRow.children["online_status"].children[0].children[0].innerHTML = "<small>IPv6</small>";
-			} else {
-				TableRow.children["online_status"].children[0].children[0].className = "progress-bar progress-bar-danger";
-				TableRow.children["online_status"].children[0].children[0].innerHTML = "<small>关闭</small>";
-			}
-
-			// Name
-			TableRow.children["name"].innerHTML = result.servers[i].alias;
-
-			// Type
-			TableRow.children["type"].innerHTML = result.servers[i].type;
-
-			// Location
-			TableRow.children["location"].innerHTML = result.servers[i].location;
-			if (!result.servers[i].online4 && !result.servers[i].online6) {
-				if (server_status[i]) {
-					TableRow.children["uptime"].innerHTML = "–";
-					TableRow.children["load"].innerHTML = "–";
-					TableRow.children["network"].innerHTML = "–";
-					TableRow.children["traffic"].innerHTML = "–";
-					TableRow.children["month_traffic"].children[0].children[0].className = "progress-bar progress-bar-warning";
-					TableRow.children["month_traffic"].children[0].children[0].innerHTML = "<small>关闭</small>";
-					TableRow.children["cpu"].children[0].children[0].className = "progress-bar progress-bar-danger";
-					TableRow.children["cpu"].children[0].children[0].style.width = "100%";
-					TableRow.children["cpu"].children[0].children[0].innerHTML = "<small>关闭</small>";
-					TableRow.children["memory"].children[0].children[0].className = "progress-bar progress-bar-danger";
-					TableRow.children["memory"].children[0].children[0].style.width = "100%";
-					TableRow.children["memory"].children[0].children[0].innerHTML = "<small>关闭</small>";
-					TableRow.children["hdd"].children[0].children[0].className = "progress-bar progress-bar-danger";
-					TableRow.children["hdd"].children[0].children[0].style.width = "100%";
-					TableRow.children["hdd"].children[0].children[0].innerHTML = "<small>关闭</small>";
-					TableRow.children["ping"].children[0].children[0].className = "progress-bar progress-bar-danger";
-					TableRow.children["ping"].children[0].children[0].style.width = "100%";
-					TableRow.children["ping"].children[0].children[0].innerHTML = "<small>关闭</small>";
-					if(ExpandRow.hasClass("in")) {
-						ExpandRow.collapse("hide");
-					}
-					TableRow.setAttribute("data-target", "");
-					server_status[i] = false;
-				}
-			} else {
-				if (!server_status[i]) {
-					TableRow.setAttribute("data-target", "#rt" + i);
-					server_status[i] = true;
-				}
-
-				// month traffic
-				var monthtraffic = "";
-				var trafficdiff_in = result.servers[i].network_in - result.servers[i].last_network_in;
-				var trafficdiff_out = result.servers[i].network_out - result.servers[i].last_network_out;
-				if(trafficdiff_in < 1024*1024*1024*1024)
-					monthtraffic += (trafficdiff_in/1024/1024/1024).toFixed(2) + "G";
-				else
-					monthtraffic += (trafficdiff_in/1024/1024/1024/1024).toFixed(2) + "T";
-				monthtraffic += " | "
-				if(trafficdiff_out < 1024*1024*1024*1024)
-					monthtraffic += (trafficdiff_out/1024/1024/1024).toFixed(2) + "G";
-				else
-					monthtraffic += (trafficdiff_out/1024/1024/1024/1024).toFixed(2) + "T";
-				TableRow.children["month_traffic"].children[0].children[0].className = "progress-bar progress-bar-success";
-				TableRow.children["month_traffic"].children[0].children[0].innerHTML = "<small>"+monthtraffic+"</small>";
-
-				// Uptime
-				TableRow.children["uptime"].innerHTML = result.servers[i].uptime;
-
-				// Load: default load_1, you can change show: load_1, load_5, load_15
-				if(result.servers[i].load == -1) {
-				    TableRow.children["load"].innerHTML = "–";
-				} else {
-				    TableRow.children["load"].innerHTML = result.servers[i].load_1.toFixed(2);
-				}
-
-				// Network
-				var netstr = "";
-				if(result.servers[i].network_rx < 1024*1024)
-					netstr += (result.servers[i].network_rx/1024).toFixed(1) + "K";
-				else
-					netstr += (result.servers[i].network_rx/1024/1024).toFixed(1) + "M";
-				netstr += " | "
-				if(result.servers[i].network_tx < 1024*1024)
-					netstr += (result.servers[i].network_tx/1024).toFixed(1) + "K";
-				else
-					netstr += (result.servers[i].network_tx/1024/1024).toFixed(1) + "M";
-				TableRow.children["network"].innerHTML = netstr;
-
-				//Traffic
-				var trafficstr = "";
-				if(result.servers[i].network_in < 1024*1024*1024*1024)
-					trafficstr += (result.servers[i].network_in/1024/1024/1024).toFixed(2) + "G";
-                else
-                    trafficstr += (result.servers[i].network_in/1024/1024/1024/1024).toFixed(2) + "T";
-				trafficstr += " | "
-				if(result.servers[i].network_out < 1024*1024*1024*1024)
-				    trafficstr += (result.servers[i].network_out/1024/1024/1024).toFixed(2) + "G";
-				else
-					trafficstr += (result.servers[i].network_out/1024/1024/1024/1024).toFixed(2) + "T";
-				TableRow.children["traffic"].innerHTML = trafficstr;
-
-				// CPU
-				if (result.servers[i].cpu >= 90)
-					TableRow.children["cpu"].children[0].children[0].className = "progress-bar progress-bar-danger";
-				else if (result.servers[i].cpu >= 80)
-					TableRow.children["cpu"].children[0].children[0].className = "progress-bar progress-bar-warning";
-				else
-					TableRow.children["cpu"].children[0].children[0].className = "progress-bar progress-bar-success";
-				TableRow.children["cpu"].children[0].children[0].style.width = result.servers[i].cpu + "%";
-				TableRow.children["cpu"].children[0].children[0].innerHTML = result.servers[i].cpu + "%";
-
-				// Memory
-				var Mem = ((result.servers[i].memory_used/result.servers[i].memory_total)*100.0).toFixed(0);
-				if (Mem >= 90)
-					TableRow.children["memory"].children[0].children[0].className = "progress-bar progress-bar-danger";
-				else if (Mem >= 80)
-					TableRow.children["memory"].children[0].children[0].className = "progress-bar progress-bar-warning";
-				else
-					TableRow.children["memory"].children[0].children[0].className = "progress-bar progress-bar-success";
-				TableRow.children["memory"].children[0].children[0].style.width = Mem + "%";
-				TableRow.children["memory"].children[0].children[0].innerHTML = Mem + "%";
-				ExpandRow[0].children["expand_mem"].innerHTML = "内存: " + bytesToSize(result.servers[i].memory_used*1024, 2) + " / " + bytesToSize(result.servers[i].memory_total*1024, 2);
-				// Swap
-				ExpandRow[0].children["expand_swap"].innerHTML = "交换分区: " + bytesToSize(result.servers[i].swap_used*1024, 2) + " / " + bytesToSize(result.servers[i].swap_total*1024, 2);
-
-				// HDD
-				var HDD = ((result.servers[i].hdd_used/result.servers[i].hdd_total)*100.0).toFixed(0);
-				if (HDD >= 90)
-					TableRow.children["hdd"].children[0].children[0].className = "progress-bar progress-bar-danger";
-				else if (HDD >= 80)
-					TableRow.children["hdd"].children[0].children[0].className = "progress-bar progress-bar-warning";
-				else
-					TableRow.children["hdd"].children[0].children[0].className = "progress-bar progress-bar-success";
-				TableRow.children["hdd"].children[0].children[0].style.width = HDD + "%";
-				TableRow.children["hdd"].children[0].children[0].innerHTML = HDD + "%";
-				ExpandRow[0].children["expand_hdd"].innerHTML = "硬盘: " + bytesToSize(result.servers[i].hdd_used*1024*1024, 2) + " / " + bytesToSize(result.servers[i].hdd_total*1024*1024, 2);
-
-                // delay time
-
-				// tcp, udp, process, thread count
-				ExpandRow[0].children["expand_tupd"].innerHTML = "TCP/UDP/进/线: " + result.servers[i].tcp_count + " / " + result.servers[i].udp_count + " / " + result.servers[i].process_count+ " / " + result.servers[i].thread_count;
-				ExpandRow[0].children["expand_ping"].innerHTML = "联通/电信/移动: " + result.servers[i].time_10010 + "ms / " + result.servers[i].time_189 + "ms / " + result.servers[i].time_10086 + "ms"
-
-                // ping
-                var PING_10010 = result.servers[i].ping_10010.toFixed(0);
-                var PING_189 = result.servers[i].ping_189.toFixed(0);
-                var PING_10086 = result.servers[i].ping_10086.toFixed(0);
-                if (PING_10010 >= 20 || PING_189 >= 20 || PING_10086 >= 20)
-                    TableRow.children["ping"].children[0].children[0].className = "progress-bar progress-bar-warning";
-                else
-                    TableRow.children["ping"].children[0].children[0].className = "progress-bar progress-bar-success";
-	            TableRow.children["ping"].children[0].children[0].innerHTML = PING_10010 + "%💻" + PING_189 + "%💻" + PING_10086 + "%";
-
-				// Custom
-				if (result.servers[i].custom) {
-					ExpandRow[0].children["expand_custom"].innerHTML = result.servers[i].custom
-				} else {
-					ExpandRow[0].children["expand_custom"].innerHTML = ""
-				}
-			}
-		};
-
-		d = new Date(result.updated*1000);
-		error = 0;
-	}).fail(function(update_error) {
-		if (!error) {
-			$("#servers > tr.accordion-toggle").each(function(i) {
-				var TableRow = $("#servers tr#r" + i)[0];
-				var ExpandRow = $("#servers #rt" + i);
-				TableRow.children["online_status"].children[0].children[0].className = "progress-bar progress-bar-error";
-				TableRow.children["online_status"].children[0].children[0].innerHTML = "<small>错误</small>";
-				TableRow.children["month_traffic"].children[0].children[0].className = "progress-bar progress-bar-error";
-				TableRow.children["month_traffic"].children[0].children[0].innerHTML = "<small>错误</small>";
-				TableRow.children["uptime"].children[0].children[0].className = "progress-bar progress-bar-error";
-				TableRow.children["uptime"].children[0].children[0].innerHTML = "<small>错误</small>";
-				TableRow.children["load"].children[0].children[0].className = "progress-bar progress-bar-error";
-				TableRow.children["load"].children[0].children[0].innerHTML = "<small>错误</small>";
-				TableRow.children["network"].children[0].children[0].className = "progress-bar progress-bar-error";
-				TableRow.children["network"].children[0].children[0].innerHTML = "<small>错误</small>";
-				TableRow.children["traffic"].children[0].children[0].className = "progress-bar progress-bar-error";
-				TableRow.children["traffic"].children[0].children[0].innerHTML = "<small>错误</small>";
-				TableRow.children["cpu"].children[0].children[0].className = "progress-bar progress-bar-error";
-				TableRow.children["cpu"].children[0].children[0].style.width = "100%";
-				TableRow.children["cpu"].children[0].children[0].innerHTML = "<small>错误</small>";
-				TableRow.children["memory"].children[0].children[0].className = "progress-bar progress-bar-error";
-				TableRow.children["memory"].children[0].children[0].style.width = "100%";
-				TableRow.children["memory"].children[0].children[0].innerHTML = "<small>错误</small>";
-				TableRow.children["hdd"].children[0].children[0].className = "progress-bar progress-bar-error";
-				TableRow.children["hdd"].children[0].children[0].style.width = "100%";
-				TableRow.children["hdd"].children[0].children[0].innerHTML = "<small>错误</small>";
-				TableRow.children["ping"].children[0].children[0].className = "progress-bar progress-bar-error";
-				TableRow.children["ping"].children[0].children[0].style.width = "100%";
-				TableRow.children["ping"].children[0].children[0].innerHTML = "<small>错误</small>";
-				if(ExpandRow.hasClass("in")) {
-					ExpandRow.collapse("hide");
-				}
-				TableRow.setAttribute("data-target", "");
-				server_status[i] = false;
-			});
-		}
-		error = 1;
-		$("#updated").html("更新错误.");
-	});
-}
-
-function updateTime() {
-	if (!error)
-		$("#updated").html("最后更新: " + timeSince(d));
-}
-
-uptime();
-updateTime();
-setInterval(uptime, 2000);
-setInterval(updateTime, 2000);
-
-
-// styleswitcher.js
-function setActiveStyleSheet(title, cookie=false) {
-        var i, a, main;
-        for(i=0; (a = document.getElementsByTagName("link")[i]); i++) {
-                if(a.getAttribute("rel").indexOf("style") != -1 && a.getAttribute("title")) {
-                        a.disabled = true;
-                        if(a.getAttribute("title") == title) a.disabled = false;
-                }
-        }
-        if (true==cookie) {
-                createCookie("style", title, 365);
-        }
-}
-
-function getActiveStyleSheet() {
-	var i, a;
-	for(i=0; (a = document.getElementsByTagName("link")[i]); i++) {
-		if(a.getAttribute("rel").indexOf("style") != -1 && a.getAttribute("title") && !a.disabled)
-			return a.getAttribute("title");
-	}
-	return null;
-}
-
-function createCookie(name,value,days) {
-	if (days) {
-		var date = new Date();
-		date.setTime(date.getTime()+(days*24*60*60*1000));
-		var expires = "; expires="+date.toGMTString();
-	}
-	else expires = "";
-	document.cookie = name+"="+value+expires+"; path=/";
-}
-
-function readCookie(name) {
-	var nameEQ = name + "=";
-	var ca = document.cookie.split(';');
-	for(var i=0;i < ca.length;i++) {
-		var c = ca[i];
-		while (c.charAt(0)==' ')
-			c = c.substring(1,c.length);
-		if (c.indexOf(nameEQ) == 0)
-			return c.substring(nameEQ.length,c.length);
-	}
-	return null;
-}
-
-window.onload = function(e) {
-        var cookie = readCookie("style");
-        if (cookie && cookie != 'null' ) {
-                setActiveStyleSheet(cookie);
+(async () => {
+    let stats = await (await fetch("/stats.json")).json()
+    for (let i = 0; i < stats.servers.length; i++) {
+        let node = document.createElement("div")
+        node.id += "table-item-" + i
+        node.className = "table-item"
+        document.querySelector(".list-inner").append(node)
+        if (stats.servers[i].online4 || stats.servers[i].online6) {
+            getDetails(`#table-item-${i}`, stats.servers[i])
+            document.querySelector(`#table-item-${i}`).innerHTML = `<div class="node">
+    <img class="flag" src="https://z-fs.cols.ro/flags/square/${stats.servers[i].location.toLowerCase()}.svg" alt>
+    <div>
+        <div class="name">${stats.servers[i].alias}</div>
+        <div class="location">${stats.servers[i].location}</div>
+    </div>
+</div>
+<div class="type">${stats.servers[i].type}</div>
+<div class="uptime">${stats.servers[i].uptime == "1 天" ? "1 Day" : stats.servers[i].uptime.replace(/天/, "Days")}</div>
+<div class="network">${byteConvert(stats.servers[i].network_tx)}↑ ${byteConvert(stats.servers[i].network_rx)}↓</div>
+<div class="traffic">${byteConvert(stats.servers[i].network_out)}↑ ${byteConvert(stats.servers[i].network_in)}↓</div>
+<div class="cpu">
+    <div class="progress">
+        <div style="width: ${Math.round(stats.servers[i].cpu)}%; background-color: ${progressConvert(Math.round(stats.servers[i].cpu))};" class="progress-bar">
+            <div>${Math.round(stats.servers[i].cpu)}%</div>
+        </div>
+    </div>
+</div>
+<div class="mem">
+    <div class="progress">
+        <div style="width: ${Math.round(stats.servers[i].memory_used / stats.servers[i].memory_total * 100)}%; background-color: ${progressConvert(Math.round(stats.servers[i].memory_used / stats.servers[i].memory_total * 100))}" class="progress-bar">
+            <div>${Math.round(stats.servers[i].memory_used / stats.servers[i].memory_total * 100)}%</div>
+        </div>
+    </div>
+</div>
+<div class="hdd">
+    <div class="progress">
+        <div style="width: ${Math.round(stats.servers[i].hdd_used / stats.servers[i].hdd_total * 100)}%; background-color: ${progressConvert(Math.round(stats.servers[i].hdd_used / stats.servers[i].hdd_total * 100))}" class="progress-bar">
+            <div>${Math.round(stats.servers[i].hdd_used / stats.servers[i].hdd_total * 100)}%</div>
+        </div>
+    </div>
+</div>
+<div class="status">
+    <div class="status-dot" style="background-color: ${Math.round(stats.servers[i].cpu) <= 70 ? "" : "#faae42"};"></div>
+    <div class="status-info">${Math.round(stats.servers[i].cpu) <= 70 ? "Available" : "Busy"}</div>
+</div>`
+            document.querySelector(`#table-item-${i}`).style.borderColor = Math.round(stats.servers[i].cpu) <= 70 ? "" : "#faae42"
         } else {
-                function handleChange (mediaQueryListEvent) {
-                        if (mediaQueryListEvent.matches) {
-                                setActiveStyleSheet('dark');
-                        } else {
-                                setActiveStyleSheet('light');
-                        }
-                }
-                const mediaQueryListDark = window.matchMedia('(prefers-color-scheme: dark)');
-                setActiveStyleSheet(mediaQueryListDark.matches ? 'dark' : 'light');
-                mediaQueryListDark.addEventListener("change",handleChange);
+            document.querySelector(`#table-item-${i}`).innerHTML = `<div class="node">
+    <img class="flag" src="https://z-fs.cols.ro/flags/square/${stats.servers[i].location.toLowerCase()}.svg" alt>
+    <div>
+        <div class="name">${stats.servers[i].alias}</div>
+        <div class="location">${stats.servers[i].location}</div>
+    </div>
+</div>
+<div class="type">${stats.servers[i].type}</div>
+<div class="uptime">Offline</div>
+<div class="network">-</div>
+<div class="traffic">-</div>
+<div class="cpu">
+    <div class="progress">
+        <div style="width: 100%; background-color: #e62965;" class="progress-bar">
+            <div>Offline</div>
+        </div>
+    </div>
+</div>
+<div class="mem">
+    <div class="progress">
+        <div style="width: 100%; background-color: #e62965;" class="progress-bar">
+            <div>Offline</div>
+        </div>
+    </div>
+</div>
+<div class="hdd">
+    <div class="progress">
+        <div style="width: 100%; background-color: #e62965;" class="progress-bar">
+            <div>Offline</div>
+        </div>
+    </div>
+</div>
+<div class="status">
+    <div class="status-dot" style="background-color: #a2a5b9;"></div>
+    <div class="status-info">Offline</div>
+</div>`
+            document.querySelector(`#table-item-${i}`).style.borderColor = "#e62965"
         }
+    }
+})()
+
+setInterval(() => {
+    (async () => {
+        let stats = await (await fetch("/stats.json")).json()
+        for (let i = 0; i < stats.servers.length; i++) {
+            try {
+                if (stats.servers[i].online4 || stats.servers[i].online6) {
+                    getDetails(`#table-item-${i}`, stats.servers[i])
+                    document.querySelector(`#table-item-${i}`).style.borderColor = Math.round(stats.servers[i].cpu) <= 70 ? "" : "#faae42"
+                    document.querySelector(`#table-item-${i} .flag`).src = `https://z-fs.cols.ro/flags/square/${stats.servers[i].location.toLowerCase()}.svg`
+                    document.querySelector(`#table-item-${i} .location`).textContent = stats.servers[i].location
+                    document.querySelector(`#table-item-${i} .type`).textContent = stats.servers[i].type
+                    document.querySelector(`#table-item-${i} .uptime`).textContent = stats.servers[i].uptime == "1 天" ? "1 Day" : stats.servers[i].uptime.replace(/天/, "Days")
+                    document.querySelector(`#table-item-${i} .network`).textContent = `${byteConvert(stats.servers[i].network_tx)}↑ ${byteConvert(stats.servers[i].network_rx)}↓`
+                    document.querySelector(`#table-item-${i} .traffic`).textContent = `${byteConvert(stats.servers[i].network_out)}↑ ${byteConvert(stats.servers[i].network_in)}↓`
+                    document.querySelector(`#table-item-${i} .cpu .progress-bar`).style.width = `${Math.round(stats.servers[i].cpu)}%`
+                    document.querySelector(`#table-item-${i} .cpu .progress-bar`).style.backgroundColor = progressConvert(Math.round(stats.servers[i].cpu))
+                    document.querySelector(`#table-item-${i} .cpu .progress-bar div`).textContent = `${Math.round(stats.servers[i].cpu)}%`
+                    document.querySelector(`#table-item-${i} .mem .progress-bar`).style.width = `${Math.round(stats.servers[i].memory_used / stats.servers[i].memory_total * 100)}%`
+                    document.querySelector(`#table-item-${i} .mem .progress-bar`).style.backgroundColor = progressConvert(Math.round(stats.servers[i].memory_used / stats.servers[i].memory_total * 100))
+                    document.querySelector(`#table-item-${i} .mem .progress-bar div`).textContent = `${Math.round(stats.servers[i].memory_used / stats.servers[i].memory_total * 100)}%`
+                    document.querySelector(`#table-item-${i} .hdd .progress-bar`).style.width = `${Math.round(stats.servers[i].hdd_used / stats.servers[i].hdd_total * 100)}%`
+                    document.querySelector(`#table-item-${i} .hdd .progress-bar`).style.backgroundColor = progressConvert(Math.round(stats.servers[i].hdd_used / stats.servers[i].hdd_total * 100))
+                    document.querySelector(`#table-item-${i} .hdd .progress-bar div`).textContent = `${Math.round(stats.servers[i].hdd_used / stats.servers[i].hdd_total * 100)}%`
+                    document.querySelector(`#table-item-${i} .status-dot`).style.backgroundColor = Math.round(stats.servers[i].cpu) <= 70 ? "" : "#faae42"
+                    document.querySelector(`#table-item-${i} .status-info`).textContent = Math.round(stats.servers[i].cpu) <= 70 ? "Available" : "Busy"
+                } else {
+                    document.querySelector(`#table-item-${i}`).onclick = null
+                    document.querySelector(`#table-item-${i}`).style.borderColor = "#e62965"
+                    document.querySelector(`#table-item-${i} .flag`).src = `https://z-fs.cols.ro/flags/square/${stats.servers[i].location.toLowerCase()}.svg`
+                    document.querySelector(`#table-item-${i} .location`).textContent = stats.servers[i].location
+                    document.querySelector(`#table-item-${i} .type`).textContent = stats.servers[i].type
+                    document.querySelector(`#table-item-${i} .uptime`).textContent = "Offline"
+                    document.querySelector(`#table-item-${i} .network`).textContent = "-"
+                    document.querySelector(`#table-item-${i} .traffic`).textContent = "-"
+                    document.querySelector(`#table-item-${i} .cpu .progress-bar`).style.width = "100%"
+                    document.querySelector(`#table-item-${i} .cpu .progress-bar`).style.backgroundColor = "#e62965"
+                    document.querySelector(`#table-item-${i} .cpu .progress-bar div`).textContent = "Offline"
+                    document.querySelector(`#table-item-${i} .mem .progress-bar`).style.width = "100%"
+                    document.querySelector(`#table-item-${i} .mem .progress-bar`).style.backgroundColor = "#e62965"
+                    document.querySelector(`#table-item-${i} .mem .progress-bar div`).textContent = "Offline"
+                    document.querySelector(`#table-item-${i} .hdd .progress-bar`).style.width = "100%"
+                    document.querySelector(`#table-item-${i} .hdd .progress-bar`).style.backgroundColor = "#e62965"
+                    document.querySelector(`#table-item-${i} .hdd .progress-bar div`).textContent = "Offline"
+                    document.querySelector(`#table-item-${i} .status-dot`).style.backgroundColor = "#a2a5b9"
+                    document.querySelector(`#table-item-${i} .status-info`).textContent = "Offline"
+                }
+            } catch {
+                document.querySelector(`#table-item-${i}`).onclick = null
+                document.querySelector(`#table-item-${i}`).style.borderColor = "#e62965"
+                document.querySelector(`#table-item-${i} .uptime`).textContent = "Offline"
+                document.querySelector(`#table-item-${i} .network`).textContent = "-"
+                document.querySelector(`#table-item-${i} .traffic`).textContent = "-"
+                document.querySelector(`#table-item-${i} .cpu .progress-bar`).style.width = "100%"
+                document.querySelector(`#table-item-${i} .cpu .progress-bar`).style.backgroundColor = "#e62965"
+                document.querySelector(`#table-item-${i} .cpu .progress-bar`).textContent = "Offline"
+                document.querySelector(`#table-item-${i} .mem .progress-bar`).style.width = "100%"
+                document.querySelector(`#table-item-${i} .mem .progress-bar`).style.backgroundColor = "#e62965"
+                document.querySelector(`#table-item-${i} .mem .progress-bar`).textContent = "Offline"
+                document.querySelector(`#table-item-${i} .hdd .progress-bar`).style.width = "100%"
+                document.querySelector(`#table-item-${i} .hdd .progress-bar`).style.backgroundColor = "#e62965"
+                document.querySelector(`#table-item-${i} .hdd .progress-bar`).textContent = "Offline"
+                document.querySelector(`#table-item-${i} .status-dot`).style.backgroundColor = "#a2a5b9"
+                document.querySelector(`#table-item-${i} .status-info`).textContent = "Offline"
+            }
+        }
+    })()
+}, 3000);
+
+let getDetails = (item, data) => {
+    document.querySelector(item).onclick = () => {
+        Swal.fire({
+            html: `<div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: center;">
+                <img style="margin-right: 10px; height: 50px;" src="https://z-fs.cols.ro/flags/rounded-rectangle/${data.location.toLowerCase()}.svg" alt>
+                <h2>${data.name}</h2>
+            </div>
+            <div style="margin: 0 auto 10px; width: 350px; text-align: left; display: flex;"><p style="width: 35%;">Type:</p><p style="width: 65%;">${data.type}</p></div>
+            <div style="margin: 0 auto 10px; width: 350px; text-align: left; display: flex;"><p style="width: 35%;">Uptime:</p><p style="width: 65%;">${data.uptime == "1 天" ? "1 Day" : data.uptime.replace(/天/, "Days")}</p></div>
+            <div style="margin: 0 auto 10px; width: 350px; text-align: left; display: flex;"><p style="width: 35%;">CPU:</p><p style="width: 65%;">${data.cpu}%</p></div>
+            <div style="margin: 0 auto 10px; width: 350px; text-align: left; display: flex;"><p style="width: 35%;">Memory:</p><p style="width: 65%;">${Math.round(data.memory_used / data.memory_total * 100)}% (${byteConvert2(data.memory_used)} / ${byteConvert2(data.memory_total)})</p></div>
+            <div style="margin: 0 auto 10px; width: 350px; text-align: left; display: flex;"><p style="width: 35%;">Swap:</p><p style="width: 65%;">${data.swap_used == 0 ? "None" : `${Math.round(data.swap_used / data.swap_total * 100)}% (${byteConvert2(data.swap_used)} / ${byteConvert2(data.swap_total)})</p></div>`}</p></div>
+            <div style="margin: 0 auto 10px; width: 350px; text-align: left; display: flex;"><p style="width: 35%;">HDD:</p><p style="width: 65%;">${Math.round(data.hdd_used / data.hdd_total * 100)}% (${byteConvert2(data.hdd_used * 1024)} / ${byteConvert2(data.hdd_total * 1024)})</p></div>
+            <div style="margin: 0 auto 10px; width: 350px; text-align: left; display: flex;"><p style="width: 35%;">Network:</p><p style="width: 65%;">${byteConvert(data.network_tx)}↑ ${byteConvert(data.network_rx)}↓</p></div>
+            <div style="margin: 0 auto 10px; width: 350px; text-align: left; display: flex;"><p style="width: 35%;">Traffic:</p><p style="width: 65%;">${byteConvert(data.network_out)}↑ ${byteConvert(data.network_in)}↓</p></div>`,
+            showConfirmButton: false
+        })
+    }
 }
+
+let byteConvert = (data) => {
+    if (data < 1024) {
+        return data.toFixed(0) + 'B'
+    } else if (data < 1024 * 1024) {
+        return (data / 1024).toFixed(0) + 'K'
+    } else if (data < 1024 * 1024 * 1024) {
+        return (data / 1024 / 1024).toFixed(1) + 'M'
+    } if (data < 1024 * 1024 * 1024 * 1024) {
+        return (data / 1024 / 1024 / 1024).toFixed(2) + 'G'
+    } else {
+        return (data / 1024 / 1024 / 1024 / 1024).toFixed(2) + 'T'
+    }
+}
+
+let byteConvert2 = (data) => {
+    if (data < 1024) {
+        return data.toFixed(0) + 'KiB'
+    } else if (data < 1024 * 1024) {
+        return (data / 1024).toFixed(0) + 'MiB'
+    } else if (data < 1024 * 1024 * 1024) {
+        return (data / 1024 / 1024).toFixed(1) + 'GiB'
+    } else {
+        return (data / 1024 / 1024 / 1024).toFixed(2) + 'TiB'
+    }
+}
+
+let progressConvert = (data) => {
+    if (data <= 70) {
+        return ""
+    } else if (data <= 90) {
+        return "#faae42"
+    } else {
+        return "#e62965"
+    }
+}
+

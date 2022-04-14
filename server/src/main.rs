@@ -98,7 +98,7 @@ async fn main_service_func(req: Request<Body>) -> Result<Response<Body>> {
     let req_path = req.uri().path();
     match (req.method(), req_path) {
         (&Method::POST, "/report") => stats_report(req).await,
-        (&Method::GET, "/json/stats.json") => get_stats_json().await,
+        (&Method::GET, "/stats.json") => get_stats_json().await,
         (&Method::POST, "/admin") => handle_admin_cmd(req).await,
         (&Method::GET, "/") | (&Method::GET, "/index.html") => {
             let body = Body::from(Asset::get("/index.html").unwrap().data);
@@ -109,8 +109,7 @@ async fn main_service_func(req: Request<Body>) -> Result<Response<Body>> {
         _ => {
             if req.method() == Method::GET
                 && (req_path.starts_with("/js/")
-                    || req_path.starts_with("/css/")
-                    || req_path.starts_with("/img/"))
+                    || req_path.starts_with("/css/"))
             {
                 if let Some(data) = Asset::get(req_path) {
                     let ct = mime_guess::from_path(req_path);
