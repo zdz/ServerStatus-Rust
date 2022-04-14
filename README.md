@@ -37,7 +37,39 @@
 ## 2.快速部署
 
 ```bash
-# for x86_64
+# 下载脚本
+wget --no-check-certificate -qO one-touch.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/one-touch.sh'
+
+# 安装 服务端
+bash one-touch.sh -i -s
+
+# 安装 客户端
+bash one-touch.sh -i -c
+# or
+bash one-touch.sh -i -c protocol://username:password@master:port
+# eg:
+bash one-touch.sh -i -c tcp://h1:p1@127.0.0.1:34512
+bash one-touch.sh -i -c http://h1:p1@127.0.0.1:8080
+
+# 更多用法：
+❯ bash one-touch.sh 
+
+help:
+    -i,--install    安装 Status
+        -i -s           安装 Server
+        -i -c           安装 Client
+        -i -c conf      自动安装 Client
+    -u,--uninstall  卸载 Status
+        -u -s           卸载 Server
+        -u -c           卸载 Client
+    -r,--reset      更改 Status 配置
+        -r          更改 Client 配置
+        -r conf         自动更改 Client配置
+    -s,--server     管理 Status 运行状态
+        -s {start|stop|restart}
+    -c,--client     管理 Client 运行状态
+        -c {start|stop|restart}
+
 mkdir -p /opt/ServerStatus && cd /opt/ServerStatus
 # apt install -y unzip / yum install -y unzip
 wget --no-check-certificate -qO one-touch.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/one-touch.sh'
