@@ -11,6 +11,9 @@
 - [Rust 版 ServerStatus 云探针](#rust-版-serverstatus-云探针)
   - [1.介绍](#1介绍)
   - [2.快速部署](#2快速部署)
+    - [2.1 快速体验](#21-快速体验)
+    - [2.2 服务管理脚本部署，感谢 @Colsro 提供](#22-服务管理脚本部署感谢-colsro-提供)
+    - [2.3 Railway 部署](#23-railway-部署)
   - [3.服务端说明](#3服务端说明)
     - [3.1 配置文件 `config.toml`](#31-配置文件-configtoml)
     - [3.2 服务端运行](#32-服务端运行)
@@ -28,7 +31,6 @@
 - 支持 `http` 协议上报，可配合 `cf` 等优化上报链路
 - 支持 `railway` 快速部署
 - 支持 `systemd`, 开机自启
-- 更小 `docker` 镜像
 
 演示：https://tz-rust.vercel.app
 | 下载：[Releases](https://github.com/zdz/ServerStatus-Rust/releases)
@@ -36,6 +38,7 @@
 
 ## 2.快速部署
 
+### 2.1 快速体验
 ```bash
 # for x86_64
 mkdir -p /opt/ServerStatus && cd /opt/ServerStatus
@@ -46,8 +49,9 @@ bash -ex one-touch.sh
 # 自定义部署可参照 one-touch.sh 脚本
 ```
 
+### 2.2 服务管理脚本部署，感谢 [@Colsro](https://github.com/Colsro) 提供
 <details>
-  <summary>服务管理脚本</summary>
+  <summary>服务管理脚本使用说明</summary>
 
 ```bash
 # 下载脚本
@@ -65,7 +69,7 @@ bash status.sh -i -c tcp://h1:p1@127.0.0.1:34512
 bash status.sh -i -c http://h1:p1@127.0.0.1:8080
 
 # 更多用法：
-❯ bash status.sh 
+❯ bash status.sh
 
 help:
     -i,--install    安装 Status
@@ -86,10 +90,13 @@ help:
 ```
 </details>
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/kzT46l?referralCode=pJYbdU)
+
+### 2.3 Railway 部署
 
 懒得配置 `Nginx`，`SSL` 证书？试试
 [在 Railway 部署 Server 教程](https://github.com/zdz/ServerStatus-Rust/wiki/Railway)
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/kzT46l?referralCode=pJYbdU)
 
 ## 3.服务端说明
 
@@ -320,4 +327,3 @@ OPTIONS:
 ## 7.相关项目
 - https://github.com/cppla/ServerStatus
 - https://github.com/BotoX/ServerStatus
-
