@@ -87,6 +87,9 @@ help:
     -c,--client     管理 Client 运行状态
         -c {start|stop|restart}
 
+若无法访问 Github: 
+    CN=true bash status.sh args
+# 可能有点用
 ```
 </details>
 
