@@ -10,8 +10,13 @@ Tip="\033[32m[注意]\033[0m"
 
 client_dir=/usr/local/ServerStatus/client/
 server_dir=/usr/local/ServerStatus/server/
-client_conf=/lib/systemd/system/stat-client.service
-server_conf=/lib/systemd/system/stat-server.service
+client_conf=/lib/systemd/system/stat_client.service
+server_conf=/lib/systemd/system/stat_server.service
+
+if [ "${MIRROR}" = CN ]; then
+    echo cn
+fi
+
 
 function sshelp() {  
     printf "
@@ -29,7 +34,9 @@ help:\n\
     -s,--server     管理 Status 运行状态\n\
         -s {start|stop|restart}\n\
     -c,--client     管理 Client 运行状态\n\
-        -c {start|stop|restart}\n\
+        -c {start|stop|restart}\n\n\
+若无法访问 Github: \n\
+    CN=true bash status.sh args
 \n"
 }
 
@@ -101,10 +108,10 @@ function get_conf() {
 
 # 检查服务
 check_server() {
-    SPID=$(pgrep -f "stat-server")
+    SPID=$(pgrep -f "stat_server")
 }
 check_client() {
-    CPID=$(pgrep -f "stat-client")
+    CPID=$(pgrep -f "stat_client")
 }
 
 # 写入 systemd 配置
@@ -120,7 +127,7 @@ After=network.target
 #Group=nobody
 Environment="RUST_BACKTRACE=1"
 WorkingDirectory=/usr/local/ServerStatus
-ExecStart=/usr/local/ServerStatus/server/stat-server -c /usr/local/ServerStatus/server/config.toml
+ExecStart=/usr/local/ServerStatus/server/stat_server -c /usr/local/ServerStatus/server/config.toml
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 
@@ -140,7 +147,7 @@ User=root
 Group=root
 Environment="RUST_BACKTRACE=1"
 WorkingDirectory=/usr/local/ServerStatus
-ExecStart=/usr/local/ServerStatus/client/stat-client -a "${PROTOCOL}://${MASTER}" -u ${USER} -p ${PASSWD}
+ExecStart=/usr/local/ServerStatus/client/stat_client -a "${PROTOCOL}://${MASTER}" -u ${USER} -p ${PASSWD}
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 
@@ -154,13 +161,13 @@ function ssserver() {
     INCMD="$1"; shift
     case ${INCMD} in
         stop)
-            systemctl stop stat-server
+            systemctl stop stat_server
         ;;
         start)
-            systemctl start stat-server
+            systemctl start stat_server
         ;;
         restart)
-            systemctl restart stat-server
+            systemctl restart stat_server
         ;;
         *)
             sshelp
@@ -171,13 +178,13 @@ function ssclient() {
     INCMD="$1"; shift
     case ${INCMD} in
         stop)
-            systemctl stop stat-client
+            systemctl stop stat_client
         ;;
         start)
-            systemctl start stat-client
+            systemctl start stat_client
         ;;
         restart)
-            systemctl restart stat-client
+            systemctl restart stat_client
         ;;
         *)
            sshelp
@@ -188,8 +195,8 @@ function ssclient() {
 # 启用服务
 function enable_server() {
     write_server
-    systemctl enable stat-server
-    systemctl start stat-server
+    systemctl enable stat_server
+    systemctl start stat_server
     check_server
     if [[ -n ${SPID} ]]; then
         echo -e "${Info} Status Server 启动成功！"
@@ -199,8 +206,8 @@ function enable_server() {
 }
 function enable_client() {
     write_client
-    systemctl enable stat-client
-    systemctl start stat-client
+    systemctl enable stat_client
+    systemctl start stat_client
     check_client
     if [[ -n ${CPID} ]]; then
         echo -e "${Info} Status Client 启动成功！"
@@ -211,7 +218,7 @@ function enable_client() {
 
 function restart_client() {
     systemctl daemon-reload
-    systemctl restart stat-client
+    systemctl restart stat_client
     check_client
     if [[ -n ${CPID} ]]; then
         echo -e "${Info} Status Client 启动成功！"
@@ -223,9 +230,13 @@ function restart_client() {
 
 # 获取二进制文件
 function get_status() {
+    if [ "${CN}" = true ]; then
+    MIRROR="https://gh-proxy.com/"
+    fi
     install_tool
-    rm ServerStatus-${arch}-unknown-linux-musl.zip stat_*
-    cd /tmp && wget "https://github.com/zdz/Serverstatus-Rust/releases/latest/download/ServerStatus-${arch}-unknown-linux-musl.zip"
+    rm -f ServerStatus-${arch}-unknown-linux-musl.zip stat_*
+    cd /tmp || exit
+    wget "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/ServerStatus-${arch}-unknown-linux-musl.zip"
     unzip -o ServerStatus-${arch}-unknown-linux-musl.zip
 }
 
@@ -234,17 +245,17 @@ function install_server() {
     echo -e "${Info} 下载 ${arch} 二进制文件"
     [ -f "/tmp/stat_server" ] || get_status
     mkdir -p ${server_dir}
-    mv /tmp/stat_server /usr/local/ServerStatus/server/stat-server
+    mv /tmp/stat_server /usr/local/ServerStatus/server/stat_server
     mv /tmp/config.toml /usr/local/ServerStatus/server/config.toml
-    chmod +x /usr/local/ServerStatus/server/stat-server
+    chmod +x /usr/local/ServerStatus/server/stat_server
     enable_server
 }
 function install_client() {
     echo -e "${Info} 下载 ${arch} 二进制文件"
     [ -f "/tmp/stat_client" ] || get_status
     mkdir -p ${client_dir}
-    mv /tmp/stat_client /usr/local/ServerStatus/client/stat-client
-    chmod +x /usr/local/ServerStatus/client/stat-client
+    mv /tmp/stat_client /usr/local/ServerStatus/client/stat_client
+    chmod +x /usr/local/ServerStatus/client/stat_client
     input_upm
     get_conf
     enable_client
@@ -266,18 +277,18 @@ function reset_conf() {
 
 # 卸载服务
 function uninstall_server() {
-    echo -e "${Error} 开始卸载 Server"
-    systemctl stop stat-server
-    systemctl disable stat-server
+    echo -e "${Tip} 开始卸载 Server"
+    systemctl stop stat_server
+    systemctl disable stat_server
     rm -rf /usr/local/ServerStatus/server/
-    rm -rf /usr/lib/systemd/system/stat-server.service
+    rm -rf /usr/lib/systemd/system/stat_server.service
 }
 function uninstall_client() {
-    echo -e "${Error} 开始卸载 Client"
-    systemctl stop stat-client
-    systemctl disable stat-client
+    echo -e "${Tip} 开始卸载 Client"
+    systemctl stop stat_client
+    systemctl disable stat_client
     rm -rf /usr/local/ServerStatus/client/
-    rm -rf /usr/lib/systemd/system/stat-client.service
+    rm -rf /usr/lib/systemd/system/stat_client.service
 }
 
 function ssinstall() {
@@ -290,8 +301,8 @@ function ssinstall() {
             if [ ! "$#" = 0 ]; then
                 echo -e "${Info} 下载 ${arch} 二进制文件"
                 [ -f "/tmp/stat_client" ] || get_status
-                mv /tmp/stat_client /usr/local/ServerStatus/client/stat-client
-                chmod +x /usr/local/ServerStatus/client/stat-client
+                mv /tmp/stat_client /usr/local/ServerStatus/client/stat_client
+                chmod +x /usr/local/ServerStatus/client/stat_client
                 UPM="$1"; shift
                 get_conf
                 enable_client
