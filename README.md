@@ -46,6 +46,46 @@ bash -ex one-touch.sh
 # 自定义部署可参照 one-touch.sh 脚本
 ```
 
+<details>
+  <summary>服务管理脚本</summary>
+
+```bash
+# 下载脚本
+wget --no-check-certificate -qO status.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh'
+
+# 安装 服务端
+bash status.sh -i -s
+
+# 安装 客户端
+bash status.sh -i -c
+# or
+bash status.sh -i -c protocol://username:password@master:port
+# eg:
+bash status.sh -i -c tcp://h1:p1@127.0.0.1:34512
+bash status.sh -i -c http://h1:p1@127.0.0.1:8080
+
+# 更多用法：
+❯ bash status.sh 
+
+help:
+    -i,--install    安装 Status
+        -i -s           安装 Server
+        -i -c           安装 Client
+        -i -c conf      自动安装 Client
+    -u,--uninstall  卸载 Status
+        -u -s           卸载 Server
+        -u -c           卸载 Client
+    -r,--reset      更改 Status 配置
+        -r          更改 Client 配置
+        -r conf         自动更改 Client配置
+    -s,--server     管理 Status 运行状态
+        -s {start|stop|restart}
+    -c,--client     管理 Client 运行状态
+        -c {start|stop|restart}
+
+```
+</details>
+
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/kzT46l?referralCode=pJYbdU)
 
 懒得配置 `Nginx`，`SSL` 证书？试试
