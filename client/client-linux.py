@@ -218,8 +218,10 @@ def _net_speed():
             now_clock = time.time()
             netSpeed["diff"] = now_clock - netSpeed["clock"]
             netSpeed["clock"] = now_clock
-            netSpeed["netrx"] = int((avgrx - netSpeed["avgrx"]) / netSpeed["diff"])
-            netSpeed["nettx"] = int((avgtx - netSpeed["avgtx"]) / netSpeed["diff"])
+            netSpeed["netrx"] = int(
+                (avgrx - netSpeed["avgrx"]) / netSpeed["diff"])
+            netSpeed["nettx"] = int(
+                (avgtx - netSpeed["avgtx"]) / netSpeed["diff"])
             netSpeed["avgrx"] = avgrx
             netSpeed["avgtx"] = avgtx
         time.sleep(INTERVAL)
@@ -360,7 +362,8 @@ def tcp_report(vnstat=False):
                 array['network_tx'] = netSpeed.get("nettx")
 
                 if vnstat:
-                    (network_in, network_out, m_network_in, m_network_out) = get_vnstat_traffic()
+                    (network_in, network_out, m_network_in,
+                     m_network_out) = get_vnstat_traffic()
                     array['network_in'] = network_in
                     array['network_out'] = network_out
                     array['last_network_in'] = network_in - m_network_in
@@ -404,9 +407,11 @@ from datetime import datetime
 from requests.auth import HTTPBasicAuth
 from optparse import OptionParser
 
+
 def get_vnstat_traffic():
     now = datetime.now()
-    vnstat_res = subprocess.check_output("/usr/bin/vnstat --json m", shell=True)
+    vnstat_res = subprocess.check_output(
+        "/usr/bin/vnstat --json m", shell=True)
     json_dict = json.loads(vnstat_res)
     network_in, network_out, m_network_in, m_network_out = (0, 0, 0, 0)
     ignore_list = ["docker", "vnet", "veth", "vmbr", "kube", "br-"]
@@ -432,10 +437,18 @@ def get_vnstat_traffic():
 
     return (network_in, network_out, m_network_in, m_network_out)
 
+
 def get_target_network(url):
     ipv4, ipv6 = False, False
     arr = url.split("/")
-    for response in socket.getaddrinfo(arr[2], arr[0].replace(":", "")):
+    proto = arr[0].replace(":", "")
+    t = arr[2].split(":")
+    if len(t) == 2:
+        host, port = t
+    else:
+        host = t[0]
+        port = 443 if proto == "https" else 80
+    for response in socket.getaddrinfo(host, port):
         family, _, _, _, sockaddr = response
         print(family, sockaddr)
         if family == socket.AddressFamily.AF_INET:
@@ -443,6 +456,7 @@ def get_target_network(url):
         elif family == socket.AddressFamily.AF_INET6:
             ipv6 = True
     return ipv4, ipv6
+
 
 def http_report(addr, username, password, vnstat=False):
     socket.setdefaulttimeout(30)
@@ -504,7 +518,8 @@ def http_report(addr, username, password, vnstat=False):
             array['tcp'], array['udp'], array['process'], array['thread'] = tupd()
 
             if vnstat:
-                (network_in, network_out, m_network_in, m_network_out) = get_vnstat_traffic()
+                (network_in, network_out, m_network_in,
+                 m_network_out) = get_vnstat_traffic()
                 array['network_in'] = network_in
                 array['network_out'] = network_out
                 array['last_network_in'] = network_in - m_network_in
@@ -539,14 +554,19 @@ def main():
     """
     parser = OptionParser(usage)
 
-    parser.add_option("-a", "--addr", dest="addr", default="http://127.0.0.1:8080/report", help="http/tcp addr")
-    parser.add_option("-u", "--user", dest="username", default="h1", help="auth user")
-    parser.add_option("-p", "--pass", dest="password", default="p1", help="auth pass")
-    parser.add_option("-n", "--vnstat", default=False, action="store_true", help="enable vnstat")
+    parser.add_option("-a", "--addr", dest="addr",
+                      default="http://127.0.0.1:8080/report", help="http/tcp addr")
+    parser.add_option("-u", "--user", dest="username",
+                      default="h1", help="auth user")
+    parser.add_option("-p", "--pass", dest="password",
+                      default="p1", help="auth pass")
+    parser.add_option("-n", "--vnstat", default=False,
+                      action="store_true", help="enable vnstat")
 
     (options, args) = parser.parse_args()
     if options.addr.startswith("http"):
-        http_report(options.addr, options.username, options.password, options.vnstat)
+        http_report(options.addr, options.username,
+                    options.password, options.vnstat)
     elif options.addr.startswith("tcp"):
         global SERVER, PORT, USER, PASSWORD, INTERVAL
         arr = options.addr.replace("tcp://", "").split(":")
@@ -558,6 +578,7 @@ def main():
         tcp_report(options.vnstat)
     else:
         print("invalid addr scheme")
+
 
 if __name__ == '__main__':
     main()
