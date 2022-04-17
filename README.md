@@ -113,7 +113,7 @@ http_addr = "0.0.0.0:8080"
 offline_threshold = 30
 
 # name 主机唯一标识，不可重复，alias 为展示名
-# disabled = true
+# disabled = true 单机禁用
 # notify = false 是可以单独禁止单台机器的告警，一般针对网络差，频繁上下线
 # ansible 批量部署时可以用主机 hostname 作为 name，统一密码
 hosts = [
