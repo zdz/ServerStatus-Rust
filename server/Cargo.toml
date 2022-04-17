@@ -1,7 +1,7 @@
 [package]
 edition = "2021"
 name = "stat_server"
-version = "1.3.4"
+version = "1.3.6"
 
 authors = ["doge <doge.py@gmail.com>"]
 categories = ["monitoring-tools"]
