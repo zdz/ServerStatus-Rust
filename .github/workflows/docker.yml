@@ -3,13 +3,13 @@ name: Docker
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 env:
   APP_NAME: stat_server
-  APP_VERSION: '1.0'
+  APP_VERSION: "1.0"
   DOCKERHUB_REPO: idoge/stat_server
-  GIT_TAG: ''
+  GIT_TAG: ""
 
 jobs:
   main:
@@ -46,5 +46,4 @@ jobs:
           push: true
           tags: |
             ${{ env.DOCKERHUB_REPO }}:latest
-            ${{ env.DOCKERHUB_REPO }}:${{ env.APP_VERSION }}
-
+            ${{ env.DOCKERHUB_REPO }}:${{ env.GIT_TAG }}
