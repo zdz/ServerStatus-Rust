@@ -4,11 +4,12 @@ http_addr = "0.0.0.0:8080"
 offline_threshold = 30
 
 # name 主机唯一标识，不可重复，alias 为展示名
-# disable_notify = true 是可以单独禁止单台机器的告警，一般针对网络差，频繁上下线
+# disabled = true
+# notify = false 是可以单独禁止单台机器的告警，一般针对网络差，频繁上下线
 # ansible 批量部署时可以用主机 hostname 作为 name，统一密码
 hosts = [
-  {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm", disable_notify = false},
-  {name = "h2", password = "p2", alias = "n2", location = "🏢", type = "kvm", monthstart = 1},
+  {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm", notify = true},
+  {name = "h2", password = "p2", alias = "n2", location = "🏢", type = "kvm", monthstart = 1, disabled = false},
 ]
 
 # 使用vnstat来更精准统计月流量，开启参考下面 vnstat 一节

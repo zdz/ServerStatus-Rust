@@ -139,7 +139,7 @@ impl StatsMgr {
                     {
                         let mut host_stat_map = stat_dict_1.lock().unwrap();
                         if let Some(pre_stat) = host_stat_map.get(&info.name) {
-                            if !info.disable_notify
+                            if info.notify
                                 && (pre_stat.latest_ts + cfg.offline_threshold < stat_t.latest_ts)
                             {
                                 // node up notify
@@ -182,7 +182,7 @@ impl StatsMgr {
                     }
 
                     if let Some(info) = cfg.get_host(o.name.as_str()) {
-                        if !info.disable_notify {
+                        if info.notify {
                             // notify check /30 s
                             if latest_notify_ts + cfg.notify_interval < resp.updated {
                                 if o.online4 || o.online6 {

@@ -7,6 +7,10 @@ use std::fs;
 
 use crate::notifier;
 
+fn default_as_true() -> bool {
+    true
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Host {
     pub name: String,
@@ -18,8 +22,8 @@ pub struct Host {
     pub host_type: String,
     #[serde(default = "u32::default")]
     pub monthstart: u32,
-    #[serde(default = "bool::default")]
-    pub disable_notify: bool,
+    #[serde(default = "default_as_true")]
+    pub notify: bool,
     #[serde(default = "bool::default")]
     pub disabled: bool,
 
