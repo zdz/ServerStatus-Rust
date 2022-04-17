@@ -300,6 +300,7 @@ def sample(options, online4, online6):
     stat_data['time_189'] = G_PING_TIME.get('189')
     stat_data['time_10086'] = G_PING_TIME.get('10086')
 
+    stat_data['vnstat'] = options.vnstat
     if options.vnstat:
         (network_in, network_out, m_network_in,
          m_network_out) = get_vnstat_traffic()

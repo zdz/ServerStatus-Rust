@@ -16,7 +16,10 @@ pub struct Host {
     pub location: String,
     #[serde(rename = "type")]
     pub host_type: String,
+    #[serde(default = "u32::default")]
     pub monthstart: u32,
+    #[serde(default = "bool::default")]
+    pub disable_notify: bool,
     #[serde(default = "bool::default")]
     pub disabled: bool,
 
@@ -40,8 +43,8 @@ pub struct Config {
     pub offline_threshold: u64,
     // pub admin_user: String,
     // pub admin_pass: String,
-    #[serde(default = "bool::default")]
-    pub vnstat: bool,
+    // #[serde(default = "bool::default")]
+    // pub vnstat: bool,
     #[serde(default = "Default::default")]
     pub tgbot: notifier::tgbot::Config,
     #[serde(default = "Default::default")]
@@ -51,15 +54,18 @@ pub struct Config {
     pub hosts: Vec<Host>,
 
     #[serde(skip_deserializing)]
-    auth_map: HashMap<String, String>,
+    pub hosts_map: HashMap<String, Host>,
 }
 
 impl Config {
     pub fn auth(&self, user: &str, pass: &str) -> bool {
-        if let Some(o) = self.auth_map.get(user) {
-            return pass.eq(o);
+        if let Some(o) = self.hosts_map.get(user) {
+            return pass.eq(o.password.as_str());
         }
         false
+    }
+    pub fn get_host(&self, name: &str) -> Option<&Host> {
+        self.hosts_map.get(name)
     }
 }
 
@@ -72,14 +78,17 @@ pub fn test_from_file(cfg: &str) -> Result<Config> {
 
 pub fn from_str(content: &str) -> Option<Config> {
     let mut o = toml::from_str::<Config>(content).unwrap();
-    o.auth_map = HashMap::new();
+    o.hosts_map = HashMap::new();
+
     for (idx, host) in o.hosts.iter_mut().enumerate() {
         host.pos = idx;
         if host.alias.is_empty() {
             host.alias = host.name.to_owned();
         }
-        o.auth_map
-            .insert(host.name.to_owned(), host.password.to_owned());
+        if host.monthstart < 1 || host.monthstart > 31 {
+            host.monthstart = 1;
+        }
+        o.hosts_map.insert(host.name.to_owned(), host.clone());
     }
     if o.notify_interval < 30 {
         o.notify_interval = 30;
@@ -94,7 +103,7 @@ pub fn from_str(content: &str) -> Option<Config> {
 pub fn from_env() -> Option<Config> {
     from_str(
         env::var("SRV_CONF")
-            .expect("can't load config from env")
+            .expect("can't load config from env `SRV_CONF")
             .as_str(),
     )
 }

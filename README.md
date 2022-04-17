@@ -112,15 +112,16 @@ http_addr = "0.0.0.0:8080"
 # 默认30s无上报判定下线
 offline_threshold = 30
 
-# 使用vnstat来更精准统计月流量，开启参考下面 vnstat 一节
-vnstat = false
-
 # name 主机唯一标识，不可重复，alias 为展示名
-# 批量部署时可以用主机 hostname 作为 name，统一密码
+# ansible 批量部署时可以用主机 hostname 作为 name，统一密码
 hosts = [
-  {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm", monthstart = 1},
+  {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm", disable_notify = false},
   {name = "h2", password = "p2", alias = "n2", location = "🏢", type = "kvm", monthstart = 1},
 ]
+
+# 使用vnstat来更精准统计月流量，开启参考下面 vnstat 一节
+# 从 v1.3.6 不再需要在 server 配置开启，client 自由选择启用与否，client 可部分打开，部分关闭
+vnstat = false
 
 # 不开启告警，可忽略后面配置，或者删除不需的通知方式
 # 告警间隔默认为30s
@@ -132,7 +133,7 @@ enabled = false
 bot_token = "<tg bot token>"
 chat_id = "<chat id>"
 # host 可用字段参见 payload.rs 文件 HostStat 结构, {{host.xxx}} 为占位变量
-# 例如 host.name 可替换为 host.alias，自己根据喜好来编写通知消息
+# 例如 host.name 可替换为 host.alias，大家根据喜好来编写通知消息
 title = "❗<b>Server Status</b>"
 online_tpl  = "{{config.title}} \n😆 {{host.location}} 的 {{host.name}} 主机恢复上线啦"
 offline_tpl = "{{config.title}} \n😱 {{host.location}} 的 {{host.name}} 主机已经掉线啦"
@@ -251,6 +252,7 @@ vnstat -m
 vnstat --json m
 
 # server config.toml 开启 vnstat
+# 从 v1.3.6 不再需要在 server 配置开启，client 自由选择启用与否，client 可部分打开，部分关闭
 vnstat = true
 
 # client 使用 -n 参数开启 vnstat 统计

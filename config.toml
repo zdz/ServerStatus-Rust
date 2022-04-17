@@ -3,17 +3,19 @@ http_addr = "0.0.0.0:8080"
 # 默认30s无上报判定下线
 offline_threshold = 30
 
-# 使用vnstat来更精准统计月流量，开启参考下面 vnstat 一节
-vnstat = false
-
 # name 主机唯一标识，不可重复，alias 为展示名
-# 批量部署时可以用主机 hostname 作为 name，统一密码
+# disable_notify = true 是可以单独禁止单台机器的告警，一般针对网络差，频繁上下线
+# ansible 批量部署时可以用主机 hostname 作为 name，统一密码
 hosts = [
-  {name = "h1", password = "p1", alias = "n1", location = "🇨🇳", type = "kvm", monthstart = 1},
-  {name = "h2", password = "p2", alias = "n2", location = "🇺🇸", type = "kvm", monthstart = 1},
+  {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm", disable_notify = false},
+  {name = "h2", password = "p2", alias = "n2", location = "🏢", type = "kvm", monthstart = 1},
 ]
 
-# 不开启告警，可忽略后面配置
+# 使用vnstat来更精准统计月流量，开启参考下面 vnstat 一节
+# 从 v1.3.6 不再需要在 server 配置开启，client 自由选择启用与否，client 可部分打开，部分关闭
+vnstat = false
+
+# 不开启告警，可忽略后面配置，或者删除不需的通知方式
 # 告警间隔默认为30s
 notify_interval = 30
 # https://core.telegram.org/bots/api
@@ -23,18 +25,18 @@ enabled = false
 bot_token = "<tg bot token>"
 chat_id = "<chat id>"
 # host 可用字段参见 payload.rs 文件 HostStat 结构, {{host.xxx}} 为占位变量
-# 例如 host.name 可替换为 host.alias，自己根据喜好来编写通知消息
+# 例如 host.name 可替换为 host.alias，大家根据喜好来编写通知消息
 title = "❗<b>Server Status</b>"
-online_tpl = "{{config.title}}  \n😆 {{host.location}} 的 {{host.name}} 主机恢复上线啦"
-offline_tpl = "{{config.title}} \n😱 {{host.location}} 的 {{host.name}} 主机已经掉线啦"
+online_tpl =  "{{config.title}} \n😆 {{host.location}} {{host.name}} 主机恢复上线啦"
+offline_tpl = "{{config.title}} \n😱 {{host.location}} {{host.name}} 主机已经掉线啦"
 # custom 模板置空则停用自定义告警，只保留上下线通知
 custom_tpl = """
 {% if host.memory_used / host.memory_total > 0.5  %}
-<pre>😲{{ host.name }} 主机内存使用率超50%, 当前{{ (100 * host.memory_used / host.memory_total) | round }}%  </pre>
+<pre>😲 {{host.name}} 主机内存使用率超50%, 当前{{ (100 * host.memory_used / host.memory_total) | round }}%  </pre>
 {% endif %}
 
 {% if host.hdd_used / host.hdd_total  > 0.5  %}
-<pre>😲{{ host.name }} 主机硬盘使用率超50%, 当前{{ (100 * host.hdd_used / host.hdd_total) | round }}% </pre>
+<pre>😲 {{host.name}} 主机硬盘使用率超50%, 当前{{ (100 * host.hdd_used / host.hdd_total) | round }}% </pre>
 {% endif %}
 """
 
@@ -44,15 +46,15 @@ corp_id = "<corp id>"
 corp_secret = "<corp secret>"
 agent_id = "<agent id>"
 title = "❗Server Status"
-online_tpl = "{{config.title}} \n😆 {{host.location}} 的 {{host.name}} 主机恢复上线啦"
-offline_tpl = "{{config.title}}\n😱 {{host.location}} 的 {{host.name}} 主机已经掉线啦"
+online_tpl  = "{{config.title}} \n😆 {{host.location}} 的 {{host.name}} 主机恢复上线啦"
+offline_tpl = "{{config.title}} \n😱 {{host.location}} 的 {{host.name}} 主机已经掉线啦"
 custom_tpl = """
 {% if host.memory_used / host.memory_total > 0.8  %}
-😲{{ host.name }} 主机内存使用率超80%
+😲 {{host.name}} 主机内存使用率超80%
 {% endif %}
 
-{% if host.hdd_used / host.hdd_total  > 0.8  %}
-😲{{ host.name }} 主机硬盘使用率超80%
+{% if host.hdd_used / host.hdd_total > 0.8  %}
+😲 {{host.name}} 主机硬盘使用率超80%
 {% endif %}
 """
 
@@ -64,14 +66,14 @@ password = "***"
 to = "user1@email.com;user2@email.com"
 subject = "ServerStatus Notification"
 title = "❗<b>Server Status</b><br/>"
-online_tpl = "{{config.title}}  😆 {{host.location}} 的 {{host.name}} 主机恢复上线啦"
+online_tpl  = "{{config.title}} 😆 {{host.location}} 的 {{host.name}} 主机恢复上线啦"
 offline_tpl = "{{config.title}} 😱 {{host.location}} 的 {{host.name}} 主机已经掉线啦"
 custom_tpl = """
 {% if host.memory_used / host.memory_total > 0.8  %}
-<pre>😲{{ host.name }} 主机内存使用率超80%, 当前{{ (100 * host.memory_used / host.memory_total) | round }}%  </pre>
+<pre>😲 {{host.name}} 主机内存使用率超80%, 当前{{ (100 * host.memory_used / host.memory_total) | round }}%  </pre>
 {% endif %}
 
-{% if host.hdd_used / host.hdd_total  > 0.8  %}
-<pre>😲{{ host.name }} 主机硬盘使用率超80%, 当前{{ (100 * host.hdd_used / host.hdd_total) | round }}% </pre>
+{% if host.hdd_used / host.hdd_total > 0.8  %}
+<pre>😲 {{host.name}} 主机硬盘使用率超80%, 当前{{ (100 * host.hdd_used / host.hdd_total) | round }}% </pre>
 {% endif %}
 """

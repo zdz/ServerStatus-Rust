@@ -13,10 +13,10 @@ pub struct HostStat {
     pub alias: String,
     #[serde(rename = "type", skip_deserializing)]
     pub host_type: String,
-    // #[serde(skip_deserializing)]
-    // pub host: String,
     #[serde(skip_deserializing)]
     pub location: String,
+    #[serde(default = "bool::default")]
+    pub vnstat: bool,
 
     #[serde(default = "default_as_true")]
     pub online4: bool,

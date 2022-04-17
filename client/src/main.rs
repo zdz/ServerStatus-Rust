@@ -306,6 +306,7 @@ async fn main() -> Result<()> {
     stat_base.insert("online4", serde_json::Value::from(ipv4));
     stat_base.insert("online6", serde_json::Value::from(ipv6));
     stat_base.insert("frame", serde_json::Value::from("data"));
+    stat_base.insert("vnstat", serde_json::Value::from(args.vnstat));
 
     if args.addr.starts_with("http") {
         let result = do_http_report(&args, &mut stat_base);
