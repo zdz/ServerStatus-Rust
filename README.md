@@ -9,22 +9,22 @@
 
 
 - [Rust 版 ServerStatus 云探针](#rust-版-serverstatus-云探针)
-  - [1.介绍](#1介绍)
-  - [2.快速部署](#2快速部署)
+  - [1. 介绍](#1-介绍)
+  - [2. 安装部署](#2-安装部署)
     - [2.1 快速体验](#21-快速体验)
     - [2.2 服务管理脚本部署，感谢 @Colsro 提供](#22-服务管理脚本部署感谢-colsro-提供)
     - [2.3 Railway 部署](#23-railway-部署)
-  - [3.服务端说明](#3服务端说明)
+  - [3. 服务端说明](#3-服务端说明)
     - [3.1 配置文件 `config.toml`](#31-配置文件-configtoml)
     - [3.2 服务端运行](#32-服务端运行)
-  - [4.客户端说明](#4客户端说明)
+  - [4. 客户端说明](#4-客户端说明)
     - [4.1 Linux (`CentOS`, `Ubuntu`, `Debian`)](#41-linux-centos-ubuntu-debian)
-    - [4.2 跨平台版本 (Window, Linux, etc)](#42-跨平台版本-window-linux-etc)
-  - [5.开启 `vnstat` 支持](#5开启-vnstat-支持)
-  - [6.FAQ](#6faq)
-  - [7.相关项目](#7相关项目)
+    - [4.2 跨平台版本 (`Window`, `Linux`, `...`)](#42-跨平台版本-window-linux-)
+  - [5. 开启 `vnstat` 支持](#5-开启-vnstat-支持)
+  - [6. FAQ](#6-faq)
+  - [7. 相关项目](#7-相关项目)
 
-## 1.介绍
+## 1. 介绍
 基于 `cppla/ServerStatus`，保持轻量和简化部署，主要特性如下：
 
 - 使用 `rust` 完全重写 `server`, `client`，单个执行文件部署
@@ -38,7 +38,7 @@
 | 下载：[Releases](https://github.com/zdz/ServerStatus-Rust/releases)
 | 反馈：[Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
 
-## 2.快速部署
+## 2. 安装部署
 
 ### 2.1 快速体验
 ```bash
@@ -103,7 +103,7 @@ help:
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/kzT46l?referralCode=pJYbdU)
 
-## 3.服务端说明
+## 3. 服务端说明
 
 ### 3.1 配置文件 `config.toml`
 ```toml
@@ -118,11 +118,11 @@ vnstat = false
 # name 主机唯一标识，不可重复，alias 为展示名
 # 批量部署时可以用主机 hostname 作为 name，统一密码
 hosts = [
-  {name = "h1", password = "p1", alias = "n1", location = "🇨🇳", type = "kvm", monthstart = 1},
-  {name = "h2", password = "p2", alias = "n2", location = "🇺🇸", type = "kvm", monthstart = 1},
+  {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm", monthstart = 1},
+  {name = "h2", password = "p2", alias = "n2", location = "🏢", type = "kvm", monthstart = 1},
 ]
 
-# 不开启告警，可忽略后面配置
+# 不开启告警，可忽略后面配置，或者删除不需的通知方式
 # 告警间隔默认为30s
 notify_interval = 30
 # https://core.telegram.org/bots/api
@@ -175,12 +175,12 @@ docker network create traefik_gw
 docker-compose up -d
 ```
 
-## 4.客户端说明
+## 4. 客户端说明
 
 ### 4.1 Linux (`CentOS`, `Ubuntu`, `Debian`)
 ```bash
 # 公网环境建议 nebula 组网或走 https, 使用 nginx 对 server 套 ssl 和自定义 location /report
-# Rust 版只在 CentOS, Ubuntu, Debian 测试通过
+# Rust 版只在 CentOS, Ubuntu, Debian 测试过
 # 如果 Rust 版客户端在你的系统无法使用，请切换到下面 4.2 跨平台版本
 
 # systemd 方式， 参照 one-touch.sh 脚本 (推荐)
@@ -191,41 +191,38 @@ docker-compose up -d
 ./stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1
 # 或
 ./stat_client -a "http://127.0.0.1:8080/report" -u h1 -p p1
-
-# Python 版本 Client 依赖安装 (不再推荐使用，其它平台请使用 4.2 跨平台版本)
-## Centos
-sudo yum -y install epel-release
-sudo yum -y install python3-pip gcc python3-devel
-sudo python3 -m pip install psutil requests
-
-## Ubuntu/Debian
-sudo apt -y install python3-pip
-sudo python3 -m pip install psutil requests
-
-wget --no-check-certificate -qO client-linux.py 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/client/client-linux.py'
-python3 client-linux.py -h
-python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
 ```
 
-### 4.2 跨平台版本 (Window, Linux, etc)
+### 4.2 跨平台版本 (`Window`, `Linux`, `...`)
 
 ```bash
-## for Alpine linux
+# Python 版本 Client 依赖安装
+## Centos
+yum -y install epel-release
+yum -y install python3-pip gcc python3-devel
+python3 -m pip install psutil requests
+
+## Ubuntu/Debian
+apt -y install python3-pip
+python3 -m pip install psutil requests
+
+## Alpine linux
 apk add wget python3 py3-pip gcc python3-dev musl-dev linux-headers
 python3 -m pip install psutil requests
+
 wget --no-check-certificate -qO stat_client.py 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/client/stat_client.py'
 
-## for Windows
+## Windows
 # 安装 python 3.10 版本，并设置环境变量
 # 命令行执行 pip install psutil requests
 # 下载 https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/client/stat_client.py
-
 pip install psutil requests
+
 python3 stat_client.py -h
 python3 stat_client.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
 ```
 
-## 5.开启 `vnstat` 支持
+## 5. 开启 `vnstat` 支持
 [vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux下一个流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量和总流量，优点是重启不丢流量数据。
 
 <details>
@@ -259,11 +256,11 @@ vnstat = true
 # client 使用 -n 参数开启 vnstat 统计
 ./stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1 -n
 # 或
-python3 client-linux.py -a "http://127.0.0.1:8080/report" -u h1 -p p1 -n
+python3 stat_client.py -a "http://127.0.0.1:8080/report" -u h1 -p p1 -n
 ```
 </details>
 
-## 6.FAQ
+## 6. FAQ
 
 <details>
   <summary>如何使用自定义主题</summary>
@@ -343,6 +340,6 @@ OPTIONS:
 ```
 </details>
 
-## 7.相关项目
+## 7. 相关项目
 - https://github.com/cppla/ServerStatus
 - https://github.com/BotoX/ServerStatus
