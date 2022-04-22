@@ -1,4 +1,4 @@
-# Rust 版 ServerStatus 云探针
+# ✨ Rust 版 ServerStatus 云探针
 
 [![Docker](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml)
 [![Release](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml)
@@ -8,7 +8,7 @@
 <img width="1217" alt="image" src="https://user-images.githubusercontent.com/152173/162551520-b8615add-5258-4e23-a929-9728956cbd59.png">
 
 
-- [Rust 版 ServerStatus 云探针](#rust-版-serverstatus-云探针)
+- [✨ Rust 版 ServerStatus 云探针](#-rust-版-serverstatus-云探针)
   - [1. 介绍](#1-介绍)
   - [2. 安装部署](#2-安装部署)
     - [2.1 快速体验](#21-快速体验)
@@ -34,7 +34,7 @@
 - 支持 `railway` 快速部署
 - 支持 `systemd`, 开机自启
 
-演示：https://tz-rust.vercel.app
+演示：[tz-rust.vercel.app](https://tz-rust.vercel.app)
 | 下载：[Releases](https://github.com/zdz/ServerStatus-Rust/releases)
 | 反馈：[Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
 
@@ -42,7 +42,7 @@
 
 ### 2.1 快速体验
 ```bash
-# for x86_64
+# for CentOS/Debian/Ubuntu x86_64
 mkdir -p /opt/ServerStatus && cd /opt/ServerStatus
 # apt install -y unzip / yum install -y unzip
 wget --no-check-certificate -qO one-touch.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/one-touch.sh'
@@ -113,19 +113,17 @@ http_addr = "0.0.0.0:8080"
 offline_threshold = 30
 
 # name 主机唯一标识，不可重复，alias 为展示名
-# disabled = true 单机禁用
-# notify = false 是可以单独禁止单台机器的告警，一般针对网络差，频繁上下线
-# ansible 批量部署时可以用主机 hostname 作为 name，统一密码
+# 使用 ansible 批量部署时可以用主机 hostname 作为 name，统一密码
+# notify = false 单独禁止单台机器的告警，一般针对网络差，频繁上下线
+# monthstart = 1 没启用vnstat时，表示月流量从每月哪天开始统计
+# disabled = true 单机禁用，跟删除这条配置的效果一样
 hosts = [
   {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm", notify = true},
-  {name = "h2", password = "p2", alias = "n2", location = "🏢", type = "kvm", monthstart = 1, disabled = false},
+  {name = "h2", password = "p2", alias = "n2", location = "🏢", type = "kvm", disabled = false},
+  {name = "h3", password = "p3", alias = "n3", location = "🏝️", type = "kvm", monthstart = 1},
 ]
 
-# 使用vnstat来更精准统计月流量，开启参考下面 vnstat 一节
-# 从 v1.3.6 不再需要在 server 配置开启，client 自由选择启用与否，client 可部分打开，部分关闭
-vnstat = false
-
-# 不开启告警，可忽略后面配置，或者删除不需的通知方式
+# 不开启告警，可忽略后面配置，或者删除不需要的通知方式
 # 告警间隔默认为30s
 notify_interval = 30
 # https://core.telegram.org/bots/api
@@ -191,12 +189,30 @@ docker-compose up -d
 # 手动方式
 # Rust 版本 Client
 ./stat_client -h
-./stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1
-# 或
 ./stat_client -a "http://127.0.0.1:8080/report" -u h1 -p p1
+# 或
+./stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1
+
+# rust client 可用参数
+./stat_client -h
+OPTIONS:
+    -a, --addr <ADDR>     [default: http://127.0.0.1:8080/report]
+        --cm <CM_ADDR>    China Mobile probe addr [default: cm.tz.cloudcpp.com:80]
+        --ct <CT_ADDR>    China Telecom probe addr [default: ct.tz.cloudcpp.com:80]
+        --cu <CU_ADDR>    China Unicom probe addr [default: cu.tz.cloudcpp.com:80]
+        --disable-ping    disable ping, default:false
+        --disable-tupd    disable t/u/p/d, default:false
+    -h, --help            Print help information
+    -n, --vnstat          enable vnstat, default:false
+    -p, --pass <PASS>     password [default: p1]
+    -u, --user <USER>     username [default: h1]
+    -V, --version         Print version information
 ```
 
 ### 4.2 跨平台版本 (`Window`, `Linux`, `...`)
+
+<details>
+  <summary>跨平台版本说明</summary>
 
 ```bash
 # Python 版本 Client 依赖安装
@@ -224,6 +240,7 @@ pip install psutil requests
 python3 stat_client.py -h
 python3 stat_client.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
 ```
+</details>
 
 ## 5. 开启 `vnstat` 支持
 [vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux下一个流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量和总流量，优点是重启不丢流量数据。
