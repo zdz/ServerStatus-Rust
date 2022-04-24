@@ -16,9 +16,9 @@ type Result<T> = std::result::Result<T, GenericError>;
 mod status;
 
 const INTERVAL_MS: u64 = 1000;
-static CU: &str = "cu.tz.cloudcpp.com:80";
-static CT: &str = "ct.tz.cloudcpp.com:80";
-static CM: &str = "cm.tz.cloudcpp.com:80";
+static CU: &str = "221.5.46.129:80";
+static CT: &str = "gd.189.cn:80";
+static CM: &str = "gd.10086.cn:80";
 
 #[derive(Parser, Debug)]
 #[clap(author, version = env!("APP_VERSION"), about, long_about = None)]
