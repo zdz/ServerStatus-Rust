@@ -25,9 +25,9 @@ from datetime import datetime
 from requests.auth import HTTPBasicAuth
 from optparse import OptionParser
 
-CU = "cu.tz.cloudcpp.com:80"
-CT = "ct.tz.cloudcpp.com:80"
-CM = "cm.tz.cloudcpp.com:80"
+CU = "221.5.46.129:80"
+CT = "gd.189.cn:80"
+CM = "gd.10086.cn:80"
 IFACE_IGNORE_LIST = ["lo", "tun", "docker",
                      "vnet", "veth", "vmbr", "kube", "br-"]
 
