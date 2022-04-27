@@ -5,7 +5,7 @@ ENV RUSTFLAGS="-C target-feature=-crt-static"
 WORKDIR /app
 COPY ./ /app
 
-RUN apk add --no-cache musl-dev git
+RUN apk add --no-cache musl-dev git cmake
 RUN cargo build --release --bin stat_server
 RUN strip /app/target/release/stat_server
 
