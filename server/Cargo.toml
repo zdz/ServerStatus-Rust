@@ -42,4 +42,4 @@ stat_common = {path = "../common"}
 tokio = {version = "1", features = ["full"]}
 toml = "0.5"
 tonic = {version = "0.7", features = ["tokio-rustls"]}
-uuid = {version = "0.8", default-features = false, features = ["serde", "v4"]}
+uuid = {version = "1.0", default-features = false, features = ["serde", "v4"]}
