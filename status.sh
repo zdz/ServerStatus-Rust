@@ -18,7 +18,7 @@ if [ "${MIRROR}" = CN ]; then
 fi
 
 
-function sshelp() {  
+function sshelp() {
     printf "
 help:\n\
     -i,--install    安装 Status\n\
@@ -97,8 +97,8 @@ function get_conf() {
     PROTOCOL=$(echo "${UPM}" |sed "s/\///g" |awk -F "[:@]" '{print $1}')
     USER=$(echo "${UPM}" |sed "s/\///g" |awk -F "[:@]" '{print $2}')
     PASSWD=$(echo "${UPM}" |sed "s/\///g" |awk -F "[:@]" '{print $3}')
-    if [ "${PROTOCOL}" = "tcp" ]; then
-        echo -e "${Info} 使用 tcp 连接"
+    if [ "${PROTOCOL}" = "grpc" ]; then
+        echo -e "${Info} 使用 grpc 连接"
         MASTER=$(echo "${UPM}" |awk -F "[@]" '{print $2}')
     else
         echo -e "${Info} 使用 http 连接"
@@ -236,8 +236,10 @@ function get_status() {
     install_tool
     rm -f ServerStatus-${arch}-unknown-linux-musl.zip stat_*
     cd /tmp || exit
-    wget "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/ServerStatus-${arch}-unknown-linux-musl.zip"
-    unzip -o ServerStatus-${arch}-unknown-linux-musl.zip
+    wget "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/server-${arch}-unknown-linux-musl.zip"
+    wget "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/client-${arch}-unknown-linux-musl.zip"
+    unzip -o server-${arch}-unknown-linux-musl.zip
+    unzip -o client-${arch}-unknown-linux-musl.zip
 }
 
 # 安装服务
@@ -272,7 +274,7 @@ function reset_conf() {
         get_conf
         write_client
         restart_client
-    fi  
+    fi
 }
 
 # 卸载服务
@@ -308,7 +310,7 @@ function ssinstall() {
                 enable_client
             else
                 install_client
-            fi  
+            fi
         ;;
         *)
             sshelp
