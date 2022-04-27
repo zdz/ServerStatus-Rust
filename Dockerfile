@@ -1,11 +1,12 @@
-FROM rust:1-alpine3.15 as builder
+FROM rust:1.60-alpine3.15 as builder
 # This is important, see https://github.com/rust-lang/docker-rust/issues/85
 ENV RUSTFLAGS="-C target-feature=-crt-static"
+ENV RUST_BACKTRACE=full
 
 WORKDIR /app
 COPY ./ /app
 
-RUN apk add --no-cache musl-dev git cmake
+RUN apk add --no-cache musl-dev git cmake make g++
 RUN cargo build --release --bin stat_server
 RUN strip /app/target/release/stat_server
 
