@@ -8,7 +8,8 @@ use serde_json;
 use std::collections::HashMap;
 use tokio::time::Duration;
 
-use crate::notifier::{add_template, get_tag, render_template, Event, HostStat, NOTIFIER_HANDLE};
+use crate::jinja::{add_template, render_template};
+use crate::notifier::{get_tag, Event, HostStat, NOTIFIER_HANDLE};
 
 // https://qydev.weixin.qq.com/wiki/index.php?title=%E4%B8%BB%E5%8A%A8%E8%B0%83%E7%94%A8
 // https://qydev.weixin.qq.com/wiki/index.php?title=%E5%8F%91%E9%80%81%E6%8E%A5%E5%8F%A3%E8%AF%B4%E6%98%8E

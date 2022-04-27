@@ -21,6 +21,7 @@ use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::Args;
+use stat_common::server_status::StatRequest;
 
 const SAMPLE_PERIOD: u64 = 1000; //ms
 const TIMEOUT_MS: u64 = 1000;
@@ -207,6 +208,7 @@ lazy_static! {
     pub static ref G_NET_SPEED: Arc<Mutex<NetSpeed>> = Arc::new(Default::default());
 }
 
+#[allow(unused)]
 pub fn start_net_speed_collect_t() {
     thread::spawn(|| loop {
         let _ = File::open("/proc/net/dev").map(|file| {
@@ -227,12 +229,12 @@ pub fn start_net_speed_collect_t() {
                 avgtx += v1[8].parse::<u64>().unwrap();
             }
 
-            {
-                let now = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs() as f64;
-                let mut t = G_NET_SPEED.lock().unwrap();
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as f64;
+
+            if let Ok(mut t) = G_NET_SPEED.lock() {
                 t.diff = now - t.clock;
                 t.clock = now;
                 t.netrx = ((avgrx - t.avgrx) as f64 / t.diff) as u64;
@@ -250,6 +252,7 @@ pub fn start_net_speed_collect_t() {
 lazy_static! {
     pub static ref G_CPU_PERCENT: Arc<Mutex<f64>> = Arc::new(Default::default());
 }
+#[allow(unused)]
 pub fn start_cpu_percent_collect_t() {
     let mut pre_cpu: Vec<u64> = vec![0, 0, 0, 0];
     thread::spawn(move || loop {
@@ -278,9 +281,10 @@ pub fn start_cpu_percent_collect_t() {
 
                 pre_cpu = cur_cpu;
 
-                let cpu_percent = &mut *G_CPU_PERCENT.lock().unwrap();
-                *cpu_percent = res.round();
-                // dbg!(cpu_percent);
+                if let Ok(mut cpu_percent) = G_CPU_PERCENT.lock() {
+                    *cpu_percent = res.round();
+                    // dbg!(cpu_percent);
+                }
             });
         });
 
@@ -360,13 +364,13 @@ fn start_ping_collect_t(data: &Arc<Mutex<PingData>>) {
             .as_millis();
         let time_cost_ms = et - st;
 
-        {
-            let mut o = &mut *ping_data.lock().unwrap();
+        if let Ok(mut o) = ping_data.lock() {
             o.ping_time = time_cost_ms as u32;
             if package_list.len() > 30 {
                 o.lost_rate = package_lost * 100 / package_list.len() as u32;
             }
         }
+
         thread::sleep(Duration::from_millis(SAMPLE_PERIOD));
     });
 }
@@ -402,5 +406,73 @@ pub fn start_all_ping_collect_t(args: &Args) {
         start_ping_collect_t(G_PING_10010.get().unwrap());
         start_ping_collect_t(G_PING_189.get().unwrap());
         start_ping_collect_t(G_PING_10086.get().unwrap());
+    }
+}
+
+pub fn sample(args: &Args, stat: &mut StatRequest) {
+    stat.version = env!("CARGO_PKG_VERSION").to_string();
+    stat.vnstat = args.vnstat;
+
+    stat.uptime = get_uptime();
+
+    let (load_1, load_5, load_15) = get_loadavg();
+    stat.load_1 = load_1;
+    stat.load_5 = load_5;
+    stat.load_15 = load_15;
+
+    let (mem_total, mem_used, swap_total, swap_free) = get_memory();
+    stat.memory_total = mem_total;
+    stat.memory_used = mem_used;
+    stat.swap_total = swap_total;
+    stat.swap_used = swap_total - swap_free;
+
+    let (hdd_total, hdd_used) = get_hdd();
+    stat.hdd_total = hdd_total;
+    stat.hdd_used = hdd_used;
+
+    let (t, u, p, d) = if args.disable_tupd {
+        (0, 0, 0, 0)
+    } else {
+        tupd()
+    };
+    stat.tcp = t;
+    stat.udp = u;
+    stat.process = p;
+    stat.thread = d;
+
+    if args.vnstat {
+        let (network_in, network_out, m_network_in, m_network_out) = get_vnstat_traffic();
+        stat.network_in = network_in;
+        stat.network_out = network_out;
+        stat.last_network_in = network_in - m_network_in;
+        stat.last_network_out = network_out - m_network_out;
+    } else {
+        let (network_in, network_out) = get_sys_traffic();
+        stat.network_in = network_in;
+        stat.network_out = network_out;
+    }
+
+    if let Ok(o) = G_CPU_PERCENT.lock() {
+        stat.cpu = *o;
+    }
+
+    if let Ok(o) = G_NET_SPEED.lock() {
+        stat.network_rx = o.netrx;
+        stat.network_tx = o.nettx;
+    }
+    {
+        let o = &*G_PING_10010.get().unwrap().lock().unwrap();
+        stat.ping_10010 = o.lost_rate.into();
+        stat.time_10010 = o.ping_time.into();
+    }
+    {
+        let o = &*G_PING_189.get().unwrap().lock().unwrap();
+        stat.ping_189 = o.lost_rate.into();
+        stat.time_189 = o.ping_time.into();
+    }
+    {
+        let o = &*G_PING_10086.get().unwrap().lock().unwrap();
+        stat.ping_10086 = o.lost_rate.into();
+        stat.time_10086 = o.ping_time.into();
     }
 }

@@ -1,5 +1,5 @@
 [workspace]
-members = ["server", "client"]
+members = ["common", "server", "client"]
 
 [profile.release]
 codegen-units = 1

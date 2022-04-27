@@ -19,6 +19,6 @@ RUN apk add --no-cache libgcc
 COPY --from=builder /app/target/release/stat_server /stat_server
 
 WORKDIR /
-EXPOSE 8080 34512
+EXPOSE 8080 9394
 
 CMD ["/stat_server", "--cloud"]

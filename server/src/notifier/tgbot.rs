@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tokio::time::Duration;
 
-use crate::notifier::{add_template, get_tag, render_template, Event, HostStat, NOTIFIER_HANDLE};
+use crate::jinja::{add_template, render_template};
+use crate::notifier::{get_tag, Event, HostStat, NOTIFIER_HANDLE};
 
 const KIND: &str = "tgbot";
 

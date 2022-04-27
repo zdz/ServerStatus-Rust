@@ -27,16 +27,19 @@
 ## 1. 介绍
 基于 `cppla/ServerStatus`，保持轻量和简化部署，主要特性如下：
 
-- 使用 `rust` 完全重写 `server`, `client`，单个执行文件部署
-- 支持上下线和简单自定义规则告警 (`telegram`, `wechat`, `email`)
-- 支持 `vnstat` 统计月流量，重启不丢流量数据
+- 使用 `rust` 完全重写 `server`、`client`，单个执行文件部署
+- 支持上下线和简单自定义规则告警 (`telegram`、 `wechat`、 `email`)
 - 支持 `http` 协议上报，可配合 `cf` 等优化上报链路
+- 支持 `vnstat` 统计月流量，重启不丢流量数据
 - 支持 `railway` 快速部署
-- 支持 `systemd`, 开机自启
+- 支持 `systemd` 开机自启
+- 其它功能，如 🗺️  见 [wiki](https://github.com/zdz/ServerStatus-Rust/wiki)
 
 演示：[tz-rust.vercel.app](https://tz-rust.vercel.app)
-| 下载：[Releases](https://github.com/zdz/ServerStatus-Rust/releases)
-| 反馈：[Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
+|
+下载：[Releases](https://github.com/zdz/ServerStatus-Rust/releases)
+|
+ 反馈：[Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
 
 ## 2. 安装部署
 
@@ -67,7 +70,7 @@ bash status.sh -i -c
 # or
 bash status.sh -i -c protocol://username:password@master:port
 # eg:
-bash status.sh -i -c tcp://h1:p1@127.0.0.1:34512
+bash status.sh -i -c grpc://h1:p1@127.0.0.1:9394
 bash status.sh -i -c http://h1:p1@127.0.0.1:8080
 
 # 更多用法：
@@ -107,10 +110,15 @@ help:
 
 ### 3.1 配置文件 `config.toml`
 ```toml
-tcp_addr = "0.0.0.0:34512"
+# 侦听地址, ipv6 使用 [::]:9394
+grpc_addr = "0.0.0.0:9394"
 http_addr = "0.0.0.0:8080"
 # 默认30s无上报判定下线
 offline_threshold = 30
+
+# 管理员账号,不设置默认随机生成，用于查看 /detail, /map
+admin_user = ""
+admin_pass = ""
 
 # name 主机唯一标识，不可重复，alias 为展示名
 # 使用 ansible 批量部署时可以用主机 hostname 作为 name，统一密码
@@ -191,22 +199,31 @@ docker-compose up -d
 ./stat_client -h
 ./stat_client -a "http://127.0.0.1:8080/report" -u h1 -p p1
 # 或
-./stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1
+./stat_client -a "grpc://127.0.0.1:9394" -u h1 -p p1
 
 # rust client 可用参数
 ./stat_client -h
 OPTIONS:
-    -a, --addr <ADDR>     [default: http://127.0.0.1:8080/report]
-        --cm <CM_ADDR>    China Mobile probe addr [default: cm.tz.cloudcpp.com:80]
-        --ct <CT_ADDR>    China Telecom probe addr [default: ct.tz.cloudcpp.com:80]
-        --cu <CU_ADDR>    China Unicom probe addr [default: cu.tz.cloudcpp.com:80]
-        --disable-ping    disable ping, default:false
-        --disable-tupd    disable t/u/p/d, default:false
-    -h, --help            Print help information
-    -n, --vnstat          enable vnstat, default:false
-    -p, --pass <PASS>     password [default: p1]
-    -u, --user <USER>     username [default: h1]
-    -V, --version         Print version information
+    -a, --addr <ADDR>      [default: http://127.0.0.1:8080/report]
+        --cm <CM_ADDR>     China Mobile probe addr [default: cm.tz.cloudcpp.com:80]
+        --ct <CT_ADDR>     China Telecom probe addr [default: ct.tz.cloudcpp.com:80]
+        --cu <CU_ADDR>     China Unicom probe addr [default: cu.tz.cloudcpp.com:80]
+        --disable-extra    disable extra info report, default:false
+        --disable-ping     disable ping, default:false
+        --disable-tupd     disable t/u/p/d, default:false
+    -h, --help             Print help information
+        --ip-info          show ip info, default:false
+        --json             use json protocol, default:false
+    -n, --vnstat           enable vnstat, default:false
+    -p, --pass <PASS>      password [default: p1]
+    -u, --user <USER>      username [default: h1]
+    -V, --version          Print version information
+
+# 一些参数说明
+--ip-info       # 显示本机ip信息后立即退出，目前使用 ip-api.com 数据
+--disable-extra # 不上报系统信息和IP信息
+--disable-ping  # 停用三网延时和丢包率探测
+--disable-tupd  # 不上报 tcp/udp/进程数/线程数，减少CPU占用
 ```
 
 ### 4.2 跨平台版本 (`Window`, `Linux`, `...`)
@@ -275,7 +292,7 @@ vnstat --json m
 vnstat = true
 
 # client 使用 -n 参数开启 vnstat 统计
-./stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1 -n
+./stat_client -a "grpc://127.0.0.1:9394" -u h1 -p p1 -n
 # 或
 python3 stat_client.py -a "http://127.0.0.1:8080/report" -u h1 -p p1 -n
 ```
@@ -341,7 +358,7 @@ cargo build --release
 
 ```bash
 # 例如自定义移动探测地址，用 --cm 指定地址
-./stat_client -a "tcp://127.0.0.1:34512" -u h1 -p p1 --cm=cm.tz.cloudcpp.com:80
+./stat_client -a "grpc://127.0.0.1:9394" -u h1 -p p1 --cm=cm.tz.cloudcpp.com:80
 
 # 电信联通参数可以使用 -h 命令查看
 ./stat_client -h

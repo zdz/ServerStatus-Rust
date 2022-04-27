@@ -3,22 +3,37 @@
 extern crate log;
 extern crate pretty_env_logger;
 use clap::Parser;
-use std::collections::HashMap;
+use hyper::header;
+use once_cell::sync::Lazy;
+use prost::Message;
 use std::net::ToSocketAddrs;
+use std::process;
+use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpStream;
+use sysinfo::{System, SystemExt};
+use tokio::time;
 
+use stat_common::server_status::{IpInfo, StatRequest, SysInfo};
 type GenericError = Box<dyn std::error::Error + Send + Sync>;
 type Result<T> = std::result::Result<T, GenericError>;
+mod grpc;
 mod status;
+mod sys_info;
 
 const INTERVAL_MS: u64 = 1000;
 static CU: &str = "cu.tz.cloudcpp.com:80";
 static CT: &str = "ct.tz.cloudcpp.com:80";
 static CM: &str = "cm.tz.cloudcpp.com:80";
+
+#[derive(Default)]
+pub struct ClientConfig {
+    ip_info: Option<IpInfo>,
+    sys_info: Option<SysInfo>,
+}
+
+pub static G_CONFIG: Lazy<Mutex<ClientConfig>> = Lazy::new(|| Mutex::new(ClientConfig::default()));
 
 #[derive(Parser, Debug)]
 #[clap(author, version = env!("APP_VERSION"), about, long_about = None)]
@@ -35,190 +50,52 @@ pub struct Args {
     disable_tupd: bool,
     #[clap(long = "disable-ping", help = "disable ping, default:false")]
     disable_ping: bool,
+    #[clap(
+        long = "disable-extra",
+        help = "disable extra info report, default:false"
+    )]
+    disable_extra: bool,
     #[clap( long = "ct", default_value = CT, help = "China Telecom probe addr")]
     ct_addr: String,
     #[clap(long = "cm", default_value = CM, help = "China Mobile probe addr")]
     cm_addr: String,
     #[clap(long = "cu", default_value = CU, help = "China Unicom probe addr")]
     cu_addr: String,
+    #[clap(long = "ip-info", help = "show ip info, default:false")]
+    ip_info: bool,
+    #[clap(long = "json", help = "use json protocol, default:false")]
+    json: bool,
 }
 
-fn sample(stat: &mut HashMap<&'static str, serde_json::Value>, args: &Args) {
-    let (load_1, load_5, load_15) = status::get_loadavg();
-    stat.insert("load_1", serde_json::Value::from(load_1));
-    stat.insert("load_5", serde_json::Value::from(load_5));
-    stat.insert("load_15", serde_json::Value::from(load_15));
-
-    let uptime = status::get_uptime();
-    stat.insert("uptime", serde_json::Value::from(uptime));
-
-    let (mem_total, mem_used, swap_total, swap_free) = status::get_memory();
-    stat.insert("memory_total", serde_json::Value::from(mem_total));
-    stat.insert("memory_used", serde_json::Value::from(mem_used));
-    stat.insert("swap_total", serde_json::Value::from(swap_total));
-    stat.insert("swap_used", serde_json::Value::from(swap_total - swap_free));
-
-    let (t, u, p, d) = if args.disable_tupd {
-        (0, 0, 0, 0)
-    } else {
-        status::tupd()
-    };
-    stat.insert("tcp", serde_json::Value::from(t));
-    stat.insert("udp", serde_json::Value::from(u));
-    stat.insert("process", serde_json::Value::from(p));
-    stat.insert("thread", serde_json::Value::from(d));
-
-    if args.vnstat {
-        let (network_in, network_out, m_network_in, m_network_out) = status::get_vnstat_traffic();
-        stat.insert("network_in", serde_json::Value::from(network_in));
-        stat.insert("network_out", serde_json::Value::from(network_out));
-        stat.insert(
-            "last_network_in",
-            serde_json::Value::from(network_in - m_network_in),
-        );
-        stat.insert(
-            "last_network_out",
-            serde_json::Value::from(network_out - m_network_out),
-        );
-    } else {
-        let (network_in, network_out) = status::get_sys_traffic();
-        stat.insert("network_in", serde_json::Value::from(network_in));
-        stat.insert("network_out", serde_json::Value::from(network_out));
-    }
-
-    let (hdd_total, hdd_used) = status::get_hdd();
-    stat.insert("hdd_total", serde_json::Value::from(hdd_total));
-    stat.insert("hdd_used", serde_json::Value::from(hdd_used));
-
-    {
-        let o = *status::G_CPU_PERCENT.lock().unwrap();
-        stat.insert("cpu", serde_json::Value::from(o));
-    }
-    {
-        let o = &*status::G_NET_SPEED.lock().unwrap();
-        stat.insert("network_rx", serde_json::Value::from(o.netrx));
-        stat.insert("network_tx", serde_json::Value::from(o.nettx));
-    }
-    {
-        let o = &*status::G_PING_10010.get().unwrap().lock().unwrap();
-        stat.insert("ping_10010", serde_json::Value::from(o.lost_rate));
-        stat.insert("time_10010", serde_json::Value::from(o.ping_time));
-    }
-    {
-        let o = &*status::G_PING_189.get().unwrap().lock().unwrap();
-        stat.insert("ping_189", serde_json::Value::from(o.lost_rate));
-        stat.insert("time_189", serde_json::Value::from(o.ping_time));
-    }
-    {
-        let o = &*status::G_PING_10086.get().unwrap().lock().unwrap();
-        stat.insert("ping_10086", serde_json::Value::from(o.lost_rate));
-        stat.insert("time_10086", serde_json::Value::from(o.ping_time));
-    }
-}
-
-async fn do_tcp_report(
-    args: &Args,
-    stat_base: &mut HashMap<&'static str, serde_json::Value>,
-) -> Result<()> {
-    // "127.0.0.1:34512";
-    let tcp_addr = args
-        .addr
-        .replace("tcp://", "")
-        .to_socket_addrs()?
-        .next()
-        .unwrap();
-    let (ipv4, ipv6) = (tcp_addr.is_ipv4(), tcp_addr.is_ipv6());
-    if ipv4 {
-        stat_base.insert("online4", serde_json::Value::from(ipv4));
-    }
-    if ipv6 {
-        stat_base.insert("online6", serde_json::Value::from(ipv6));
-    }
+fn sample_all(args: &Args, stat_base: &StatRequest) -> StatRequest {
     // dbg!(&stat_base);
+    let mut stat_rt = stat_base.clone();
 
-    loop {
-        thread::sleep(Duration::from_millis(INTERVAL_MS));
+    #[cfg(all(feature = "native", not(feature = "sysinfo")))]
+    status::sample(args, &mut stat_rt);
+    #[cfg(all(feature = "sysinfo", not(feature = "native")))]
+    sys_info::sample(args, &mut stat_rt);
 
-        let result = TcpStream::connect(&tcp_addr).await;
-        if result.is_err() {
-            error!("{:?}", result);
-            continue;
-        }
-        let mut socket = result.unwrap();
-        info!("{}", format!("connected {}", args.addr));
+    stat_rt.latest_ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
 
-        let mut buf = vec![0; 1024];
-        let result = socket.read(&mut buf).await;
-        if String::from_utf8(buf)
-            .unwrap()
-            .contains("Authentication required")
-        {
-            dbg!("Authentication required");
-        }
-        if result.is_err() {
-            error!("{:?}", result);
-            drop(socket);
-            continue;
-        }
-
-        let mut auth_map = HashMap::new();
-        auth_map.insert("frame", "auth".to_string());
-        auth_map.insert("user", args.user.to_string());
-        auth_map.insert("pass", args.pass.to_string());
-        let auth_dat = serde_json::to_string(&auth_map).unwrap() + "\n";
-
-        let result = socket.write_all(auth_dat.as_bytes()).await;
-        if result.is_err() {
-            error!("{:?}", result);
-            drop(socket);
-            continue;
-        }
-
-        let mut buf = vec![0; 1024];
-        let result = socket.read(&mut buf).await;
-        if !String::from_utf8(buf)
-            .unwrap()
-            .contains("Authentication successful")
-        {
-            dbg!(&result);
-            error!("Authentication failed!");
-            drop(socket);
-            continue;
-        }
-
-        loop {
-            let mut stat = stat_base.clone();
-            stat.insert(
-                "latest_ts",
-                serde_json::Value::from(
-                    SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs(),
-                ),
-            );
-
-            sample(&mut stat, args);
-            let json_str = serde_json::to_string(&stat).unwrap();
-            trace!("json_str => {:?}", json_str);
-
-            //
-            let frame_data = json_str + "\n";
-            let result = socket.write_all(frame_data.as_bytes()).await;
-            if result.is_err() {
-                error!("{:?}", result);
-                break;
+    if !args.disable_extra {
+        if let Ok(o) = G_CONFIG.lock() {
+            if let Some(ip_info) = o.ip_info.as_ref() {
+                stat_rt.ip_info = Some(ip_info.clone());
             }
-
-            thread::sleep(Duration::from_millis(INTERVAL_MS));
+            if let Some(sys_info) = o.sys_info.as_ref() {
+                stat_rt.sys_info = Some(sys_info.clone());
+            }
         }
     }
+
+    stat_rt
 }
 
-fn do_http_report(
-    args: &Args,
-    stat_base: &mut HashMap<&'static str, serde_json::Value>,
-) -> Result<()> {
+fn http_report(args: &Args, stat_base: &mut StatRequest) -> Result<()> {
     let mut domain = args.addr.split('/').collect::<Vec<&str>>()[2].to_owned();
     if !domain.contains(':') {
         if args.addr.contains("https") {
@@ -230,12 +107,11 @@ fn do_http_report(
     let tcp_addr = domain.to_socket_addrs()?.next().unwrap();
     let (ipv4, ipv6) = (tcp_addr.is_ipv4(), tcp_addr.is_ipv6());
     if ipv4 {
-        stat_base.insert("online4", serde_json::Value::from(ipv4));
+        stat_base.online4 = ipv4;
     }
     if ipv6 {
-        stat_base.insert("online6", serde_json::Value::from(ipv6));
+        stat_base.online6 = ipv6;
     }
-    // dbg!(&stat_base);
 
     let http_client = reqwest::Client::builder()
         .pool_max_idle_per_host(1)
@@ -247,20 +123,22 @@ fn do_http_report(
         ))
         .build()?;
     loop {
-        let mut stat = stat_base.clone();
-        stat.insert(
-            "latest_ts",
-            serde_json::Value::from(
-                SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs(),
-            ),
-        );
+        let stat_rt = sample_all(args, stat_base);
 
-        sample(&mut stat, args);
-        let json_str = serde_json::to_string(&stat).unwrap();
-        trace!("json_str => {:?}", json_str);
+        let body_data: Option<Vec<u8>>;
+        let mut content_type = "application/octet-stream";
+        if args.json {
+            let data = serde_json::to_string(&stat_rt)?;
+            trace!("json_str => {:?}", serde_json::to_string(&data)?);
+            body_data = Some(data.into());
+            content_type = "application/json";
+        } else {
+            let buf = stat_rt.encode_to_vec();
+            body_data = Some(buf);
+            // content_type = "application/octet-stream";
+        }
+        // byte 581, json str 1281
+        // dbg!(&body_data.as_ref().unwrap().len());
 
         let client = http_client.clone();
         let url = args.addr.to_string();
@@ -273,7 +151,8 @@ fn do_http_report(
                 .post(&url)
                 .basic_auth(auth_user, Some(auth_pass))
                 .timeout(Duration::from_secs(3))
-                .json(&stat)
+                .header(header::CONTENT_TYPE, content_type)
+                .body(body_data.unwrap())
                 .send()
                 .await
             {
@@ -290,29 +169,91 @@ fn do_http_report(
     }
 }
 
+async fn refresh_ip_info() {
+    // refresh/1 hour
+    let mut interval = time::interval(time::Duration::from_secs(3600));
+    loop {
+        info!("get ip info from ip-api.com");
+        match stat_common::ip_api::get_ip_info().await {
+            Ok(ip_info) => {
+                info!("refresh_ip_info succ => {:?}", ip_info);
+                if let Ok(mut o) = G_CONFIG.lock() {
+                    o.ip_info = Some(ip_info);
+                }
+            }
+            Err(err) => {
+                error!("refresh_ip_info error => {:?}", err);
+            }
+        }
+
+        interval.tick().await;
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     pretty_env_logger::init();
     let args = Args::parse();
     dbg!(&args);
 
-    status::start_cpu_percent_collect_t();
-    status::start_net_speed_collect_t();
+    if args.ip_info {
+        let info = stat_common::ip_api::get_ip_info().await?;
+        dbg!(info);
+        process::exit(0);
+    }
+
+    let sys_info = sys_info::collect_sys_info(&args);
+    let sys_info_json = serde_json::to_string(&sys_info)?;
+    eprintln!("sys info: {}", sys_info_json);
+
+    if let Ok(mut o) = G_CONFIG.lock() {
+        o.sys_info = Some(sys_info);
+    }
+
+    // support check
+    if !System::IS_SUPPORTED {
+        panic!("当前系统不支持，请切换到Python跨平台版本!");
+    }
+
+    // use native
+    #[cfg(all(feature = "native", not(feature = "sysinfo")))]
+    {
+        eprintln!("enable feature native");
+        status::start_cpu_percent_collect_t();
+        status::start_net_speed_collect_t();
+    }
+
+    // use sysinfo
+    #[cfg(all(feature = "sysinfo", not(feature = "native")))]
+    {
+        eprintln!("enable feature sysinfo");
+        sys_info::start_cpu_percent_collect_t();
+        sys_info::start_net_speed_collect_t();
+    }
+
     status::start_all_ping_collect_t(&args);
     let (ipv4, ipv6) = status::get_network();
+    eprintln!("get_network (ipv4, ipv6) => ({}, {})", ipv4, ipv6);
 
-    let mut stat_base: HashMap<&str, serde_json::Value> = HashMap::new();
-    stat_base.insert("name", serde_json::Value::from(args.user.to_string()));
-    stat_base.insert("online4", serde_json::Value::from(ipv4));
-    stat_base.insert("online6", serde_json::Value::from(ipv6));
-    stat_base.insert("frame", serde_json::Value::from("data"));
-    stat_base.insert("vnstat", serde_json::Value::from(args.vnstat));
+    if !args.disable_extra {
+        // refresh ip info
+        tokio::spawn(async { refresh_ip_info().await });
+    }
+
+    let mut stat_base = StatRequest {
+        name: args.user.to_string(),
+        frame: "data".to_string(),
+        online4: ipv4,
+        online6: ipv6,
+        vnstat: args.vnstat,
+        ..Default::default()
+    };
 
     if args.addr.starts_with("http") {
-        let result = do_http_report(&args, &mut stat_base);
+        let result = http_report(&args, &mut stat_base);
         dbg!(&result);
-    } else if args.addr.starts_with("tcp://") {
-        let result = do_tcp_report(&args, &mut stat_base).await;
+    } else if args.addr.starts_with("grpc") {
+        let result = grpc::report(&args, &mut stat_base).await;
         dbg!(&result);
     } else {
         eprint!("invalid addr scheme!");

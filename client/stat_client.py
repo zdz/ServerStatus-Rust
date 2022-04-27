@@ -414,6 +414,16 @@ def http_report(options):
             time.sleep(3)
             sess = requests.Session()
 
+def get_ip_info():
+    """ip info"""
+    pass
+    # TODO
+
+def get_sys_info():
+    """sys info"""
+    pass
+    # TODO
+
 
 def main():
     usage = """usage: python3 %prog [options] arg
@@ -447,12 +457,17 @@ def main():
 
     if options.vnstat:
         if sys.platform.startswith("win"):
-            raise RuntimeError("unsupport enable vnstat on win system")
+            raise RuntimeError("unsupported: enable vnstat on win os")
+
+    # TODO sys info
 
     if options.addr.startswith("http"):
         http_report(options)
     elif options.addr.startswith("tcp"):
+        raise RuntimeError("tcp unsupported")
         tcp_report(options)
+    elif options.addr.startswith("grpc"):
+        raise RuntimeError("grpc unsupported")
     else:
         print("invalid addr scheme")
 

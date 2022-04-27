@@ -18,6 +18,7 @@ Cargo.lock
 
 .DS_Store
 
+certs
 stats.json
 tmp
 .prod

@@ -17,7 +17,7 @@ services:
       - ./stats.json:/stats.json
     ports:
       - 8080:8080
-      - 34512:34512
+      - 9394:9394
     environment:
       - RUST_BACKTRACE=1
       - RUST_LOG=trace

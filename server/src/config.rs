@@ -4,11 +4,18 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::env;
 use std::fs;
+use uuid::Uuid;
 
 use crate::notifier;
 
 fn default_as_true() -> bool {
     true
+}
+fn default_grpc_addr() -> String {
+    "0.0.0.0:9394".to_string()
+}
+fn default_http_addr() -> String {
+    "0.0.0.0:8080".to_string()
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -39,16 +46,18 @@ pub struct Host {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
+    #[serde(default = "default_http_addr")]
     pub http_addr: String,
-    pub tcp_addr: String,
+    #[serde(default = "default_grpc_addr")]
+    pub grpc_addr: String,
     #[serde(default = "Default::default")]
     pub notify_interval: u64,
     #[serde(default = "Default::default")]
     pub offline_threshold: u64,
-    // pub admin_user: String,
-    // pub admin_pass: String,
-    // #[serde(default = "bool::default")]
-    // pub vnstat: bool,
+    // admin user&pass
+    pub admin_user: Option<String>,
+    pub admin_pass: Option<String>,
+
     #[serde(default = "Default::default")]
     pub tgbot: notifier::tgbot::Config,
     #[serde(default = "Default::default")]
@@ -65,6 +74,12 @@ impl Config {
     pub fn auth(&self, user: &str, pass: &str) -> bool {
         if let Some(o) = self.hosts_map.get(user) {
             return pass.eq(o.password.as_str());
+        }
+        false
+    }
+    pub fn admin_auth(&self, user: &str, pass: &str) -> bool {
+        if let (Some(u), Some(p)) = (self.admin_user.as_ref(), self.admin_pass.as_ref()) {
+            return user.eq(u.as_str()) && pass.eq(p.as_str());
         }
         false
     }
@@ -100,6 +115,15 @@ pub fn from_str(content: &str) -> Option<Config> {
     if o.offline_threshold < 30 {
         o.offline_threshold = 30;
     }
+    if o.admin_user.is_none() || o.admin_user.as_ref()?.is_empty() {
+        o.admin_user = Some("admin".to_string());
+    }
+    if o.admin_pass.is_none() || o.admin_pass.as_ref()?.is_empty() {
+        o.admin_pass = Some(Uuid::new_v4().to_string());
+    }
+
+    eprintln!("✨ admin_user: {}", o.admin_user.as_ref()?);
+    eprintln!("✨ admin_pass: {}", o.admin_pass.as_ref()?);
 
     Some(o)
 }

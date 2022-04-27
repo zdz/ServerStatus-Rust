@@ -1,0 +1,101 @@
+syntax = "proto3";
+package server_status;
+
+message IpInfo {
+  string query = 1;
+  string source = 2; // ip-api,
+  //
+  string continent = 3;
+  string country = 4;
+  string region_name = 5;
+  string city = 6;
+  //
+  string isp = 7;
+  string org = 8;
+  string as = 9;
+  string asname = 10;
+  //
+  double lat = 11;
+  double lon = 12;
+}
+
+message SysInfo {
+  string name = 1;
+  string version = 2;
+
+  string os_name = 3;
+  string os_arch = 4;
+  string os_family = 5;
+  string os_release = 6;
+  string kernel_version = 7;
+
+  uint32 cpu_num = 8;
+  string cpu_brand = 9;
+  string cpu_vender_id = 10;
+
+  string host_name = 11;
+}
+
+message StatRequest {
+  string name = 1;
+  string version = 2;
+  uint64 latest_ts = 3;
+  string frame = 4;
+  // string location = 5;
+  bool vnstat = 6;
+
+  bool online4 = 7;
+  bool online6 = 8;
+
+  uint64 uptime = 9;
+  // load
+  double load_1 = 10;
+  double load_5 = 11;
+  double load_15 = 12;
+
+  //
+  double ping_10010 = 13;
+  double ping_189 = 14;
+  double ping_10086 = 15;
+  double time_10010 = 16;
+  double time_189 = 17;
+  double time_10086 = 18;
+
+  // t/u/p/d
+  uint32 tcp = 19;
+  uint32 udp = 20;
+  uint32 process = 21;
+  uint32 thread = 22;
+
+  // netowrk
+  uint64 network_rx = 23;
+  uint64 network_tx = 24;
+  uint64 network_in = 25;
+  uint64 network_out = 26;
+
+  uint64 last_network_in = 27;
+  uint64 last_network_out = 28;
+
+  //
+  double cpu = 29;
+  uint64 memory_total = 30;
+  uint64 memory_used = 31;
+  uint64 swap_total = 32;
+  uint64 swap_used = 33;
+  uint64 hdd_total = 34;
+  uint64 hdd_used = 35;
+
+  optional string custom = 36;
+
+  optional SysInfo sys_info = 37;
+  optional IpInfo ip_info = 38;
+}
+
+message Response {
+  int32 code = 1;
+  string message = 2;
+}
+
+service ServerStatus {
+  rpc Report(StatRequest) returns (Response);
+}

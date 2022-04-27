@@ -1,5 +1,6 @@
 #![deny(warnings)]
 use serde::{Deserialize, Serialize};
+use stat_common::server_status::{IpInfo, SysInfo};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn default_as_true() -> bool {
@@ -68,6 +69,11 @@ pub struct HostStat {
 
     #[serde(skip_deserializing)]
     pub custom: String,
+
+    #[serde(skip_serializing)]
+    pub ip_info: Option<IpInfo>,
+    #[serde(skip_serializing)]
+    pub sys_info: Option<SysInfo>,
 
     // user data
     #[serde(skip_deserializing)]
