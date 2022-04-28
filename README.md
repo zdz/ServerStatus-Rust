@@ -236,15 +236,15 @@ OPTIONS:
 ## Centos
 yum -y install epel-release
 yum -y install python3-pip gcc python3-devel
-python3 -m pip install psutil requests
+python3 -m pip install psutil requests py-cpuinfo
 
 ## Ubuntu/Debian
 apt -y install python3-pip
-python3 -m pip install psutil requests
+python3 -m pip install psutil requests py-cpuinfo
 
 ## Alpine linux
 apk add wget python3 py3-pip gcc python3-dev musl-dev linux-headers
-python3 -m pip install psutil requests
+python3 -m pip install psutil requests py-cpuinfo
 
 wget --no-check-certificate -qO stat_client.py 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/client/stat_client.py'
 
@@ -252,7 +252,7 @@ wget --no-check-certificate -qO stat_client.py 'https://raw.githubusercontent.co
 # 安装 python 3.10 版本，并设置环境变量
 # 命令行执行 pip install psutil requests
 # 下载 https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/client/stat_client.py
-pip install psutil requests
+pip install psutil requests py-cpuinfo
 
 python3 stat_client.py -h
 python3 stat_client.py -a "http://127.0.0.1:8080/report" -u h1 -p p1

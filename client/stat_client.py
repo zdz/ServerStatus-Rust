@@ -34,6 +34,8 @@ IFACE_IGNORE_LIST = ["lo", "tun", "docker",
 PROBE_PROTOCOL_PREFER = 'ipv4'
 PING_PACKET_HISTORY_LEN = 100
 INTERVAL = 1
+G_IP_INFO = None
+G_SYS_INFO = None
 
 
 def get_uptime():
@@ -242,6 +244,13 @@ def start_rt_collect_t(options):
             }
         ))
 
+    # ip info
+    if not options.disable_extra:
+        t_list.append(threading.Thread(
+            target=refresh_ip_info,
+        ))
+
+    # net speed
     t_list.append(threading.Thread(
         target=_net_speed,
     ))
@@ -317,53 +326,14 @@ def sample(options, online4, online6):
         stat_data['tcp'], stat_data['udp'], stat_data['process'], stat_data['thread'] = 0, 0, 0, 0
     else:
         stat_data['tcp'], stat_data['udp'], stat_data['process'], stat_data['thread'] = tupd()
+
+    if not options.disable_extra:
+        if G_IP_INFO:
+            stat_data['ip_info'] = G_IP_INFO
+        if G_SYS_INFO:
+            stat_data['sys_info'] = G_SYS_INFO
+
     return stat_data
-
-
-def tcp_report(options):
-    socket.setdefaulttimeout(5)
-    start_rt_collect_t(options)
-
-    online4 = get_network(4)
-    online6 = get_network(6)
-
-    arr = options.addr.replace("tcp://", "").split(":")
-    server, port = arr
-    auth_obj = {"frame": "auth", "user": options.username,
-                "pass": options.password}
-    while True:
-        try:
-            print("Connecting...")
-            s = socket.create_connection((server, port))
-            data = byte_str(s.recv(1024))
-            if data.find("Authentication required") > -1:
-                s.send(byte_str(json.dumps(auth_obj) + "\n"))
-                data = byte_str(s.recv(1024))
-                if data.find("Authentication successful") < 0:
-                    print(data)
-                    raise socket.error
-            else:
-                print(data)
-                raise socket.error
-
-            while True:
-                stat_data = sample(options, online4, online6)
-                print(json.dumps(stat_data))
-                s.send(byte_str(json.dumps(stat_data) + "\n"))
-        except KeyboardInterrupt:
-            raise
-        except socket.error:
-            traceback.print_exc()
-            print("Disconnected...")
-            if 's' in locals().keys():
-                del s
-            time.sleep(3)
-        except Exception as e:
-            traceback.print_exc()
-            print("Caught Exception:", e)
-            if 's' in locals().keys():
-                del s
-            time.sleep(3)
 
 
 def get_target_network(url):
@@ -414,15 +384,63 @@ def http_report(options):
             time.sleep(3)
             sess = requests.Session()
 
-def get_ip_info():
-    """ip info"""
-    pass
-    # TODO
 
-def get_sys_info():
+IP_API_URL = "http://ip-api.com/json?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,isp,org,as,asname,query&lang=zh-CN"
+
+
+def refresh_ip_info():
+    """ip info"""
+    while True:
+        try:
+            r = requests.get(IP_API_URL, timeout=5)
+            resp = r.json()
+            # print(json.dumps(resp, indent=2))
+            ip_info = {
+                "query": resp.get("query", "unknown"),
+                "source": "ip-api.com",
+                "continent": resp.get("continent", "unknown"),
+                "country": resp.get("country", "unknown"),
+                "region_name": resp.get("regionName", "unknown"),
+                "city": resp.get("city", "unknown"),
+                "isp": resp.get("isp", "unknown"),
+                "org": resp.get("org", "unknown"),
+                "as": resp.get("as", "unknown"),
+                "asname": resp.get("asname", "unknown"),
+                "lat": resp.get("lat", 0),
+                "lon": resp.get("lon", 0),
+            }
+            # print(json.dumps(ip_info, indent=2))
+            global G_IP_INFO
+            G_IP_INFO = ip_info
+        except Exception as ex:
+            traceback.print_exc()
+        # /1h
+        time.sleep(3600)
+
+
+def get_sys_info(options):
     """sys info"""
-    pass
-    # TODO
+    # pip3 install py-cpuinfo
+    import platform
+    from cpuinfo import get_cpu_info
+    cpu_info = get_cpu_info()
+
+    sys_info = {
+        "name": options.username,
+        "version": "stat_client.py",
+        "os_name": platform.system(),
+        "os_arch": platform.machine(),
+        "os_family": "unknown",
+        "os_release": platform.platform(),
+        "kernel_version": platform.release(),
+        "cpu_num": cpu_info.get("count", 0),
+        "cpu_brand": cpu_info.get("brand_raw", "unknown"),
+        "cpu_vender_id": cpu_info.get("vendor_id_raw", "unknown"),
+        "host_name": platform.node(),
+    }
+
+    print(json.dumps(sys_info, indent=2))
+    return sys_info
 
 
 def main():
@@ -441,6 +459,8 @@ def main():
                       default="p1", help="auth pass [default: %default]")
     parser.add_option("-n", "--vnstat", default=False,
                       action="store_true", help="enable vnstat [default: %default]")
+    parser.add_option("--disable-extra", default=False,
+                      action="store_true", help="disable extra info report [default: %default]")
     parser.add_option("--disable-ping", default=False,
                       action="store_true", help="disable ping [default: %default]")
     parser.add_option("--disable-tupd", default=False,
@@ -459,13 +479,13 @@ def main():
         if sys.platform.startswith("win"):
             raise RuntimeError("unsupported: enable vnstat on win os")
 
-    # TODO sys info
+    # sys info
+    if not options.disable_extra:
+        global G_SYS_INFO
+        G_SYS_INFO = get_sys_info(options)
 
     if options.addr.startswith("http"):
         http_report(options)
-    elif options.addr.startswith("tcp"):
-        raise RuntimeError("tcp unsupported")
-        tcp_report(options)
     elif options.addr.startswith("grpc"):
         raise RuntimeError("grpc unsupported")
     else:
