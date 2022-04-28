@@ -66,12 +66,8 @@ async fn stats_report(req: Request<Body>) -> Result<Response<Body>> {
     if let Some(auth) = req_header.get(hyper::header::AUTHORIZATION) {
         let auth_header_value = auth.to_str()?.to_string();
         if let Ok(credentials) = Credentials::from_header(auth_header_value) {
-            if G_CONFIG
-                .get()
-                .unwrap()
-                .auth(&credentials.user_id, &credentials.password)
-            {
-                auth_ok = true;
+            if let Some(cfg) = G_CONFIG.get() {
+                auth_ok = cfg.auth(&credentials.user_id, &credentials.password);
             }
         }
     }
@@ -154,7 +150,7 @@ fn init_jinja_tpl() -> Result<()> {
 }
 
 //
-async fn get_jinja_tpl_info(tag: &'static str, req: Request<Body>) -> Result<Response<Body>> {
+async fn render_jinja_ht_tpl(tag: &'static str, req: Request<Body>) -> Result<Response<Body>> {
     if !is_admin(&req) {
         return Ok(Response::builder()
             .header(header::WWW_AUTHENTICATE, "Basic realm=\"Restricted\"")
@@ -187,10 +183,6 @@ async fn get_jinja_tpl_info(tag: &'static str, req: Request<Body>) -> Result<Res
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .body(INTERNAL_SERVER_ERROR.into())?,
     ))
-}
-
-async fn get_detail_ht(req: Request<Body>) -> Result<Response<Body>> {
-    get_jinja_tpl_info("detail_ht", req).await
 }
 
 use prettytable::Table;
@@ -308,8 +300,8 @@ async fn main_service_func(req: Request<Body>) -> Result<Response<Body>> {
         (&Method::POST, "/report") => stats_report(req).await,
         (&Method::GET, "/json/stats.json") => get_stats_json().await,
         (&Method::GET, "/detail") => get_detail(req).await,
-        (&Method::GET, "/detail_ht") => get_detail_ht(req).await,
-        (&Method::GET, "/map") => get_jinja_tpl_info("map", req).await,
+        (&Method::GET, "/detail_ht") => render_jinja_ht_tpl("detail_ht", req).await,
+        (&Method::GET, "/map") => render_jinja_ht_tpl("map", req).await,
         (&Method::GET, "/") | (&Method::GET, "/index.html") => {
             let body = Body::from(Asset::get("/index.html").unwrap().data);
             Ok(Response::builder()
