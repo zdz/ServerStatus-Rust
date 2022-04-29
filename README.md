@@ -5,8 +5,8 @@
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/zdz/ServerStatus-Rust)](https://github.com/zdz/ServerStatus-Rust/releases)
 [![GitHub all releases](https://img.shields.io/github/downloads/zdz/ServerStatus-Rust/total)](https://github.com/zdz/ServerStatus-Rust/releases)
 
-<img width="1217" alt="image" src="https://user-images.githubusercontent.com/152173/162551520-b8615add-5258-4e23-a929-9728956cbd59.png">
-
+<img width="1215" alt="image" src="https://user-images.githubusercontent.com/152173/165957689-d35714a9-f7f8-49f7-9573-97d4cf3c2f79.png">
+<img width="1436" alt="image" src="https://user-images.githubusercontent.com/152173/165958225-25fc8fda-5798-42f8-bac5-72d778c0bab5.png">
 
 - [✨ Rust 版 ServerStatus 云探针](#-rust-版-serverstatus-云探针)
   - [1. 介绍](#1-介绍)
