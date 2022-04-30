@@ -7,8 +7,8 @@ use std::borrow::Borrow;
 use std::borrow::BorrowMut;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::fs;
 use std::fs::File;
-use std::io::BufReader;
 use std::io::Write;
 use std::sync::mpsc::sync_channel;
 use std::sync::mpsc::SyncSender;
@@ -46,31 +46,34 @@ impl StatsMgr {
         let mut hosts_map = cfg.hosts_map.clone();
 
         // load last_network_in/out
-        if let Ok(file) = File::open("stats.json") {
-            let stats_json: serde_json::Value = serde_json::from_reader(BufReader::new(file))?;
-            if let Some(servers) = stats_json["servers"].as_array() {
-                for v in servers {
-                    if let (Some(name), Some(last_network_in), Some(last_network_out)) = (
-                        v["name"].as_str(),
-                        v["last_network_in"].as_u64(),
-                        v["last_network_out"].as_u64(),
-                    ) {
-                        if let Some(srv) = hosts_map.get_mut(name) {
-                            srv.last_network_in = last_network_in;
-                            srv.last_network_out = last_network_out;
+        if let Ok(contents) = fs::read_to_string("stats.json") {
+            if let Ok(stats_json) = serde_json::from_str::<serde_json::Value>(contents.as_str()) {
+                if let Some(servers) = stats_json["servers"].as_array() {
+                    for v in servers {
+                        if let (Some(name), Some(last_network_in), Some(last_network_out)) = (
+                            v["name"].as_str(),
+                            v["last_network_in"].as_u64(),
+                            v["last_network_out"].as_u64(),
+                        ) {
+                            if let Some(srv) = hosts_map.get_mut(name) {
+                                srv.last_network_in = last_network_in;
+                                srv.last_network_out = last_network_out;
 
-                            trace!(
-                                "{} => last in/out ({}/{}))",
-                                &name,
-                                last_network_in,
-                                last_network_out
-                            );
+                                trace!(
+                                    "{} => last in/out ({}/{}))",
+                                    &name,
+                                    last_network_in,
+                                    last_network_out
+                                );
+                            }
+                        } else {
+                            error!("invalid json => {:?}", v);
                         }
-                    } else {
-                        error!("invalid json => {:?}", v);
                     }
+                    trace!("load stats.json succ!");
                 }
-                trace!("load stats.json succ!");
+            } else {
+                warn!("ignore invalid stats.json");
             }
         }
 
@@ -170,7 +173,6 @@ impl StatsMgr {
             let mut resp = StatsResp::new();
             let mut notified = false;
             if let Ok(mut host_stat_map) = stat_dict_2.lock() {
-                // let mut host_stat_map = stat_dict_2.lock().unwrap();
                 for (_, stat) in host_stat_map.iter_mut() {
                     if stat.disabled {
                         resp.servers.push(stat.to_owned().into_owned());
