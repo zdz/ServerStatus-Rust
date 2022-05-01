@@ -25,7 +25,7 @@
   - [7. 相关项目](#7-相关项目)
 
 ## 1. 介绍
-基于 `cppla/ServerStatus`，保持轻量和简化部署，主要特性如下：
+`cppla/ServerStatus` 威力加强版，保持轻量和简化部署，增加主要特性如下：
 
 - 使用 `rust` 完全重写 `server`、`client`，单个执行文件部署
 - 支持上下线和简单自定义规则告警 (`telegram`、 `wechat`、 `email`)
@@ -307,7 +307,7 @@ python3 stat_client.py -a "http://127.0.0.1:8080/report" -u h1 -p p1 -n
 server {
   # ssl,domain 等其它配置
 
-  # 代理 /report 请求
+  # 反代 /report 请求
   location = /report {
     proxy_set_header Host              $host;
     proxy_set_header X-Real-IP         $remote_addr;
@@ -318,7 +318,7 @@ server {
 
     proxy_pass http://127.0.0.1:8080/report;
   }
-  # 代理转发 json 数据请求
+  # 反代 json 数据请求
   location = /json/stats.json {
     proxy_set_header Host              $host;
     proxy_set_header X-Real-IP         $remote_addr;
@@ -329,6 +329,7 @@ server {
 
     proxy_pass http://127.0.0.1:8080/json/stats.json;
   }
+  # v1.4.0后，同样需要反代  /detail, /map
 
   # 其它 html,js,css 等，走本地文本
   location / {
@@ -376,6 +377,14 @@ OPTIONS:
     -u, --user <USER>     username [default: h1]
     -V, --version         Print version information
 ```
+</details>
+
+<details>
+  <summary>关于这个轮子</summary>
+
+  之前一直在使用 `Prometheus` + `Grafana` + `Alertmanager` + `node_exporter` 做VPS监控，这也是业界比较成熟的监控方案，用过一段时间后，发现非生产环境的话，很多监控指标都用不上，反而显得有些重。
+  `ServerStatus` 很好，足够简单和轻量，一眼看尽大好山河，只是 `c++` 版本很久没迭代过，自己的一些需求在原版上不是很好修改，如自带 `tcp` 上报对跨区机器不是很友好，也不方便对上报的链路优化 等等。过年的时候正值疫情闲来无事，学习 `Rust` 正好需要个小项目练手，于是撸个 `ServerStatus` 来练手，项目后面应该不会增加复杂的功能，保持小而美，简单部署，配合 [Uptime Kuma](https://github.com/louislam/uptime-kuma) 基本上可以满足大部分监控需求。
+
 </details>
 
 ## 7. 相关项目
