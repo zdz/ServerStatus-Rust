@@ -37,7 +37,7 @@ jobs:
 
       # 构建 Docker 并推送到 Docker hub
       - name: Build Docker
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: .
