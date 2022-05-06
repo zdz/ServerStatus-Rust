@@ -39,7 +39,7 @@
 |
 下载：[Releases](https://github.com/zdz/ServerStatus-Rust/releases)
 |
- 反馈：[Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
+反馈：[Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
 
 ## 2. 安装部署
 
@@ -123,12 +123,13 @@ admin_pass = ""
 # name 主机唯一标识，不可重复，alias 为展示名
 # 使用 ansible 批量部署时可以用主机 hostname 作为 name，统一密码
 # notify = false 单独禁止单台机器的告警，一般针对网络差，频繁上下线
-# monthstart = 1 没启用vnstat时，表示月流量从每月哪天开始统计
+# monthstart = 1 没启用 vnstat 时，表示月流量从每月哪天开始统计
 # disabled = true 单机禁用，跟删除这条配置的效果一样
 hosts = [
-  {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm", notify = true},
-  {name = "h2", password = "p2", alias = "n2", location = "🏢", type = "kvm", disabled = false},
+  {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm"},
+  {name = "h2", password = "p2", alias = "n2", location = "🏢", type = "kvm", notify = true},
   {name = "h3", password = "p3", alias = "n3", location = "🏝️", type = "kvm", monthstart = 1},
+  {name = "h4", password = "p4", alias = "n4", location = "🏢", type = "kvm", disabled = false},
 ]
 
 # 不开启告警，可忽略后面配置，或者删除不需要的通知方式
@@ -204,6 +205,7 @@ docker-compose up -d
 # rust client 可用参数
 ./stat_client -h
 OPTIONS:
+    -6, --ipv6             ipv6 only, default:false
     -a, --addr <ADDR>      [default: http://127.0.0.1:8080/report]
         --cm <CM_ADDR>     China Mobile probe addr [default: cm.tz.cloudcpp.com:80]
         --ct <CT_ADDR>     China Telecom probe addr [default: ct.tz.cloudcpp.com:80]
@@ -363,19 +365,10 @@ cargo build --release
 
 # 电信联通参数可以使用 -h 命令查看
 ./stat_client -h
-# rust client 可用参数
 OPTIONS:
-    -a, --addr <ADDR>     [default: http://127.0.0.1:8080/report]
-        --cm <CM_ADDR>    China Mobile probe addr [default: cm.tz.cloudcpp.com:80]
-        --ct <CT_ADDR>    China Telecom probe addr [default: ct.tz.cloudcpp.com:80]
-        --cu <CU_ADDR>    China Unicom probe addr [default: cu.tz.cloudcpp.com:80]
-        --disable-ping    disable ping, default:false
-        --disable-tupd    disable t/u/p/d, default:false
-    -h, --help            Print help information
-    -n, --vnstat          enable vnstat, default:false
-    -p, --pass <PASS>     password [default: p1]
-    -u, --user <USER>     username [default: h1]
-    -V, --version         Print version information
+    --cm <CM_ADDR>    China Mobile probe addr [default: cm.tz.cloudcpp.com:80]
+    --ct <CT_ADDR>    China Telecom probe addr [default: ct.tz.cloudcpp.com:80]
+    --cu <CU_ADDR>    China Unicom probe addr [default: cu.tz.cloudcpp.com:80]
 ```
 </details>
 
@@ -383,7 +376,7 @@ OPTIONS:
   <summary>关于这个轮子</summary>
 
   之前一直在使用 `Prometheus` + `Grafana` + `Alertmanager` + `node_exporter` 做VPS监控，这也是业界比较成熟的监控方案，用过一段时间后，发现非生产环境的话，很多监控指标都用不上，反而显得有些重。
-  `ServerStatus` 很好，足够简单和轻量，一眼看尽大好山河，只是 `c++` 版本很久没迭代过，自己的一些需求在原版上不是很好修改，如自带 `tcp` 上报对跨区机器不是很友好，也不方便对上报的链路优化 等等。过年的时候正值疫情闲来无事，学习 `Rust` 正好需要个小项目练手，于是撸个 `ServerStatus` 来练手，项目后面应该不会增加复杂的功能，保持小而美，简单部署，配合 [Uptime Kuma](https://github.com/louislam/uptime-kuma) 基本上可以满足大部分监控需求。
+  `ServerStatus` 很好，足够简单和轻量，一眼可以看尽大好山河，只是 `c++` 版本很久没迭代过，自己的一些需求在原版上不是很好修改，如自带 `tcp` 上报对跨区机器不是很友好，也不方便对上报的链路优化 等等。过年的时候正值疫情闲来无事，学习 `Rust` 正好需要个小项目练手，于是撸了个 `ServerStatus` 来练手，项目后面会继续维护但不会增加复杂的功能，保持小而美，简单部署，配合 [Uptime Kuma](https://github.com/louislam/uptime-kuma) 基本上可以满足个人大部分监控需求。
 
 </details>
 

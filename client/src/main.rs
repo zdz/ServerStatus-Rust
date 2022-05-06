@@ -19,6 +19,7 @@ use stat_common::server_status::{IpInfo, StatRequest, SysInfo};
 type GenericError = Box<dyn std::error::Error + Send + Sync>;
 type Result<T> = std::result::Result<T, GenericError>;
 mod grpc;
+mod ip_api;
 mod status;
 mod sys_info;
 
@@ -35,7 +36,7 @@ pub struct ClientConfig {
 
 pub static G_CONFIG: Lazy<Mutex<ClientConfig>> = Lazy::new(|| Mutex::new(ClientConfig::default()));
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[clap(author, version = env!("APP_VERSION"), about, long_about = None)]
 pub struct Args {
     #[clap(short, long, default_value = "http://127.0.0.1:8080/report")]
@@ -55,7 +56,7 @@ pub struct Args {
         help = "disable extra info report, default:false"
     )]
     disable_extra: bool,
-    #[clap( long = "ct", default_value = CT, help = "China Telecom probe addr")]
+    #[clap(long = "ct", default_value = CT, help = "China Telecom probe addr")]
     ct_addr: String,
     #[clap(long = "cm", default_value = CM, help = "China Mobile probe addr")]
     cm_addr: String,
@@ -65,6 +66,8 @@ pub struct Args {
     ip_info: bool,
     #[clap(long = "json", help = "use json protocol, default:false")]
     json: bool,
+    #[clap(short = '6', long = "ipv6", help = "ipv6 only, default:false")]
+    ipv6: bool,
 }
 
 fn sample_all(args: &Args, stat_base: &StatRequest) -> StatRequest {
@@ -169,12 +172,12 @@ fn http_report(args: &Args, stat_base: &mut StatRequest) -> Result<()> {
     }
 }
 
-async fn refresh_ip_info() {
+async fn refresh_ip_info(args: &Args) {
     // refresh/1 hour
     let mut interval = time::interval(time::Duration::from_secs(3600));
     loop {
         info!("get ip info from ip-api.com");
-        match stat_common::ip_api::get_ip_info().await {
+        match ip_api::get_ip_info(args.ipv6).await {
             Ok(ip_info) => {
                 info!("refresh_ip_info succ => {:?}", ip_info);
                 if let Ok(mut o) = G_CONFIG.lock() {
@@ -197,7 +200,7 @@ async fn main() -> Result<()> {
     dbg!(&args);
 
     if args.ip_info {
-        let info = stat_common::ip_api::get_ip_info().await?;
+        let info = ip_api::get_ip_info(args.ipv6).await?;
         dbg!(info);
         process::exit(0);
     }
@@ -237,7 +240,8 @@ async fn main() -> Result<()> {
 
     if !args.disable_extra {
         // refresh ip info
-        tokio::spawn(async { refresh_ip_info().await });
+        let args_1 = args.clone();
+        tokio::spawn(async move { refresh_ip_info(&args_1).await });
     }
 
     let mut stat_base = StatRequest {
