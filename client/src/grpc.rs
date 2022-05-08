@@ -33,7 +33,7 @@ pub async fn report(args: &Args, stat_base: &mut StatRequest) -> anyhow::Result<
         );
     }
 
-    let token = MetadataValue::from_str(format!("{}@_@{}", args.user, args.pass).as_str())?;
+    let token = MetadataValue::try_from(format!("{}@_@{}", args.user, args.pass).as_str())?;
 
     let channel = Channel::from_shared(args.addr.to_string())?
         .connect()
