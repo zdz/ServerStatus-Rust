@@ -364,19 +364,21 @@ function readCookie(name) {
 }
 
 window.onload = function(e) {
-        var cookie = readCookie("style");
-        if (cookie && cookie != 'null' ) {
-                setActiveStyleSheet(cookie);
-        } else {
-                function handleChange (mediaQueryListEvent) {
-                        if (mediaQueryListEvent.matches) {
-                                setActiveStyleSheet('dark');
-                        } else {
-                                setActiveStyleSheet('light');
-                        }
-                }
-                const mediaQueryListDark = window.matchMedia('(prefers-color-scheme: dark)');
-                setActiveStyleSheet(mediaQueryListDark.matches ? 'dark' : 'light');
-                mediaQueryListDark.addEventListener("change",handleChange);
-        }
+	setActiveStyleSheet("dark");
+
+	// var cookie = readCookie("style");
+	// if (cookie && cookie != 'null' ) {
+	// 		setActiveStyleSheet(cookie);
+	// } else {
+	// 		function handleChange (mediaQueryListEvent) {
+	// 				if (mediaQueryListEvent.matches) {
+	// 						setActiveStyleSheet('dark');
+	// 				} else {
+	// 						setActiveStyleSheet('light');
+	// 				}
+	// 		}
+	// 		const mediaQueryListDark = window.matchMedia('(prefers-color-scheme: dark)');
+	// 		setActiveStyleSheet(mediaQueryListDark.matches ? 'dark' : 'light');
+	// 		mediaQueryListDark.addEventListener("change",handleChange);
+	// }
 }
