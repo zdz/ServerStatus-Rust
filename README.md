@@ -10,6 +10,7 @@
 
 - [✨ Rust 版 ServerStatus 云探针](#-rust-版-serverstatus-云探针)
   - [1. 介绍](#1-介绍)
+    - [🍀 主题](#-主题)
   - [2. 安装部署](#2-安装部署)
     - [2.1 快速体验](#21-快速体验)
     - [2.2 服务管理脚本部署，感谢 @Colsro 提供](#22-服务管理脚本部署感谢-colsro-提供)
@@ -42,6 +43,19 @@
 下载：[Releases](https://github.com/zdz/ServerStatus-Rust/releases)
 |
 反馈：[Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
+
+### 🍀 主题
+
+如果你觉得你修改的主题还不错，欢迎分享出来
+
+<details>
+  <summary>Hotaru 主题</summary>
+
+Hotaru 主题 [@HinataKato](https://github.com/HinataKato) 修改提供，[主题地址](https://github.com/HinataKato/hotaru_theme_for_RustVersion)
+
+<img width="1202" alt="image" src="https://user-images.githubusercontent.com/152173/167900971-5ef0c23a-af43-4f52-aab5-d58e4a66c8ea.png">
+
+</details>
 
 ## 2. 安装部署
 
