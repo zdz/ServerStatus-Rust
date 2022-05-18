@@ -46,12 +46,12 @@
 
 ### 🍀 主题
 
-如果你觉得你修改的主题还不错，欢迎分享出来
+如果你觉得你修改的主题还不错，欢迎分享/PR，前端单独部署方法参见 [#37](https://github.com/zdz/ServerStatus-Rust/discussions/37)
 
 <details>
   <summary>Hotaru 主题</summary>
 
-Hotaru 主题 [@HinataKato](https://github.com/HinataKato) 修改提供，[主题地址](https://github.com/HinataKato/hotaru_theme_for_RustVersion)
+Hotaru 主题由 [@HinataKato](https://github.com/HinataKato) 修改提供，[主题地址](https://github.com/HinataKato/hotaru_theme_for_RustVersion)
 
 <img width="1202" alt="image" src="https://user-images.githubusercontent.com/152173/167900971-5ef0c23a-af43-4f52-aab5-d58e4a66c8ea.png">
 
@@ -126,6 +126,8 @@ help:
 
 <details>
   <summary>前后端分离部署</summary>
+
+这种方式是将前端主题部分单独部署在 `vercel.app` ，前后端分离部署，使用 `routes` 指向后端，功能类似 `nginx` 反代，好处是主题保持在自己的库中，主题随便修改而无需改动 `server`。目前 `tz-rust.vercel.app` 也是使用这种方式。[#37](https://github.com/zdz/ServerStatus-Rust/discussions/37)
 
 ```bash
 # 1. 参照前面先把 Server 部署好
@@ -375,9 +377,11 @@ python3 stat_client.py -a "http://127.0.0.1:8080/report" -u h1 -p p1 -n
 <details>
   <summary>如何使用自定义主题</summary>
 
+更灵活的方式参见 [#37](https://github.com/zdz/ServerStatus-Rust/discussions/37)
+
 ```nginx
 server {
-  # ssl,domain 等其它配置
+  # ssl, domain 等其它 nginx 配置
 
   # 反代 /report 请求
   location = /report {
