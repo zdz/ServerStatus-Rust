@@ -36,6 +36,13 @@ impl ServerStatus for ServerStatusSrv {
 }
 
 fn check_auth(req: Request<()>) -> Result<Request<()>, Status> {
+    let mut group_auth = false;
+    req.metadata().get("ssr-auth").map(|v| {
+        v.to_str().map(|s| {
+            group_auth = s.eq("group");
+        })
+    });
+
     match req.metadata().get("authorization") {
         Some(token) => {
             let tuple = token
@@ -45,17 +52,21 @@ fn check_auth(req: Request<()>) -> Result<Request<()>, Status> {
                 .collect::<Vec<_>>();
 
             if tuple.len() == 2 {
-                if let Some(mgr) = G_CONFIG.get() {
-                    if mgr.auth(tuple[0], tuple[1]) {
+                if let Some(cfg) = G_CONFIG.get() {
+                    if group_auth {
+                        if cfg.group_auth(tuple[0], tuple[1]) {
+                            return Ok(req);
+                        }
+                    } else if cfg.auth(tuple[0], tuple[1]) {
                         return Ok(req);
                     }
                 }
             }
 
-            Err(Status::unauthenticated("invalid user && pass"))
+            Err(Status::unauthenticated("invalid user/group && pass"))
         }
 
-        _ => Err(Status::unauthenticated("invalid user && pass")),
+        _ => Err(Status::unauthenticated("invalid user/group && pass")),
     }
 }
 

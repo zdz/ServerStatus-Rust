@@ -111,6 +111,7 @@ impl crate::notifier::Notifier for Email {
             self.kind(),
             get_tag(e),
             context!(host => stat, config => self.config),
+            true,
         )
         .map(|content| match *e {
             Event::NodeUp | Event::NodeDown => self.send_notify(content).unwrap(),

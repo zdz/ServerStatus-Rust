@@ -33,7 +33,16 @@ pub async fn report(args: &Args, stat_base: &mut StatRequest) -> anyhow::Result<
         );
     }
 
-    let token = MetadataValue::try_from(format!("{}@_@{}", args.user, args.pass))?;
+    let auth_user: String;
+    let ssr_auth: &[u8];
+    if args.gid.is_empty() {
+        auth_user = args.user.to_string();
+        ssr_auth = b"single";
+    } else {
+        auth_user = args.gid.to_string();
+        ssr_auth = b"group";
+    }
+    let token = MetadataValue::try_from(format!("{}@_@{}", auth_user, args.pass))?;
 
     let channel = Channel::from_shared(args.addr.to_string())?
         .connect()
@@ -43,6 +52,9 @@ pub async fn report(args: &Args, stat_base: &mut StatRequest) -> anyhow::Result<
     let grpc_client =
         ServerStatusClient::with_interceptor(timeout_channel, move |mut req: Request<()>| {
             req.metadata_mut().insert("authorization", token.clone());
+            req.metadata_mut()
+                .insert("ssr-auth", MetadataValue::try_from(ssr_auth).unwrap());
+
             Ok(req)
         });
 

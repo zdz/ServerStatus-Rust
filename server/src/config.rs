@@ -17,16 +17,18 @@ fn default_grpc_addr() -> String {
 fn default_http_addr() -> String {
     "0.0.0.0:8080".to_string()
 }
+fn default_workspace() -> String {
+    "/opt/ServerStatus".to_string()
+}
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct Host {
     pub name: String,
     pub password: String,
     #[serde(default = "Default::default")]
     pub alias: String,
     pub location: String,
-    #[serde(rename = "type")]
-    pub host_type: String,
+    pub r#type: String,
     #[serde(default = "u32::default")]
     pub monthstart: u32,
     #[serde(default = "default_as_true")]
@@ -42,6 +44,44 @@ pub struct Host {
     // user data
     #[serde(skip_serializing, skip_deserializing)]
     pub pos: usize,
+    #[serde(default = "Default::default", skip_serializing)]
+    pub weight: u64,
+    #[serde(default = "Default::default")]
+    pub gid: String,
+    #[serde(default = "Default::default")]
+    pub latest_ts: u64,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct HostGroup {
+    pub gid: String,
+    pub password: String,
+    pub location: String,
+    pub r#type: String,
+    #[serde(default = "default_as_true")]
+    pub notify: bool,
+    // user data
+    #[serde(skip_serializing, skip_deserializing)]
+    pub pos: usize,
+    #[serde(default = "Default::default", skip_serializing)]
+    pub weight: u64,
+}
+
+impl HostGroup {
+    pub fn inst_host(&self, name: &str) -> Host {
+        Host {
+            name: name.to_owned(),
+            gid: self.gid.to_owned(),
+            password: self.password.to_owned(),
+            location: self.location.to_owned(),
+            r#type: self.r#type.to_owned(),
+            monthstart: 1,
+            notify: self.notify,
+            pos: self.pos,
+            weight: self.weight,
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -54,7 +94,7 @@ pub struct Config {
     pub notify_interval: u64,
     #[serde(default = "Default::default")]
     pub offline_threshold: u64,
-    // admin user&pass
+    // admin user & pass
     pub admin_user: Option<String>,
     pub admin_pass: Option<String>,
 
@@ -64,15 +104,36 @@ pub struct Config {
     pub wechat: notifier::wechat::Config,
     #[serde(default = "Default::default")]
     pub email: notifier::email::Config,
+
+    #[serde(default = "Default::default")]
     pub hosts: Vec<Host>,
+    #[serde(default = "Default::default")]
+    pub hosts_group: Vec<HostGroup>,
+    #[serde(default = "Default::default")]
+    pub group_gc: u64,
+
+    // deploy
+    #[serde(default = "Default::default")]
+    pub server_url: String,
+    #[serde(default = "default_workspace")]
+    pub workspace: String,
 
     #[serde(skip_deserializing)]
     pub hosts_map: HashMap<String, Host>,
+
+    #[serde(skip_deserializing)]
+    pub hosts_group_map: HashMap<String, HostGroup>,
 }
 
 impl Config {
     pub fn auth(&self, user: &str, pass: &str) -> bool {
         if let Some(o) = self.hosts_map.get(user) {
+            return pass.eq(o.password.as_str());
+        }
+        false
+    }
+    pub fn group_auth(&self, gid: &str, pass: &str) -> bool {
+        if let Some(o) = self.hosts_group_map.get(gid) {
             return pass.eq(o.password.as_str());
         }
         false
@@ -86,13 +147,9 @@ impl Config {
     pub fn get_host(&self, name: &str) -> Option<&Host> {
         self.hosts_map.get(name)
     }
-}
-
-pub fn test_from_file(cfg: &str) -> Result<Config> {
-    fs::read_to_string(cfg)
-        .map(|contents| toml::from_str::<Config>(&contents))
-        .unwrap()
-        .map_err(anyhow::Error::new)
+    // pub fn get_host_group(&self, gid: &str) -> Option<&HostGroup> {
+    //     self.hosts_group_map.get(gid)
+    // }
 }
 
 pub fn from_str(content: &str) -> Option<Config> {
@@ -107,14 +164,27 @@ pub fn from_str(content: &str) -> Option<Config> {
         if host.monthstart < 1 || host.monthstart > 31 {
             host.monthstart = 1;
         }
+        host.weight = 10000_u64 - idx as u64;
         o.hosts_map.insert(host.name.to_owned(), host.clone());
+    }
+
+    for (idx, group) in o.hosts_group.iter_mut().enumerate() {
+        group.pos = idx;
+        group.weight = (10000 - (1 + idx) * 100) as u64;
+        o.hosts_group_map
+            .insert(group.gid.to_owned(), group.clone());
+    }
+
+    if o.offline_threshold < 30 {
+        o.offline_threshold = 30;
     }
     if o.notify_interval < 30 {
         o.notify_interval = 30;
     }
-    if o.offline_threshold < 30 {
-        o.offline_threshold = 30;
+    if o.group_gc < 30 {
+        o.group_gc = 30;
     }
+
     if o.admin_user.is_none() || o.admin_user.as_ref()?.is_empty() {
         o.admin_user = Some("admin".to_string());
     }
@@ -140,4 +210,11 @@ pub fn from_file(cfg: &str) -> Option<Config> {
     fs::read_to_string(cfg)
         .map(|contents| from_str(contents.as_str()))
         .ok()?
+}
+
+pub fn test_from_file(cfg: &str) -> Result<Config> {
+    fs::read_to_string(cfg)
+        .map(|contents| toml::from_str::<Config>(&contents))
+        .unwrap()
+        .map_err(anyhow::Error::new)
 }

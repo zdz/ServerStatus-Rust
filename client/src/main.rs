@@ -68,6 +68,15 @@ pub struct Args {
     json: bool,
     #[clap(short = '6', long = "ipv6", help = "ipv6 only, default:false")]
     ipv6: bool,
+    // #[clap(long = "debug", help = "debug mode, default:false")]
+    // debug: bool,
+    // for group
+    #[clap(short, long, default_value = "", help = "group id")]
+    gid: String,
+    #[clap(long = "alias", default_value = "unknown", help = "alias for host")]
+    alias: String,
+    #[clap(short, long, default_value = "0", help = "weight for rank")]
+    weight: u64,
 }
 
 fn sample_all(args: &Args, stat_base: &StatRequest) -> StatRequest {
@@ -145,8 +154,16 @@ fn http_report(args: &Args, stat_base: &mut StatRequest) -> Result<()> {
 
         let client = http_client.clone();
         let url = args.addr.to_string();
-        let auth_user = args.user.to_string();
         let auth_pass = args.pass.to_string();
+        let auth_user: String;
+        let ssr_auth: &str;
+        if args.gid.is_empty() {
+            auth_user = args.user.to_string();
+            ssr_auth = "single";
+        } else {
+            auth_user = args.gid.to_string();
+            ssr_auth = "group";
+        }
 
         // http
         tokio::spawn(async move {
@@ -155,6 +172,7 @@ fn http_report(args: &Args, stat_base: &mut StatRequest) -> Result<()> {
                 .basic_auth(auth_user, Some(auth_pass))
                 .timeout(Duration::from_secs(3))
                 .header(header::CONTENT_TYPE, content_type)
+                .header("ssr-auth", ssr_auth)
                 .body(body_data.unwrap())
                 .send()
                 .await
@@ -196,7 +214,7 @@ async fn refresh_ip_info(args: &Args) {
 #[tokio::main]
 async fn main() -> Result<()> {
     pretty_env_logger::init();
-    let args = Args::parse();
+    let mut args = Args::parse();
     dbg!(&args);
 
     if args.ip_info {
@@ -205,17 +223,19 @@ async fn main() -> Result<()> {
         process::exit(0);
     }
 
+    // support check
+    if !System::IS_SUPPORTED {
+        panic!("当前系统不支持，请切换到Python跨平台版本!");
+    }
+
     let sys_info = sys_info::collect_sys_info(&args);
     let sys_info_json = serde_json::to_string(&sys_info)?;
+    let sys_id = sys_info::gen_sys_id(&sys_info);
+    eprintln!("sys id: {}", sys_id);
     eprintln!("sys info: {}", sys_info_json);
 
     if let Ok(mut o) = G_CONFIG.lock() {
         o.sys_info = Some(sys_info);
-    }
-
-    // support check
-    if !System::IS_SUPPORTED {
-        panic!("当前系统不支持，请切换到Python跨平台版本!");
     }
 
     // use native
@@ -250,8 +270,22 @@ async fn main() -> Result<()> {
         online4: ipv4,
         online6: ipv6,
         vnstat: args.vnstat,
+        weight: args.weight,
+        version: env!("CARGO_PKG_VERSION").to_string(),
         ..Default::default()
     };
+    if !args.gid.is_empty() {
+        stat_base.gid = args.gid.to_owned();
+        if stat_base.name.eq("h1") {
+            stat_base.name = sys_id;
+        }
+        if args.alias.eq("unknown") {
+            args.alias = stat_base.name.to_owned();
+        } else {
+            stat_base.alias = args.alias.to_owned();
+        }
+    }
+    // dbg!(&stat_base);
 
     if args.addr.starts_with("http") {
         let result = http_report(&args, &mut stat_base);

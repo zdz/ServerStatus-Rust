@@ -89,6 +89,11 @@ message StatRequest {
 
   optional SysInfo sys_info = 37;
   optional IpInfo ip_info = 38;
+
+  // group
+  string gid = 39;
+  string alias = 40;
+  uint64 weight = 41;
 }
 
 message Response {
@@ -96,6 +101,4 @@ message Response {
   string message = 2;
 }
 
-service ServerStatus {
-  rpc Report(StatRequest) returns (Response);
-}
+service ServerStatus { rpc Report(StatRequest) returns (Response); }

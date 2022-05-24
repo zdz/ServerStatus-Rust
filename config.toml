@@ -14,11 +14,29 @@ admin_pass = ""
 # monthstart = 1 没启用vnstat时，表示月流量从每月哪天开始统计
 # disabled = true 单机禁用，跟删除这条配置的效果一样
 hosts = [
-  {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm", notify = true},
+  {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm"},
   {name = "h2", password = "p2", alias = "n2", location = "🏢", type = "kvm", disabled = false},
-  {name = "h3", password = "p3", alias = "n3", location = "🏝️", type = "kvm", monthstart = 1},
+  {name = "h3", password = "p3", alias = "n3", location = "🏡", type = "kvm", monthstart = 1},
+  {name = "h4", password = "p4", alias = "n4", location = "🏡", type = "kvm", notify = true},
 ]
 
+# 动态注册模式，不再需要针对每一个主机做单独配置
+# gid 为模板组id, 自动注册唯一标识，不可重复
+hosts_group = [
+  # 可以按国家地区或用途来做分组
+  {gid = "g1", password = "pp", location = "🏠", type = "kvm", notify = true},
+  {gid = "g2", password = "pp", location = "🏢", type = "kvm", notify = true},
+  # 例如不发送通知可以单独做一组
+  {gid = "silent", password = "pp", location = "🏡", type = "kvm", notify = false},
+]
+# 动态注册模式下，无效数据清理间隔，默认 30s
+group_gc = 30
+
+# !!! 一键部署如果没问题则不需要动，Server 会自行根据你的域名生成 server_url
+# 修正一键部署，请自行替换 ssr.rs 为你的域名,
+# server_url = "https://ssr.rs/report"
+# stat_client 默认安装的路径
+workspace = "/opt/ServerStatus"
 
 # 不开启告警，可忽略后面配置，或者删除不需的通知方式
 # 告警间隔默认为30s

@@ -83,6 +83,7 @@ pub fn start_net_speed_collect_t() {
     });
 }
 
+// TODO
 pub fn sample(args: &Args, stat: &mut StatRequest) {
     stat.version = env!("CARGO_PKG_VERSION").to_string();
     stat.vnstat = args.vnstat;
@@ -210,4 +211,20 @@ pub fn collect_sys_info(args: &Args) -> SysInfo {
     info_pb.host_name = sys.host_name().unwrap_or_default();
 
     info_pb
+}
+
+pub fn gen_sys_id(sys_info: &SysInfo) -> String {
+    format!(
+        "{:x}",
+        md5::compute(format!(
+            "{}/{}/{}/{}/{}/{}/{}",
+            sys_info.host_name,
+            sys_info.os_name,
+            sys_info.os_arch,
+            sys_info.os_family,
+            sys_info.os_release,
+            sys_info.kernel_version,
+            sys_info.cpu_brand,
+        ))
+    )
 }

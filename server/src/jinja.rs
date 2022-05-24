@@ -23,7 +23,12 @@ where
         .unwrap();
 }
 
-pub fn render_template(kind: &'static str, tag: &'static str, ctx: Value) -> Result<String> {
+pub fn render_template(
+    kind: &'static str,
+    tag: &'static str,
+    ctx: Value,
+    trim: bool,
+) -> Result<String> {
     let name = format!("{}.{}", kind, tag);
     Ok(JINJA_ENV
         .lock()
@@ -31,12 +36,15 @@ pub fn render_template(kind: &'static str, tag: &'static str, ctx: Value) -> Res
             e.get_template(name.as_str()).map(|tmpl| {
                 tmpl.render(ctx)
                     .map(|content| {
+                        if trim {
+                            return content
+                                .split('\n')
+                                .map(|t| t.trim())
+                                .filter(|&t| !t.is_empty())
+                                .collect::<Vec<&str>>()
+                                .join("\n");
+                        }
                         content
-                            .split('\n')
-                            .map(|t| t.trim())
-                            .filter(|&t| !t.is_empty())
-                            .collect::<Vec<&str>>()
-                            .join("\n")
                     })
                     .unwrap_or_else(|err| {
                         error!("tmpl.render err => {:?}", err);

@@ -18,6 +18,7 @@ use std::thread;
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use crate::config::Host;
 use crate::notifier::{Event, Notifier};
 use crate::payload::{HostStat, StatsResp};
 
@@ -38,77 +39,130 @@ impl StatsMgr {
         }
     }
 
+    fn load_last_network(&mut self, hosts_map: &mut HashMap<String, Host>) {
+        let contents = fs::read_to_string("stats.json").unwrap_or_default();
+        if contents.is_empty() {
+            return;
+        }
+
+        if let Ok(stats_json) = serde_json::from_str::<serde_json::Value>(contents.as_str()) {
+            if let Some(servers) = stats_json["servers"].as_array() {
+                for v in servers {
+                    if let (Some(name), Some(last_network_in), Some(last_network_out)) = (
+                        v["name"].as_str(),
+                        v["last_network_in"].as_u64(),
+                        v["last_network_out"].as_u64(),
+                    ) {
+                        if let Some(srv) = hosts_map.get_mut(name) {
+                            srv.last_network_in = last_network_in;
+                            srv.last_network_out = last_network_out;
+
+                            trace!(
+                                "{} => last in/out ({}/{}))",
+                                &name,
+                                last_network_in,
+                                last_network_out
+                            );
+                        }
+                    } else {
+                        error!("invalid json => {:?}", v);
+                    }
+                }
+                trace!("load stats.json succ!");
+            }
+        } else {
+            warn!("ignore invalid stats.json");
+        }
+    }
+
     pub fn init(
         &mut self,
         cfg: &'static crate::config::Config,
         notifies: Arc<Mutex<Vec<Box<dyn Notifier + Send>>>>,
     ) -> Result<()> {
-        let mut hosts_map = cfg.hosts_map.clone();
+        let hosts_map_base = Arc::new(Mutex::new(cfg.hosts_map.clone()));
 
         // load last_network_in/out
-        if let Ok(contents) = fs::read_to_string("stats.json") {
-            if let Ok(stats_json) = serde_json::from_str::<serde_json::Value>(contents.as_str()) {
-                if let Some(servers) = stats_json["servers"].as_array() {
-                    for v in servers {
-                        if let (Some(name), Some(last_network_in), Some(last_network_out)) = (
-                            v["name"].as_str(),
-                            v["last_network_in"].as_u64(),
-                            v["last_network_out"].as_u64(),
-                        ) {
-                            if let Some(srv) = hosts_map.get_mut(name) {
-                                srv.last_network_in = last_network_in;
-                                srv.last_network_out = last_network_out;
-
-                                trace!(
-                                    "{} => last in/out ({}/{}))",
-                                    &name,
-                                    last_network_in,
-                                    last_network_out
-                                );
-                            }
-                        } else {
-                            error!("invalid json => {:?}", v);
-                        }
-                    }
-                    trace!("load stats.json succ!");
-                }
-            } else {
-                warn!("ignore invalid stats.json");
-            }
+        if let Ok(mut hosts_map) = hosts_map_base.lock() {
+            self.load_last_network(&mut *hosts_map);
         }
 
         let (stat_tx, stat_rx) = sync_channel(512);
         STAT_SENDER.set(stat_tx).unwrap();
         let (notifier_tx, notifier_rx) = sync_channel(512);
 
-        let stat_dict: Arc<Mutex<HashMap<String, Cow<HostStat>>>> =
+        let stat_map: Arc<Mutex<HashMap<String, Cow<HostStat>>>> =
             Arc::new(Mutex::new(HashMap::new()));
 
         // stat_rx thread
-        let stat_dict_1 = stat_dict.clone();
+        let hosts_group_map = cfg.hosts_group_map.clone();
+        let hosts_map_1 = hosts_map_base.clone();
+        let stat_map_1 = stat_map.clone();
         let notifier_tx_1 = notifier_tx.clone();
         thread::spawn(move || loop {
             while let Ok(stat) = stat_rx.recv() {
                 trace!("recv stat `{:?}", stat);
-                if let Some(info) = hosts_map.get_mut(&stat.name) {
+
+                let mut stat_c = stat;
+                let mut stat_t = stat_c.to_mut();
+
+                // group mode
+                if !stat_t.gid.is_empty() {
+                    if stat_t.alias.is_empty() {
+                        stat_t.alias = stat_t.name.to_string();
+                    }
+
+                    if let Ok(mut hosts_map) = hosts_map_1.lock() {
+                        let host = hosts_map.get(&stat_t.name);
+                        if host.is_none() || !host.unwrap().gid.eq(&stat_t.gid) {
+                            if let Some(group) = hosts_group_map.get(&stat_t.gid) {
+                                // 名称不变，换组了，更新组配置 & last in/out
+                                let mut inst = group.inst_host(&stat_t.name);
+                                if let Some(o) = host {
+                                    inst.last_network_in = o.last_network_in;
+                                    inst.last_network_out = o.last_network_out;
+                                };
+                                hosts_map.insert(stat_t.name.to_string(), inst);
+                            } else {
+                                continue;
+                            }
+                        }
+                    }
+                }
+
+                //
+                if let Ok(mut hosts_map) = hosts_map_1.lock() {
+                    let host_info = hosts_map.get_mut(&stat_t.name);
+                    if host_info.is_none() {
+                        error!("invalid stat `{:?}", stat_t);
+                        continue;
+                    }
+                    let info = host_info.unwrap();
+
                     if info.disabled {
                         continue;
                     }
 
-                    let local_now = Local::now();
                     // 补齐
-                    let mut stat_c = stat;
-                    let mut stat_t = stat_c.to_mut();
                     stat_t.location = info.location.to_string();
-                    stat_t.host_type = info.host_type.to_owned();
+                    stat_t.host_type = info.r#type.to_owned();
                     stat_t.pos = info.pos;
-                    stat_t.alias = info.alias.to_owned();
                     stat_t.disabled = info.disabled;
-                    stat_t.latest_ts = SystemTime::now()
+                    stat_t.weight += info.weight;
+
+                    // !group
+                    if !info.alias.is_empty() {
+                        stat_t.alias = info.alias.to_owned();
+                    }
+
+                    info.latest_ts = SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .unwrap()
                         .as_secs();
+                    stat_t.latest_ts = info.latest_ts;
+
                     // last_network_in/out
+                    let local_now = Local::now();
                     if !stat_t.vnstat {
                         if info.last_network_in == 0
                             || (stat_t.network_in != 0 && info.last_network_in > stat_t.network_in)
@@ -138,8 +192,8 @@ impl StatsMgr {
                     }
 
                     info!("update stat `{:?}", stat_t);
-                    if let Ok(mut host_stat_map) = stat_dict_1.lock() {
-                        if let Some(pre_stat) = host_stat_map.get(&info.name) {
+                    if let Ok(mut host_stat_map) = stat_map_1.lock() {
+                        if let Some(pre_stat) = host_stat_map.get(&stat_t.name) {
                             if stat_t.ip_info.is_none() {
                                 stat_t.ip_info = pre_stat.ip_info.to_owned();
                             }
@@ -151,11 +205,9 @@ impl StatsMgr {
                                 notifier_tx_1.send((Event::NodeUp, stat_c.to_owned()));
                             }
                         }
-                        host_stat_map.insert(info.name.to_string(), stat_c);
+                        host_stat_map.insert(stat_c.name.to_string(), stat_c);
                         //trace!("{:?}", host_stat_map);
                     }
-                } else {
-                    error!("invalid stat `{:?}", stat);
                 }
             }
         });
@@ -163,16 +215,33 @@ impl StatsMgr {
         // timer thread
         let resp_json = self.resp_json.clone();
         let stats_data = self.stats_data.clone();
-        let stat_dict_2 = stat_dict.clone();
+        let hosts_map_2 = hosts_map_base.clone();
+        let stat_map_2 = stat_map.clone();
         let notifier_tx_2 = notifier_tx.clone();
-        let mut latest_notify_ts: u64 = 0;
-        let mut latest_save_ts: u64 = 0;
+        let mut latest_notify_ts = 0_u64;
+        let mut latest_save_ts = 0_u64;
+        let mut latest_group_gc = 0_u64;
         thread::spawn(move || loop {
             thread::sleep(Duration::from_millis(500));
 
             let mut resp = StatsResp::new();
+            let now = resp.updated;
             let mut notified = false;
-            if let Ok(mut host_stat_map) = stat_dict_2.lock() {
+
+            // gc for group
+            if latest_group_gc + cfg.group_gc < now {
+                latest_group_gc = now;
+                //
+                if let Ok(mut hosts_map) = hosts_map_2.lock() {
+                    hosts_map.retain(|_, o| o.gid.is_empty() || o.latest_ts + cfg.group_gc >= now);
+                }
+                //
+                if let Ok(mut stat_map) = stat_map_2.lock() {
+                    stat_map.retain(|_, o| o.gid.is_empty() || o.latest_ts + cfg.group_gc >= now);
+                }
+            }
+
+            if let Ok(mut host_stat_map) = stat_map_2.lock() {
                 for (_, stat) in host_stat_map.iter_mut() {
                     if stat.disabled {
                         resp.servers.push(stat.to_owned().into_owned());
@@ -181,15 +250,16 @@ impl StatsMgr {
                     let stat_c = stat.borrow_mut();
                     let o = stat_c.to_mut();
                     // 30s 下线
-                    if o.latest_ts + cfg.offline_threshold < resp.updated {
+                    if o.latest_ts + cfg.offline_threshold < now {
                         o.online4 = false;
                         o.online6 = false;
                     }
 
+                    // client notify
                     if let Some(info) = cfg.get_host(o.name.as_str()) {
                         if info.notify {
                             // notify check /30 s
-                            if latest_notify_ts + cfg.notify_interval < resp.updated {
+                            if latest_notify_ts + cfg.notify_interval < now {
                                 if o.online4 || o.online6 {
                                     notifier_tx_2.send((Event::Custom, stat_c.to_owned()));
                                 } else {
@@ -204,15 +274,24 @@ impl StatsMgr {
                     resp.servers.push(stat_c.to_owned().into_owned());
                 }
                 if notified {
-                    latest_notify_ts = resp.updated;
+                    latest_notify_ts = now;
                 }
             }
 
-            resp.servers.sort_by(|a, b| a.pos.cmp(&b.pos));
+            resp.servers.sort_by(|a, b| {
+                if a.weight != b.weight {
+                    return a.weight.cmp(&b.weight).reverse();
+                }
+                if a.pos != b.pos {
+                    return a.pos.cmp(&b.pos);
+                }
+                // same group
+                a.alias.cmp(&b.alias)
+            });
 
             // last_network_in/out save /60s
-            if latest_save_ts + SAVE_INTERVAL < resp.updated {
-                latest_save_ts = resp.updated;
+            if latest_save_ts + SAVE_INTERVAL < now {
+                latest_save_ts = now;
                 if !resp.servers.is_empty() {
                     if let Ok(mut file) = File::create("stats.json") {
                         file.write(serde_json::to_string(&resp).unwrap().as_bytes());
