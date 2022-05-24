@@ -1,16 +1,10 @@
 version: "3"
-networks:
-  traefik:
-    external:
-      name: traefik_gw
 
 services:
   stat_server:
     image: idoge/stat_server:latest
     container_name: stat_server
     restart: unless-stopped
-    networks:
-      - traefik
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./config.toml:/config.toml
