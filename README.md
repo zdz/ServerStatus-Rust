@@ -3,7 +3,7 @@
 [![Docker](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml)
 [![Release](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml)
 [![GitHub issues](https://img.shields.io/github/issues/zdz/ServerStatus-Rust)](https://github.com/zdz/ServerStatus-Rust/issues)
-![GitHub Discussions](https://img.shields.io/github/discussions/zdz/ServerStatus-Rust)
+[![GitHub Discussions](https://img.shields.io/github/discussions/zdz/ServerStatus-Rust)](https://github.com/zdz/ServerStatus-Rust/discussions)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/zdz/ServerStatus-Rust)](https://github.com/zdz/ServerStatus-Rust/releases)
 [![GitHub all releases](https://img.shields.io/github/downloads/zdz/ServerStatus-Rust/total)](https://github.com/zdz/ServerStatus-Rust/releases)
 
