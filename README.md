@@ -2,8 +2,11 @@
 
 [![Docker](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml)
 [![Release](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml)
+[![GitHub issues](https://img.shields.io/github/issues/zdz/ServerStatus-Rust)](https://github.com/zdz/ServerStatus-Rust/issues)
+![GitHub Discussions](https://img.shields.io/github/discussions/zdz/ServerStatus-Rust)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/zdz/ServerStatus-Rust)](https://github.com/zdz/ServerStatus-Rust/releases)
 [![GitHub all releases](https://img.shields.io/github/downloads/zdz/ServerStatus-Rust/total)](https://github.com/zdz/ServerStatus-Rust/releases)
+
 
 <img width="1215" alt="image" src="https://user-images.githubusercontent.com/152173/165957689-d35714a9-f7f8-49f7-9573-97d4cf3c2f79.png">
 <img width="1436" alt="image" src="https://user-images.githubusercontent.com/152173/165958225-25fc8fda-5798-42f8-bac5-72d778c0bab5.png">
@@ -18,7 +21,6 @@
     - [2.2 快速部署](#22-快速部署)
     - [2.3 服务管理脚本部署，感谢 @Colsro 提供](#23-服务管理脚本部署感谢-colsro-提供)
     - [2.4 Railway 部署](#24-railway-部署)
-    - [2.5 前后端分离部署](#25-前后端分离部署)
   - [3. 服务端说明](#3-服务端说明)
     - [3.1 配置文件 `config.toml`](#31-配置文件-configtoml)
     - [3.2 服务端运行](#32-服务端运行)
@@ -131,61 +133,6 @@ help:
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/kzT46l?referralCode=pJYbdU)
 
-### 2.5 前后端分离部署
-
-<details>
-  <summary>前后端分离部署</summary>
-
-这种方式是将前端主题部分单独部署在 `vercel.app` ，前后端分离部署，使用 `routes` 指向后端，功能类似 `nginx` 反代，好处是主题保持在自己的库中，主题随便修改而无需改动 `server`。目前 `tz-rust.vercel.app` 也是使用这种方式。[#37](https://github.com/zdz/ServerStatus-Rust/discussions/37)
-
-```bash
-# 1. 参照前面先把 Server 部署好
-# 2. 复制 web 目录，新建一个代码库，工程目录结构如下
-
-~$ tree .
-.
-├── README.md
-├── css
-│   ├── bootstrap-theme.min.css
-│   ├── bootstrap-theme.min.css.map
-│   ├── bootstrap.min.css
-│   ├── bootstrap.min.css.map
-│   └── dark.css
-├── favicon.ico
-├── img
-│   └── dark.png
-├── index.html
-├── js
-│   ├── bootstrap.min.js
-│   ├── jquery.min.js
-│   └── serverstatus.js
-├── netlify.toml
-└── vercel.json
-
-# 3. 在工程目录添加 vercel.json 文件来指定路由，指向你的 Server，内容如下
-
-{
-  "routes": [
-    {
-      "src": "/json/stats.json",
-      "dest": "http://tz.xxx.com:8080/json/stats.json"
-    },
-    {
-      "src": "/detail",
-      "dest": "http://tz.xxx.com:8080/detail"
-    },
-    {
-      "src": "/map",
-      "dest": "http://tz.xxx.com:8080/map"
-    }
-  ]
-}
-
-# 4. 最后将这个静态站点部署到 vercel.com
-# 部署教程参照 =》 google 搜索 "vercel.com 部署静态站点"
-```
-
-</details>
 
 ## 3. 服务端说明
 
@@ -322,6 +269,8 @@ OPTIONS:
 --disable-ping  # 停用三网延时和丢包率探测
 --disable-tupd  # 不上报 tcp/udp/进程数/线程数，减少CPU占用
 -w, --weight    # 排序加分，微调让主机靠前显示，无强迫症可忽略
+-g, --gid       # 动态注册的组id
+--alias         # 动态注册模式下，指定主机的展示名字
 ```
 
 ### 4.2 跨平台版本 (`Window`, `Linux`, `...`)
@@ -470,7 +419,7 @@ OPTIONS:
   <summary>关于这个轮子</summary>
 
   之前一直在使用 `Prometheus` + `Grafana` + `Alertmanager` + `node_exporter` 做VPS监控，这也是业界比较成熟的监控方案，用过一段时间后，发现非生产环境，很多监控指标都用不上，反而显得有些重。
-  而 `ServerStatus` 很好，足够简单和轻量，一眼可以看尽所有小机机，只是 `c++` 版本很久没迭代过，自己的一些需求在原版上不是很好修改，如自带 `tcp` 上报对跨区机器不是很友好，也不方便对上报的链路做优化 等等。过年的时候正值疫情闲来无事，学习 `Rust` 正好需要个小项目练手，于是撸了个 `ServerStatus` 来练手，项目后面会继续维护但不会增加复杂的功能，保持小而美，简单部署，配合 [Uptime Kuma](https://github.com/louislam/uptime-kuma) 基本上可以满足个人大部分监控需求。
+  而 `ServerStatus` 很好，足够简单和轻量，一眼可以看尽所有小机机，只是 `c++` 版本很久没迭代过，自己的一些需求在原版上不是很好修改，如自带 `tcp` 上报对跨区机器不是很友好，也不方便对上报的链路做优化 等等。过年的时候正值疫情闲来无事，学习 `Rust` 正好需要个小项目练手，于是撸了个 `ServerStatus` 来练手，项目后面会继续维护但不会增加复杂的功能(有趣的除外)，保持小而美，简单部署，配合 [Uptime Kuma](https://github.com/louislam/uptime-kuma) 基本上可以满足个人大部分监控需求。
 
 </details>
 
