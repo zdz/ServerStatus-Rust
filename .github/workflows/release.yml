@@ -65,7 +65,7 @@ jobs:
         continue-on-error: true
         # Disable upx for mips. See https://github.com/upx/upx/issues/387
         if: matrix.os == 'ubuntu-latest' && !contains(matrix.target, 'mips')
-        uses: crazy-max/ghaction-upx@v1
+        uses: crazy-max/ghaction-upx@v2
         with:
           version: latest
           files: |
