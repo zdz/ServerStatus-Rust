@@ -1,0 +1,62 @@
+name: Rust
+
+on:
+  pull_request:
+    branches: ["*"]
+  push:
+    branches: ["dev"]
+
+concurrency:
+  # Documentation suggests ${{ github.head_ref }}, but that's only available on pull_request/pull_request_target triggers, so using ${{ github.ref }}.
+  # On main, we want all builds to complete even if merging happens faster to make it easier to discover at which point something broke.
+  group: ${{ github.ref == 'refs/heads/main' && format('ci-main-{0}', github.sha) || format('ci-{0}', github.ref) }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lints:
+    name: Lints
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: clippy
+      - uses: Swatinem/rust-cache@v1
+      - name: Clippy
+        run: cargo clippy -- -D warnings
+      - name: Setup cargo-hack
+        run: cargo install cargo-hack
+      - name: Check all features
+        run: cargo hack check --feature-powerset --no-dev-deps
+
+  build:
+    name: Build for ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v1
+      - name: Build
+        run: cargo build
+      - name: Run tests
+        run: cargo test --verbose
+      - uses: actions/upload-artifact@v2
+        with:
+          name: SSR-${{ matrix.target }}
+          path: |
+            target/${{ matrix.target }}/release/stat_server
+            target/${{ matrix.target }}/release/stat_client
