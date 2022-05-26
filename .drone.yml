@@ -1,56 +1,133 @@
 ---
 kind: pipeline
 type: docker
-name: default
+name: linux-amd64
 
 platform:
   os: linux
   arch: amd64
 
 steps:
-- name: build docker
-  image: plugins/docker
+  - name: build docker
+    image: plugins/docker
+    settings:
+      username:
+        from_secret: hub_docker_username
+      password:
+        from_secret: hub_docker_password
+      repo: idoge/stat_server
+      # https://docs.drone.io/plugins/popular/docker/#autotag
+      auto_tag: true
+      auto_tag_suffix: linux-amd64
+      # 与  Dockerfile 对应
+      target: production
+
+    when:
+      event:
+        - push
+        - tag
+
+node:
+  ci: rust
+
+
+---
+kind: pipeline
+type: docker
+name: linux-arm64
+
+platform:
+  os: linux
+  arch: arm64
+
+steps:
+  - name: build docker
+    image: plugins/docker
+    settings:
+      username:
+        from_secret: hub_docker_username
+      password:
+        from_secret: hub_docker_password
+      repo: idoge/stat_server
+      auto_tag: true
+      auto_tag_suffix: linux-arm64
+      # 与  Dockerfile 对应
+      target: production
+
+    when:
+      event:
+        - push
+        - tag
+
+---
+kind: pipeline
+type: docker
+name: manifest
+
+steps:
+- name: manifest
+  image: plugins/manifest
   settings:
+    auto_tag: "true"
+    ignore_missing: "true"
     username:
       from_secret: hub_docker_username
     password:
       from_secret: hub_docker_password
-    repo: idoge/stat_server
-    tags:
-      - dev
-    # 与  Dockerfile 对应
-    target: production
+    spec: .drone.manifest.tmpl
+    platforms:
+      - linux/amd64
+      - linux/arm64
 
-- name: notify-wx
-  image: lizheming/drone-wechat
-  pull: always
-  settings:
-    title: >
-     {% if success %}
-     ✅ {{repo.owner}}/{{repo.name}} 第 {{build.number}} 次构建成功！
-     {% else %}
-     ❌ {{repo.owner}}/{{repo.name}} 第 {{build.number}} 次构建失败了，快来修理下吧。
-     {% endif %}
-    corpid:
-      from_secret: corpid
-    corp_secret:
-      from_secret: corp_secret
-    agent_id:
-      from_secret: agent_id
-    to_user: "@all"
-    message: >
-      {% if success %}
-      😊主人，{{repo.owner}}/{{repo.name}}第{{build.number}}次构建成功！
-      {% else %}
-      😭主人，{{repo.owner}}/{{repo.name}}第{{build.number}}次构建失败了，快来修理下吧。
-      {% endif %}
-  when:
-    status:
-    - success
-    - failure
+depends_on:
+  - linux-amd64
+  - linux-arm64
 
 trigger:
-  branch:
-  - master
+  event:
+    - push
+    - tag
 
+---
+kind: pipeline
+type: docker
+name: notify
 
+steps:
+  - name: notify-wx
+    image: lizheming/drone-wechat
+    pull: always
+    settings:
+      title: >
+        {% if success %}
+        ✅ {{repo.owner}}/{{repo.name}} 第 {{build.number}} 次构建成功！
+        {% else %}
+        ❌ {{repo.owner}}/{{repo.name}} 第 {{build.number}} 次构建失败了，快来修理下吧。
+        {% endif %}
+      corpid:
+        from_secret: corpid
+      corp_secret:
+        from_secret: corp_secret
+      agent_id:
+        from_secret: agent_id
+      to_user: "@all"
+      message: >
+        {% if success %}
+        😊主人，{{repo.owner}}/{{repo.name}}第{{build.number}}次构建成功！
+        {% else %}
+        😭主人，{{repo.owner}}/{{repo.name}}第{{build.number}}次构建失败了，快来修理下吧。
+        {% endif %}
+    when:
+      status:
+        - success
+        - failure
+
+trigger:
+  event:
+    - push
+    - tag
+
+depends_on:
+  - manifest
+
+##
