@@ -64,7 +64,11 @@ function check_arch() {
 }
 
 function download_client() {
-depends=("unzip" "wget" "chmod" "vnstat")
+if [[ ${SSR_VNSTAT} == "true" ]]; then 
+    depends=("unzip" "wget" "chmod" "vnstat")
+    else
+    depends=("unzip" "wget" "chmod")
+fi
 depend=""
 for i in "${!depends[@]}"; do
 	now_depend="${depends[$i]}"
