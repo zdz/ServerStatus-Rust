@@ -64,13 +64,37 @@ function check_arch() {
 }
 
 function download_client() {
-    need_cmd rm
-    need_cmd unzip
-    need_cmd wget
-    need_cmd chmod
+depends=("unzip" "wget" "chmod" "vnstat")
+depend=""
+for i in "${!depends[@]}"; do
+	now_depend="${depends[$i]}"
+	if [ ! -x "$(command -v $now_depend 2>/dev/null)" ]; then
+		echo "$now_depend 未安装"
+		depend="$now_depend $depend"
+	fi
+done
+if [ "$depend" ]; then
+	if [ -x "$(command -v apk 2>/dev/null)" ]; then
+		apk --no-cache add $depend $proxy >>/dev/null 2>&1
+	elif [ -x "$(command -v apt-get 2>/dev/null)" ]; then
+		apt -y install $depend >>/dev/null 2>&1
+	elif [ -x "$(command -v yum 2>/dev/null)" ]; then
+		yum -y install $depend >>/dev/null 2>&1
+	else
+		red "未找到合适的包管理工具,请手动安装:$depend"
+		exit 1
+	fi
+	for i in "${!depends[@]}"; do
+		now_depend="${depends[$i]}"
+		if [ ! -x "$(command -v $now_depend)" ]; then
+			red "$now_depend 未成功安装,请尝试手动安装!"
+			exit 1
+		fi
+	done
+fi
 
     if [ "${CN}" = true ]; then
-        MIRROR="https://gh-proxy.com/"
+        MIRROR="https://ghproxy.com/"
         say "using mirror: ${MIRROR}"
     fi
 
