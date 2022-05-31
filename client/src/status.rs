@@ -17,8 +17,7 @@ use std::str;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
-use std::time::Duration;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use crate::Args;
 use stat_common::server_status::StatRequest;
@@ -339,10 +338,7 @@ fn start_ping_collect_t(data: &Arc<Mutex<PingData>>) {
             package_lost -= 1;
         }
 
-        let st = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis();
+        let instant = Instant::now();
         match TcpStream::connect_timeout(&addr, Duration::from_millis(TIMEOUT_MS)) {
             Ok(s) => {
                 let _ = s.shutdown(Shutdown::Both);
@@ -358,11 +354,7 @@ fn start_ping_collect_t(data: &Arc<Mutex<PingData>>) {
                 }
             }
         }
-        let et = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis();
-        let time_cost_ms = et - st;
+        let time_cost_ms = instant.elapsed().as_millis();
 
         if let Ok(mut o) = ping_data.lock() {
             o.ping_time = time_cost_ms as u32;

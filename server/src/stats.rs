@@ -162,8 +162,8 @@ impl StatsMgr {
                     stat_t.latest_ts = info.latest_ts;
 
                     // last_network_in/out
-                    let local_now = Local::now();
                     if !stat_t.vnstat {
+                        let local_now = Local::now();
                         if info.last_network_in == 0
                             || (stat_t.network_in != 0 && info.last_network_in > stat_t.network_in)
                             || (local_now.day() == info.monthstart
