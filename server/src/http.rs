@@ -55,10 +55,14 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
             .body(StatusCode::BAD_REQUEST.canonical_reason().unwrap().into())?);
     }
     let vnstat = params.get("vnstat").map(|p| p.eq("1")).unwrap_or(false);
-    let mut weight = 0_u64;
-    if let Some(w) = params.get("weight") {
-        weight = w.parse::<u64>().unwrap_or_default();
-    }
+    let disable_ping = params.get("ping").map(|p| p.eq("0")).unwrap_or(false);
+    let disable_tupd = params.get("tupd").map(|p| p.eq("0")).unwrap_or(false);
+    let disable_extra = params.get("extra").map(|p| p.eq("0")).unwrap_or(false);
+    let cn = params.get("cn").map(|p| p.eq("1")).unwrap_or(false);
+    let weight = params
+        .get("weight")
+        .map(|p| p.parse::<u64>().unwrap_or(0_u64))
+        .unwrap_or(0_u64);
 
     // auth
     let mut auth_ok = false;
@@ -119,6 +123,15 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
     if vnstat {
         client_opts.push_str(" -n");
     }
+    if disable_ping {
+        client_opts.push_str(" --disable-ping");
+    }
+    if disable_tupd {
+        client_opts.push_str(" --disable-tupd");
+    }
+    if disable_extra {
+        client_opts.push_str(" --disable-extra");
+    }
     if weight > 0 {
         client_opts.push_str(format!(r#" -w {}"#, weight).as_str());
     }
@@ -135,7 +148,7 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
         "client-init",
         context!(
             pass => pass, uid => uid, gid => gid, alias => alias,
-            vnstat => vnstat, weight => weight,
+            vnstat => vnstat, weight => weight, cn => cn,
             domain => domain, scheme => scheme,
             server_url => server_url, workspace => workspace,
             client_opts => client_opts,
