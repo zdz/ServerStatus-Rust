@@ -7,12 +7,13 @@ export SSR_GID={{gid}}
 export SSR_ALIAS={{alias}}
 export SSR_SCHEME={{scheme}}
 export SSR_DOMAIN={{domain}}
-export SSR_SRVEL_URL={{server_url}}
+export SSR_SERVER_URL={{server_url}}
 export SSR_VNSTAT={{vnstat}}
 export SSR_WEIGHT={{weight}}
 export SSR_PKG_VERSION={{pkg_version}}
 export SSR_CLIENT_OPTS='{{client_opts}}'
 export SSR_WORKSPACE={{workspace}}
+export SSR_CN={{cn}}
 
 Info="\033[32m[info]\033[0m"
 Error="\033[31m[err]\033[0m"
@@ -63,41 +64,50 @@ function check_arch() {
     say "os arch: ${arch}"
 }
 
-function download_client() {
-if [[ ${SSR_VNSTAT} == "true" ]]; then 
-    depends=("unzip" "wget" "chmod" "vnstat")
-    else
-    depends=("unzip" "wget" "chmod")
-fi
-depend=""
-for i in "${!depends[@]}"; do
-	now_depend="${depends[$i]}"
-	if [ ! -x "$(command -v $now_depend 2>/dev/null)" ]; then
-		echo "$now_depend 未安装"
-		depend="$now_depend $depend"
-	fi
-done
-if [ "$depend" ]; then
-	if [ -x "$(command -v apk 2>/dev/null)" ]; then
-		apk --no-cache add $depend $proxy >>/dev/null 2>&1
-	elif [ -x "$(command -v apt-get 2>/dev/null)" ]; then
-		apt -y install $depend >>/dev/null 2>&1
-	elif [ -x "$(command -v yum 2>/dev/null)" ]; then
-		yum -y install $depend >>/dev/null 2>&1
-	else
-		red "未找到合适的包管理工具,请手动安装:$depend"
-		exit 1
-	fi
-	for i in "${!depends[@]}"; do
-		now_depend="${depends[$i]}"
-		if [ ! -x "$(command -v $now_depend)" ]; then
-			red "$now_depend 未成功安装,请尝试手动安装!"
-			exit 1
-		fi
-	done
-fi
+function install_deps() {
+    say "checking dependencies"
 
-    if [ "${CN}" = true ]; then
+    if [ "${SSR_VNSTAT}" == "true" ]; then
+        cmd_deps=("unzip" "wget" "chmod" "vnstat")
+    else
+        cmd_deps=("unzip" "wget" "chmod")
+    fi
+    need_deps=""
+    for i in "${!cmd_deps[@]}"; do
+        cur_dep="${cmd_deps[$i]}"
+        if [ ! -x "$(command -v $cur_dep 2>/dev/null)" ]; then
+            say "$cur_dep 未安装"
+            need_deps="$cur_dep ${need_deps}"
+        fi
+    done
+    if [ "${need_deps}" ]; then
+        say "start installing dependencies: ${need_deps}"
+
+        if [ -x "$(command -v apk 2>/dev/null)" ]; then
+            apk update > /dev/null 2>&1
+            apk --no-cache add ${need_deps} > /dev/null 2>&1
+        elif [ -x "$(command -v apt-get 2>/dev/null)" ]; then
+            apt-get update -y > /dev/null 2>&1
+            apt-get install -y  ${need_deps} > /dev/null 2>&1
+        elif [ -x "$(command -v yum 2>/dev/null)" ]; then
+            yum install -y  ${need_deps} > /dev/null 2>&1
+        else
+            err "未找到合适的包管理工具,请手动安装: ${need_deps}"
+            exit 1
+        fi
+        for i in "${!cmd_deps[@]}"; do
+            cur_dep="${cmd_deps[$i]}"
+            if [ ! -x "$(command -v $cur_dep)" ]; then
+                err "$cur_dep 未成功安装,请尝试手动安装!"
+                exit 1
+            fi
+        done
+    fi
+}
+
+function download_client() {
+
+    if [ "${SSR_CN}" = true ]; then
         MIRROR="https://ghproxy.com/"
         say "using mirror: ${MIRROR}"
     fi
@@ -160,5 +170,6 @@ EOF
 }
 
 check_arch
+install_deps
 download_client
 install_client_service
