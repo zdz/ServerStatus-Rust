@@ -64,6 +64,16 @@ Hotaru 主题由 [@HinataKato](https://github.com/HinataKato) 修改提供，[�
 
 </details>
 
+<details>
+  <summary>ServerStatus-web 主题</summary>
+
+ServerStatus-web 主题由 [@mjjrock](https://github.com/mjjrock) 修改提供，[主题地址](https://github.com/mjjrock/ServerStatus-web)
+
+<img width="1425" alt="image" src="https://user-images.githubusercontent.com/102237118/171837653-3a5b2cd6-bf02-4602-a132-2c80a6707f68.png">
+
+
+</details>
+
 ## 2. 安装部署
 
 ### 2.1 快速体验
