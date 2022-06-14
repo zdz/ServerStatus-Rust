@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
-use sysinfo::{DiskExt, NetworkExt, ProcessorExt, RefreshKind, System, SystemExt};
+use sysinfo::{CpuExt, DiskExt, NetworkExt, RefreshKind, System, SystemExt};
 
 use crate::status;
 use crate::status::get_vnstat_traffic;
@@ -41,9 +41,9 @@ pub fn start_cpu_percent_collect_t() {
     let mut sys = System::new_all();
     sys.refresh_cpu();
     thread::spawn(move || loop {
-        let global_processor = sys.global_processor_info();
+        let global_cpu = sys.global_cpu_info();
         if let Ok(mut cpu_percent) = G_CPU_PERCENT.lock() {
-            *cpu_percent = global_processor.cpu_usage().round() as f64;
+            *cpu_percent = global_cpu.cpu_usage().round() as f64;
         }
 
         sys.refresh_cpu();
@@ -203,10 +203,10 @@ pub fn collect_sys_info(args: &Args) -> SysInfo {
     info_pb.kernel_version = sys.kernel_version().unwrap_or_default();
 
     // cpu
-    let global_processor = sys.global_processor_info();
-    info_pb.cpu_num = sys.processors().len() as u32;
-    info_pb.cpu_brand = global_processor.brand().to_string();
-    info_pb.cpu_vender_id = global_processor.vendor_id().to_string();
+    let global_cpu = sys.global_cpu_info();
+    info_pb.cpu_num = sys.cpus().len() as u32;
+    info_pb.cpu_brand = global_cpu.brand().to_string();
+    info_pb.cpu_vender_id = global_cpu.vendor_id().to_string();
 
     info_pb.host_name = sys.host_name().unwrap_or_default();
 
