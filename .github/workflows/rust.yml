@@ -36,9 +36,3 @@ jobs:
         run: cargo build
       - name: Run tests
         run: cargo test --verbose
-      - uses: actions/upload-artifact@v2
-        with:
-          name: SSR-${{ matrix.target }}
-          path: |
-            target/${{ matrix.target }}/release/stat_server
-            target/${{ matrix.target }}/release/stat_client
