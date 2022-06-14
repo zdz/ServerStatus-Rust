@@ -39,43 +39,73 @@ pub static G_CONFIG: Lazy<Mutex<ClientConfig>> = Lazy::new(|| Mutex::new(ClientC
 #[derive(Parser, Debug, Clone)]
 #[clap(author, version = env!("APP_VERSION"), about, long_about = None)]
 pub struct Args {
-    #[clap(short, long, default_value = "http://127.0.0.1:8080/report")]
+    #[clap(
+        short,
+        long,
+        value_parser,
+        default_value = "http://127.0.0.1:8080/report"
+    )]
     addr: String,
-    #[clap(short, long, default_value = "h1", help = "username")]
+    #[clap(short, long, value_parser, default_value = "h1", help = "username")]
     user: String,
-    #[clap(short, long, default_value = "p1", help = "password")]
+    #[clap(short, long, value_parser, default_value = "p1", help = "password")]
     pass: String,
-    #[clap(short = 'n', long, help = "enable vnstat, default:false")]
+    #[clap(short = 'n', long, value_parser, help = "enable vnstat, default:false")]
     vnstat: bool,
-    #[clap(long = "disable-tupd", help = "disable t/u/p/d, default:false")]
+    #[clap(
+        long = "disable-tupd",
+        value_parser,
+        help = "disable t/u/p/d, default:false"
+    )]
     disable_tupd: bool,
-    #[clap(long = "disable-ping", help = "disable ping, default:false")]
+    #[clap(
+        long = "disable-ping",
+        value_parser,
+        help = "disable ping, default:false"
+    )]
     disable_ping: bool,
     #[clap(
         long = "disable-extra",
+        value_parser,
         help = "disable extra info report, default:false"
     )]
     disable_extra: bool,
-    #[clap(long = "ct", default_value = CT, help = "China Telecom probe addr")]
+    #[clap(long = "ct", value_parser, default_value = CT, help = "China Telecom probe addr")]
     ct_addr: String,
-    #[clap(long = "cm", default_value = CM, help = "China Mobile probe addr")]
+    #[clap(long = "cm", value_parser, default_value = CM, help = "China Mobile probe addr")]
     cm_addr: String,
-    #[clap(long = "cu", default_value = CU, help = "China Unicom probe addr")]
+    #[clap(long = "cu", value_parser, default_value = CU, help = "China Unicom probe addr")]
     cu_addr: String,
-    #[clap(long = "ip-info", help = "show ip info, default:false")]
+    #[clap(long = "ip-info", value_parser, help = "show ip info, default:false")]
     ip_info: bool,
-    #[clap(long = "json", help = "use json protocol, default:false")]
+    #[clap(long = "json", value_parser, help = "use json protocol, default:false")]
     json: bool,
-    #[clap(short = '6', long = "ipv6", help = "ipv6 only, default:false")]
+    #[clap(
+        short = '6',
+        value_parser,
+        long = "ipv6",
+        help = "ipv6 only, default:false"
+    )]
     ipv6: bool,
     // #[clap(long = "debug", help = "debug mode, default:false")]
     // debug: bool,
     // for group
-    #[clap(short, long, default_value = "", help = "group id")]
+    #[clap(short, long, value_parser, default_value = "", help = "group id")]
     gid: String,
-    #[clap(long = "alias", default_value = "unknown", help = "alias for host")]
+    #[clap(
+        long = "alias",
+        value_parser,
+        default_value = "unknown",
+        help = "alias for host"
+    )]
     alias: String,
-    #[clap(short, long, default_value = "0", help = "weight for rank")]
+    #[clap(
+        short,
+        long,
+        value_parser,
+        default_value = "0",
+        help = "weight for rank"
+    )]
     weight: u64,
 }
 
