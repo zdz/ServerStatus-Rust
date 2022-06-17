@@ -1,4 +1,4 @@
-FROM rust:1.61-alpine3.15 as builder
+FROM rust:1-alpine3.16 as builder
 # This is important, see https://github.com/rust-lang/docker-rust/issues/85
 ENV RUSTFLAGS="-C target-feature=-crt-static"
 ENV RUST_BACKTRACE=full
