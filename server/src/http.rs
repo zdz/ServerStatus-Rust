@@ -120,7 +120,7 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
         .get("weight")
         .map(|p| p.parse::<u64>().unwrap_or(0_u64))
         .unwrap_or(0_u64);
-    let notify = params.get("notify").map(|p| p.eq("0")).unwrap_or(true);
+    let notify = params.get("notify").map(|p| !p.eq("0")).unwrap_or(true);
     let host_type = params.get("type").unwrap_or(&invalid);
     let location = params.get("loc").unwrap_or(&invalid);
 
