@@ -107,16 +107,17 @@ function install_deps() {
 
 function download_client() {
 
-    if [ "${SSR_CN}" = true ]; then
-        MIRROR="https://ghproxy.com/"
-        say "using mirror: ${MIRROR}"
-    fi
-
     cd ${SSR_WORKSPACE}
     rm -rf client-*.zip stat_* | true
 
     say "start downloading the stat_client"
-    wget --no-check-certificate -qO "client-${arch}-unknown-linux-musl.zip" "${MIRROR}https://github.com/zdz/ServerStatus-Rust/releases/download/v{{pkg_version}}/client-${arch}-unknown-linux-musl.zip"
+
+    if [ "${SSR_CN}" = true ]; then
+        say "using cn mirror: coding.net"
+        wget --no-check-certificate -qO "client-${arch}-unknown-linux-musl.zip" "https://d0ge-generic.pkg.coding.net/ServerStatus-Rust/releases/client-${arch}-unknown-linux-musl-v{{pkg_version}}.zip?version=v{{pkg_version}}"
+    else
+        wget --no-check-certificate -qO "client-${arch}-unknown-linux-musl.zip" "https://github.com/zdz/ServerStatus-Rust/releases/download/v{{pkg_version}}/client-${arch}-unknown-linux-musl.zip"
+    fi
 
     say "download stat_client succ"
 
