@@ -69,6 +69,8 @@ Hotaru 主题由 [@HinataKato](https://github.com/HinataKato) 修改提供，[�
 
 ServerStatus-web 主题由 [@mjjrock](https://github.com/mjjrock) 修改提供，[主题地址](https://github.com/mjjrock/ServerStatus-web)
 
+演示：[Demo](https://ssr-web.vercel.app)
+
 <img width="1425" alt="image" src="https://user-images.githubusercontent.com/102237118/171837653-3a5b2cd6-bf02-4602-a132-2c80a6707f68.png">
 
 
@@ -253,24 +255,27 @@ docker-compose up -d
 # rust client 可用参数
 ./stat_client -h
 OPTIONS:
-    -6, --ipv6               ipv6 only, default:false
-    -a, --addr <ADDR>        [default: http://127.0.0.1:8080/report]
-        --alias <ALIAS>      alias for host [default: unknown]
-        --cm <CM_ADDR>       China Mobile probe addr [default: cm.tz.cloudcpp.com:80]
-        --ct <CT_ADDR>       China Telecom probe addr [default: ct.tz.cloudcpp.com:80]
-        --cu <CU_ADDR>       China Unicom probe addr [default: cu.tz.cloudcpp.com:80]
-        --disable-extra      disable extra info report, default:false
-        --disable-ping       disable ping, default:false
-        --disable-tupd       disable t/u/p/d, default:false
-    -g, --gid <GID>          group id [default: ]
-    -h, --help               Print help information
-        --ip-info            show ip info, default:false
-        --json               use json protocol, default:false
-    -n, --vnstat             enable vnstat, default:false
-    -p, --pass <PASS>        password [default: p1]
-    -u, --user <USER>        username [default: h1]
-    -V, --version            Print version information
-    -w, --weight <WEIGHT>    weight for rank [default: 0]
+    -6, --ipv6                   ipv6 only, default:false
+    -a, --addr <ADDR>            [default: http://127.0.0.1:8080/report]
+        --alias <ALIAS>          alias for host [default: unknown]
+        --cm <CM_ADDR>           China Mobile probe addr [default: cm.tz.cloudcpp.com:80]
+        --ct <CT_ADDR>           China Telecom probe addr [default: ct.tz.cloudcpp.com:80]
+        --cu <CU_ADDR>           China Unicom probe addr [default: cu.tz.cloudcpp.com:80]
+        --disable-extra          disable extra info report, default:false
+        --disable-notify         disable notify, default:false
+        --disable-ping           disable ping, default:false
+        --disable-tupd           disable t/u/p/d, default:false
+    -g, --gid <GID>              group id [default: ]
+    -h, --help                   Print help information
+        --ip-info                show ip info, default:false
+        --json                   use json protocol, default:false
+        --location <LOCATION>    location [default: ]
+    -n, --vnstat                 enable vnstat, default:false
+    -p, --pass <PASS>            password [default: p1]
+    -t, --type <HOST_TYPE>       host type [default: ]
+    -u, --user <USER>            username [default: h1]
+    -V, --version                Print version information
+    -w, --weight <WEIGHT>        weight for rank [default: 0]
 
 # 一些参数说明
 --ip-info       # 显示本机ip信息后立即退出，目前使用 ip-api.com 数据
