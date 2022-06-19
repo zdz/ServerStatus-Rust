@@ -12,10 +12,12 @@ pub struct HostStat {
     pub name: String,
     #[serde(default = "Default::default")]
     pub alias: String,
-    #[serde(rename = "type", skip_deserializing)]
+    #[serde(rename = "type", default = "Default::default")]
     pub host_type: String,
-    #[serde(skip_deserializing)]
+    #[serde(default = "Default::default")]
     pub location: String,
+    #[serde(default = "default_as_true")]
+    pub notify: bool,
     #[serde(default = "bool::default")]
     pub vnstat: bool,
 

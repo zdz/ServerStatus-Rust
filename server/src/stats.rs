@@ -144,8 +144,13 @@ impl StatsMgr {
                     }
 
                     // 补齐
-                    stat_t.location = info.location.to_string();
-                    stat_t.host_type = info.r#type.to_owned();
+                    if stat_t.location.is_empty() {
+                        stat_t.location = info.location.to_string();
+                    }
+                    if stat_t.host_type.is_empty() {
+                        stat_t.host_type = info.r#type.to_owned();
+                    }
+                    stat_t.notify = info.notify && stat_t.notify;
                     stat_t.pos = info.pos;
                     stat_t.disabled = info.disabled;
                     stat_t.weight += info.weight;
@@ -198,7 +203,7 @@ impl StatsMgr {
                                 stat_t.ip_info = pre_stat.ip_info.to_owned();
                             }
 
-                            if info.notify
+                            if stat_t.notify
                                 && (pre_stat.latest_ts + cfg.offline_threshold < stat_t.latest_ts)
                             {
                                 // node up notify
@@ -256,18 +261,16 @@ impl StatsMgr {
                     }
 
                     // client notify
-                    if let Some(info) = cfg.get_host(o.name.as_str()) {
-                        if info.notify {
-                            // notify check /30 s
-                            if latest_notify_ts + cfg.notify_interval < now {
-                                if o.online4 || o.online6 {
-                                    notifier_tx_2.send((Event::Custom, stat_c.to_owned()));
-                                } else {
-                                    o.disabled = true;
-                                    notifier_tx_2.send((Event::NodeDown, stat_c.to_owned()));
-                                }
-                                notified = true;
+                    if o.notify {
+                        // notify check /30 s
+                        if latest_notify_ts + cfg.notify_interval < now {
+                            if o.online4 || o.online6 {
+                                notifier_tx_2.send((Event::Custom, stat_c.to_owned()));
+                            } else {
+                                o.disabled = true;
+                                notifier_tx_2.send((Event::NodeDown, stat_c.to_owned()));
                             }
+                            notified = true;
                         }
                     }
 

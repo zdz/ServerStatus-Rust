@@ -496,6 +496,12 @@ def main():
                       help="China Unicom probe addr [default: %default]")
     parser.add_option("-w", "--weight", dest="weight",
                       default=0, help="weight for rank [default: %default]")
+    parser.add_option("--disable-notify", default=False,
+                      action="store_true", help="disable notify [default: %default]")
+    parser.add_option("-t", "--type", dest="type",
+                      default="", help="host type [default: %default]")
+    parser.add_option("--location", dest="location",
+                      default="", help="location [default: %default]")
 
     (options, args) = parser.parse_args()
     print(json.dumps(options.__dict__, indent=2))
@@ -527,9 +533,16 @@ def main():
         if options.username == "h1":
             stat_base['name'] = sys_id
         if options.alias == "unknown":
-            stat_base['alias'] = options.username
+            stat_base['alias'] = stat_base['name']
         else:
             stat_base['alias'] = options.alias
+
+    if options.disable_notify:
+        stat_base['notify'] = False
+    if len(options.type) > 0:
+        stat_base['type'] = options.type
+    if len(options.location) > 0:
+        stat_base['location'] = options.location
 
     print("stat_base: {}".format(json.dumps(stat_base, indent=2)))
     # sys.exit(0)

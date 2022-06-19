@@ -87,8 +87,6 @@ pub struct Args {
         help = "ipv6 only, default:false"
     )]
     ipv6: bool,
-    // #[clap(long = "debug", help = "debug mode, default:false")]
-    // debug: bool,
     // for group
     #[clap(short, long, value_parser, default_value = "", help = "group id")]
     gid: String,
@@ -107,6 +105,24 @@ pub struct Args {
         help = "weight for rank"
     )]
     weight: u64,
+    #[clap(
+        long = "disable-notify",
+        value_parser,
+        help = "disable notify, default:false"
+    )]
+    disable_notify: bool,
+    #[clap(
+        short = 't',
+        long = "type",
+        value_parser,
+        default_value = "",
+        help = "host type"
+    )]
+    host_type: String,
+    #[clap(long, value_parser, default_value = "", help = "location")]
+    location: String,
+    // #[clap(long = "debug", help = "debug mode, default:false")]
+    // debug: bool,
 }
 
 fn sample_all(args: &Args, stat_base: &StatRequest) -> StatRequest {
@@ -314,6 +330,15 @@ async fn main() -> Result<()> {
         } else {
             stat_base.alias = args.alias.to_owned();
         }
+    }
+    if args.disable_notify {
+        stat_base.notify = args.disable_notify;
+    }
+    if !args.host_type.is_empty() {
+        stat_base.r#type = args.host_type.to_owned();
+    }
+    if !args.location.is_empty() {
+        stat_base.location = args.location.to_owned();
     }
     // dbg!(&stat_base);
 

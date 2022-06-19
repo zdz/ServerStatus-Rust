@@ -41,7 +41,7 @@ message StatRequest {
   string version = 2;
   uint64 latest_ts = 3;
   string frame = 4;
-  // string location = 5;
+
   bool vnstat = 6;
 
   bool online4 = 7;
@@ -94,6 +94,10 @@ message StatRequest {
   string gid = 39;
   string alias = 40;
   uint64 weight = 41;
+
+  string type = 42;
+  string location = 43;
+  bool notify = 44;
 }
 
 message Response {

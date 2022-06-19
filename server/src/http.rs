@@ -15,6 +15,7 @@ type Result<T> = std::result::Result<T, GenericError>;
 
 static UNAUTHORIZED: &[u8] = b"Unauthorized";
 static INTERNAL_SERVER_ERROR: &[u8] = b"Internal Server Error";
+const KIND: &str = "http";
 
 // admin auth
 fn is_admin(req: &Request<Body>) -> bool {
@@ -54,15 +55,6 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
             .status(StatusCode::BAD_REQUEST)
             .body(StatusCode::BAD_REQUEST.canonical_reason().unwrap().into())?);
     }
-    let vnstat = params.get("vnstat").map(|p| p.eq("1")).unwrap_or(false);
-    let disable_ping = params.get("ping").map(|p| p.eq("0")).unwrap_or(false);
-    let disable_tupd = params.get("tupd").map(|p| p.eq("0")).unwrap_or(false);
-    let disable_extra = params.get("extra").map(|p| p.eq("0")).unwrap_or(false);
-    let cn = params.get("cn").map(|p| p.eq("1")).unwrap_or(false);
-    let weight = params
-        .get("weight")
-        .map(|p| p.parse::<u64>().unwrap_or(0_u64))
-        .unwrap_or(0_u64);
 
     // auth
     let mut auth_ok = false;
@@ -79,7 +71,6 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
             .body(UNAUTHORIZED.into())?);
     }
 
-    let req_header = req.headers();
     let mut domain = "localhost".to_string();
     let mut scheme = "http".to_string();
     let mut server_url = "".to_string();
@@ -92,6 +83,8 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
     }
     // build server url
     if server_url.is_empty() {
+        let req_header = req.headers();
+
         if let Some(v) = req.uri().scheme() {
             scheme = v.to_string();
             debug!("Http Scheme => {}", scheme);
@@ -118,6 +111,19 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
         server_url = format!("{}://{}/report", scheme, domain);
     }
 
+    let vnstat = params.get("vnstat").map(|p| p.eq("1")).unwrap_or(false);
+    let disable_ping = params.get("ping").map(|p| p.eq("0")).unwrap_or(false);
+    let disable_tupd = params.get("tupd").map(|p| p.eq("0")).unwrap_or(false);
+    let disable_extra = params.get("extra").map(|p| p.eq("0")).unwrap_or(false);
+    let cn = params.get("cn").map(|p| p.eq("1")).unwrap_or(false);
+    let weight = params
+        .get("weight")
+        .map(|p| p.parse::<u64>().unwrap_or(0_u64))
+        .unwrap_or(0_u64);
+    let notify = params.get("notify").map(|p| p.eq("0")).unwrap_or(true);
+    let host_type = params.get("type").unwrap_or(&invalid);
+    let location = params.get("loc").unwrap_or(&invalid);
+
     // build client opts
     let mut client_opts = format!(r#"-a "{}" -p "{}""#, server_url, pass);
     if vnstat {
@@ -133,18 +139,27 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
         client_opts.push_str(" --disable-extra");
     }
     if weight > 0 {
-        client_opts.push_str(format!(r#" -w {}"#, weight).as_str());
+        client_opts.push_str(&format!(r#" -w {}"#, weight));
     }
     if !gid.is_empty() {
-        client_opts.push_str(format!(r#" -g "{}""#, gid).as_str());
-        client_opts.push_str(format!(r#" --alias "{}""#, alias).as_str());
+        client_opts.push_str(&format!(r#" -g "{}""#, gid));
+        client_opts.push_str(&format!(r#" --alias "{}""#, alias));
     }
     if !uid.is_empty() {
-        client_opts.push_str(format!(r#" -u "{}""#, uid).as_str());
+        client_opts.push_str(&format!(r#" -u "{}""#, uid));
+    }
+    if !notify {
+        client_opts.push_str(" --disable-notify");
+    }
+    if !host_type.is_empty() {
+        client_opts.push_str(&format!(r#" -t "{}""#, host_type));
+    }
+    if !location.is_empty() {
+        client_opts.push_str(&format!(r#" --location "{}""#, location));
     }
 
     Ok(jinja::render_template(
-        "http",
+        KIND,
         "client-init",
         context!(
             pass => pass, uid => uid, gid => gid, alias => alias,
@@ -175,21 +190,21 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
 pub fn init_jinja_tpl() -> Result<()> {
     let detail_data = Asset::get("/jinja/detail.jinja.html").expect("detail.jinja.html not found");
     let detail_html: String = String::from_utf8(detail_data.data.try_into()?).unwrap();
-    jinja::add_template("http", "detail", detail_html);
+    jinja::add_template(KIND, "detail", detail_html);
 
     let map_data = Asset::get("/jinja/map.jinja.html").expect("map.jinja.html not found");
     let map_html: String = String::from_utf8(map_data.data.try_into()?).unwrap();
-    jinja::add_template("http", "map", map_html);
+    jinja::add_template(KIND, "map", map_html);
 
     let detail_ht_data =
         Asset::get("/jinja/detail_ht.jinja.html").expect("detail_ht.jinja.html not found");
     let detail_ht_html: String = String::from_utf8(detail_ht_data.data.try_into()?).unwrap();
-    jinja::add_template("http", "detail_ht", detail_ht_html);
+    jinja::add_template(KIND, "detail_ht", detail_ht_html);
 
     let client_init_sh =
         Asset::get("/jinja/client-init.jinja.sh").expect("client-init.jinja.sh not found");
     let client_init_sh_s: String = String::from_utf8(client_init_sh.data.try_into()?).unwrap();
-    jinja::add_template("http", "client-init", client_init_sh_s);
+    jinja::add_template(KIND, "client-init", client_init_sh_s);
     Ok(())
 }
 
@@ -213,7 +228,7 @@ pub async fn render_jinja_ht_tpl(tag: &'static str, req: Request<Body>) -> Resul
     }
 
     Ok(jinja::render_template(
-        "http",
+        KIND,
         tag,
         context!(resp => &*o, ip_info_list => ip_info_list, sys_info_list => sys_info_list),
         false,
@@ -322,7 +337,7 @@ pub async fn get_detail(req: Request<Body>) -> Result<Response<Body>> {
     // table.printstd();
 
     Ok(jinja::render_template(
-        "http",
+        KIND,
         "detail",
         context!(pretty_content => table.to_string()),
         true,
