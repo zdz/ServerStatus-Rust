@@ -35,21 +35,9 @@ pub struct Email {
 impl Email {
     pub fn new(cfg: &'static Config) -> Self {
         let o = Self { config: cfg };
-        add_template(
-            KIND,
-            get_tag(&Event::NodeUp),
-            o.config.online_tpl.to_string(),
-        );
-        add_template(
-            KIND,
-            get_tag(&Event::NodeDown),
-            o.config.offline_tpl.to_string(),
-        );
-        add_template(
-            KIND,
-            get_tag(&Event::Custom),
-            o.config.custom_tpl.to_string(),
-        );
+        add_template(KIND, get_tag(&Event::NodeUp), o.config.online_tpl.to_string());
+        add_template(KIND, get_tag(&Event::NodeDown), o.config.offline_tpl.to_string());
+        add_template(KIND, get_tag(&Event::Custom), o.config.custom_tpl.to_string());
         o
     }
 }
@@ -61,11 +49,7 @@ impl crate::notifier::Notifier for Email {
 
     fn send_notify(&self, html_content: String) -> Result<()> {
         let email = Message::builder()
-            .from(
-                format!("ServerStatus <{}>", self.config.username)
-                    .parse()
-                    .unwrap(),
-            )
+            .from(format!("ServerStatus <{}>", self.config.username).parse().unwrap())
             .to(self.config.to.parse().unwrap())
             .subject(self.config.subject.to_string())
             .multipart(
@@ -77,10 +61,7 @@ impl crate::notifier::Notifier for Email {
             )
             .unwrap();
 
-        let creds = Credentials::new(
-            self.config.username.to_string(),
-            self.config.password.to_string(),
-        );
+        let creds = Credentials::new(self.config.username.to_string(), self.config.password.to_string());
 
         let smtp_server = self.config.server.to_string();
         let handle = NOTIFIER_HANDLE.lock().unwrap().as_ref().unwrap().clone();

@@ -57,12 +57,7 @@ impl StatsMgr {
                             srv.last_network_in = last_network_in;
                             srv.last_network_out = last_network_out;
 
-                            trace!(
-                                "{} => last in/out ({}/{}))",
-                                &name,
-                                last_network_in,
-                                last_network_out
-                            );
+                            trace!("{} => last in/out ({}/{}))", &name, last_network_in, last_network_out);
                         }
                     } else {
                         error!("invalid json => {:?}", v);
@@ -91,8 +86,7 @@ impl StatsMgr {
         STAT_SENDER.set(stat_tx).unwrap();
         let (notifier_tx, notifier_rx) = sync_channel(512);
 
-        let stat_map: Arc<Mutex<HashMap<String, Cow<HostStat>>>> =
-            Arc::new(Mutex::new(HashMap::new()));
+        let stat_map: Arc<Mutex<HashMap<String, Cow<HostStat>>>> = Arc::new(Mutex::new(HashMap::new()));
 
         // stat_rx thread
         let hosts_group_map = cfg.hosts_group_map.clone();
@@ -160,10 +154,7 @@ impl StatsMgr {
                         stat_t.alias = info.alias.to_owned();
                     }
 
-                    info.latest_ts = SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs();
+                    info.latest_ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
                     stat_t.latest_ts = info.latest_ts;
 
                     // last_network_in/out
@@ -171,9 +162,7 @@ impl StatsMgr {
                         let local_now = Local::now();
                         if info.last_network_in == 0
                             || (stat_t.network_in != 0 && info.last_network_in > stat_t.network_in)
-                            || (local_now.day() == info.monthstart
-                                && local_now.hour() == 0
-                                && local_now.minute() < 5)
+                            || (local_now.day() == info.monthstart && local_now.hour() == 0 && local_now.minute() < 5)
                         {
                             info.last_network_in = stat_t.network_in;
                             info.last_network_out = stat_t.network_out;
@@ -203,9 +192,7 @@ impl StatsMgr {
                                 stat_t.ip_info = pre_stat.ip_info.to_owned();
                             }
 
-                            if stat_t.notify
-                                && (pre_stat.latest_ts + cfg.offline_threshold < stat_t.latest_ts)
-                            {
+                            if stat_t.notify && (pre_stat.latest_ts + cfg.offline_threshold < stat_t.latest_ts) {
                                 // node up notify
                                 notifier_tx_1.send((Event::NodeUp, stat_c.to_owned()));
                             }
@@ -340,8 +327,7 @@ impl StatsMgr {
 
     pub fn report(&self, data: serde_json::Value) -> Result<()> {
         lazy_static! {
-            static ref SENDER: SyncSender<Cow<'static, HostStat>> =
-                STAT_SENDER.get().unwrap().clone();
+            static ref SENDER: SyncSender<Cow<'static, HostStat>> = STAT_SENDER.get().unwrap().clone();
         }
 
         match serde_json::from_value(data) {

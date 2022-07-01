@@ -101,10 +101,7 @@ pub struct StatsResp {
 impl StatsResp {
     pub fn new() -> Self {
         Self {
-            updated: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs(),
+            updated: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
             servers: Vec::new(),
         }
     }

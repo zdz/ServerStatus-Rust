@@ -37,21 +37,9 @@ impl TGBot {
             http_client: reqwest::Client::new(),
         };
 
-        add_template(
-            KIND,
-            get_tag(&Event::NodeUp),
-            o.config.online_tpl.to_string(),
-        );
-        add_template(
-            KIND,
-            get_tag(&Event::NodeDown),
-            o.config.offline_tpl.to_string(),
-        );
-        add_template(
-            KIND,
-            get_tag(&Event::Custom),
-            o.config.custom_tpl.to_string(),
-        );
+        add_template(KIND, get_tag(&Event::NodeUp), o.config.online_tpl.to_string());
+        add_template(KIND, get_tag(&Event::NodeDown), o.config.offline_tpl.to_string());
+        add_template(KIND, get_tag(&Event::Custom), o.config.custom_tpl.to_string());
 
         o
     }

@@ -39,12 +39,7 @@ pub static G_CONFIG: Lazy<Mutex<ClientConfig>> = Lazy::new(|| Mutex::new(ClientC
 #[derive(Parser, Debug, Clone)]
 #[clap(author, version = env!("APP_VERSION"), about, long_about = None)]
 pub struct Args {
-    #[clap(
-        short,
-        long,
-        value_parser,
-        default_value = "http://127.0.0.1:8080/report"
-    )]
+    #[clap(short, long, value_parser, default_value = "http://127.0.0.1:8080/report")]
     addr: String,
     #[clap(short, long, value_parser, default_value = "h1", help = "username")]
     user: String,
@@ -52,17 +47,9 @@ pub struct Args {
     pass: String,
     #[clap(short = 'n', long, value_parser, help = "enable vnstat, default:false")]
     vnstat: bool,
-    #[clap(
-        long = "disable-tupd",
-        value_parser,
-        help = "disable t/u/p/d, default:false"
-    )]
+    #[clap(long = "disable-tupd", value_parser, help = "disable t/u/p/d, default:false")]
     disable_tupd: bool,
-    #[clap(
-        long = "disable-ping",
-        value_parser,
-        help = "disable ping, default:false"
-    )]
+    #[clap(long = "disable-ping", value_parser, help = "disable ping, default:false")]
     disable_ping: bool,
     #[clap(
         long = "disable-extra",
@@ -80,44 +67,18 @@ pub struct Args {
     ip_info: bool,
     #[clap(long = "json", value_parser, help = "use json protocol, default:false")]
     json: bool,
-    #[clap(
-        short = '6',
-        value_parser,
-        long = "ipv6",
-        help = "ipv6 only, default:false"
-    )]
+    #[clap(short = '6', value_parser, long = "ipv6", help = "ipv6 only, default:false")]
     ipv6: bool,
     // for group
     #[clap(short, long, value_parser, default_value = "", help = "group id")]
     gid: String,
-    #[clap(
-        long = "alias",
-        value_parser,
-        default_value = "unknown",
-        help = "alias for host"
-    )]
+    #[clap(long = "alias", value_parser, default_value = "unknown", help = "alias for host")]
     alias: String,
-    #[clap(
-        short,
-        long,
-        value_parser,
-        default_value = "0",
-        help = "weight for rank"
-    )]
+    #[clap(short, long, value_parser, default_value = "0", help = "weight for rank")]
     weight: u64,
-    #[clap(
-        long = "disable-notify",
-        value_parser,
-        help = "disable notify, default:false"
-    )]
+    #[clap(long = "disable-notify", value_parser, help = "disable notify, default:false")]
     disable_notify: bool,
-    #[clap(
-        short = 't',
-        long = "type",
-        value_parser,
-        default_value = "",
-        help = "host type"
-    )]
+    #[clap(short = 't', long = "type", value_parser, default_value = "", help = "host type")]
     host_type: String,
     #[clap(long, value_parser, default_value = "", help = "location")]
     location: String,
@@ -134,10 +95,7 @@ fn sample_all(args: &Args, stat_base: &StatRequest) -> StatRequest {
     #[cfg(all(feature = "sysinfo", not(feature = "native")))]
     sys_info::sample(args, &mut stat_rt);
 
-    stat_rt.latest_ts = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
+    stat_rt.latest_ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
 
     if !args.disable_extra {
         if let Ok(o) = G_CONFIG.lock() {
@@ -174,11 +132,7 @@ fn http_report(args: &Args, stat_base: &mut StatRequest) -> Result<()> {
     let http_client = reqwest::Client::builder()
         .pool_max_idle_per_host(1)
         .connect_timeout(Duration::from_secs(5))
-        .user_agent(format!(
-            "{}/{}",
-            env!("CARGO_BIN_NAME"),
-            env!("CARGO_PKG_VERSION")
-        ))
+        .user_agent(format!("{}/{}", env!("CARGO_BIN_NAME"), env!("CARGO_PKG_VERSION")))
         .build()?;
     loop {
         let stat_rt = sample_all(args, stat_base);

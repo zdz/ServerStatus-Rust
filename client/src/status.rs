@@ -67,10 +67,7 @@ pub fn get_memory() -> (u64, u64, u64, u64) {
     for line in buf_reader.lines() {
         let l = line.unwrap();
         if let Some(caps) = MEMORY_REGEX_RE.captures(&l) {
-            res_dict.insert(
-                caps["key"].to_string(),
-                caps["value"].parse::<u64>().unwrap(),
-            );
+            res_dict.insert(caps["key"].to_string(), caps["value"].parse::<u64>().unwrap());
         };
     }
 
@@ -78,11 +75,8 @@ pub fn get_memory() -> (u64, u64, u64, u64) {
     let swap_total = res_dict["SwapTotal"];
     let swap_free = res_dict["SwapFree"];
 
-    let mem_used = mem_total
-        - res_dict["MemFree"]
-        - res_dict["Buffers"]
-        - res_dict["Cached"]
-        - res_dict["SReclaimable"];
+    let mem_used =
+        mem_total - res_dict["MemFree"] - res_dict["Buffers"] - res_dict["Cached"] - res_dict["SReclaimable"];
 
     (mem_total, mem_used, swap_total, swap_free)
 }
@@ -143,7 +137,8 @@ pub fn get_vnstat_traffic() -> (u64, u64, u64, u64) {
     (network_in, network_out, m_network_in, m_network_out)
 }
 
-static TRAFFIC_REGEX: &str = r#"([^\s]+):[\s]{0,}(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)"#;
+static TRAFFIC_REGEX: &str =
+    r#"([^\s]+):[\s]{0,}(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)"#;
 lazy_static! {
     static ref TRAFFIC_REGEX_RE: Regex = Regex::new(TRAFFIC_REGEX).unwrap();
 }
@@ -228,10 +223,7 @@ pub fn start_net_speed_collect_t() {
                 avgtx += v1[8].parse::<u64>().unwrap();
             }
 
-            let now = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs() as f64;
+            let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as f64;
 
             if let Ok(mut t) = G_NET_SPEED.lock() {
                 t.diff = now - t.clock;
@@ -299,11 +291,10 @@ pub fn get_network() -> (bool, bool) {
             if let Some(addr) = iter.next() {
                 info!("{} => {}", probe_addr, addr);
 
-                let r =
-                    TcpStream::connect_timeout(&addr, Duration::from_millis(TIMEOUT_MS)).map(|s| {
-                        network[idx] = true;
-                        s.shutdown(Shutdown::Both)
-                    });
+                let r = TcpStream::connect_timeout(&addr, Duration::from_millis(TIMEOUT_MS)).map(|s| {
+                    network[idx] = true;
+                    s.shutdown(Shutdown::Both)
+                });
 
                 info!("{:?}", r);
             };
@@ -422,11 +413,7 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
     stat.hdd_total = hdd_total;
     stat.hdd_used = hdd_used;
 
-    let (t, u, p, d) = if args.disable_tupd {
-        (0, 0, 0, 0)
-    } else {
-        tupd()
-    };
+    let (t, u, p, d) = if args.disable_tupd { (0, 0, 0, 0) } else { tupd() };
     stat.tcp = t;
     stat.udp = u;
     stat.process = p;

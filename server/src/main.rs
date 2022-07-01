@@ -51,17 +51,9 @@ struct Args {
     config: String,
     #[clap(short = 't', long, value_parser, help = "config test, default:false")]
     config_test: bool,
-    #[clap(
-        long = "notify-test",
-        value_parser,
-        help = "notify test, default:false"
-    )]
+    #[clap(long = "notify-test", value_parser, help = "notify test, default:false")]
     notify_test: bool,
-    #[clap(
-        long = "cloud",
-        value_parser,
-        help = "cloud mode, load cfg from env var: SRV_CONF"
-    )]
+    #[clap(long = "cloud", value_parser, help = "cloud mode, load cfg from env var: SRV_CONF")]
     cloud: bool,
 }
 
@@ -95,12 +87,7 @@ async fn stats_report(req: Request<Body>) -> Result<Response<Body>> {
     // auth end
 
     let mut json_data: Option<serde_json::Value> = None;
-    if let Ok(content_type) = req_header
-        .get(hyper::header::CONTENT_TYPE)
-        .unwrap()
-        .clone()
-        .to_str()
-    {
+    if let Ok(content_type) = req_header.get(hyper::header::CONTENT_TYPE).unwrap().clone().to_str() {
         let whole_body = hyper::body::aggregate(req).await?;
         // dbg!(content_type);
         if content_type.eq(&mime::APPLICATION_JSON.to_string()) {
@@ -204,10 +191,7 @@ async fn main() -> Result<()> {
         eprintln!("✨ run in cloud mode, load config from env");
         config::from_env()
     } else {
-        eprintln!(
-            "✨ run in normal mode, load conf from local file `{}",
-            &args.config
-        );
+        eprintln!("✨ run in normal mode, load conf from local file `{}", &args.config);
         config::from_file(&args.config)
     } {
         debug!("{:?}", cfg);
@@ -223,8 +207,7 @@ async fn main() -> Result<()> {
     // init notifier
     *notifier::NOTIFIER_HANDLE.lock().unwrap() = Some(Handle::current());
     let cfg = G_CONFIG.get().unwrap();
-    let notifies: Arc<Mutex<Vec<Box<dyn notifier::Notifier + Send>>>> =
-        Arc::new(Mutex::new(Vec::new()));
+    let notifies: Arc<Mutex<Vec<Box<dyn notifier::Notifier + Send>>>> = Arc::new(Mutex::new(Vec::new()));
     if cfg.tgbot.enabled {
         let o = Box::new(notifier::tgbot::TGBot::new(&cfg.tgbot));
         notifies.lock().unwrap().push(o);
@@ -265,8 +248,7 @@ async fn main() -> Result<()> {
     });
 
     // serv http
-    let http_service =
-        make_service_fn(|_| async { Ok::<_, GenericError>(service_fn(main_service_func)) });
+    let http_service = make_service_fn(|_| async { Ok::<_, GenericError>(service_fn(main_service_func)) });
 
     let http_addr = G_CONFIG.get().unwrap().http_addr.parse()?;
     eprintln!("🚀 listening on http://{}", http_addr);

@@ -13,10 +13,7 @@ pub struct ServerStatusSrv {}
 
 #[tonic::async_trait]
 impl ServerStatus for ServerStatusSrv {
-    async fn report(
-        &self,
-        request: Request<StatRequest>,
-    ) -> Result<Response<server_status::Response>, Status> {
+    async fn report(&self, request: Request<StatRequest>) -> Result<Response<server_status::Response>, Status> {
         if let Some(mgr) = G_STATS_MGR.get() {
             match serde_json::to_value(request.get_ref()) {
                 Ok(v) => {
@@ -45,11 +42,7 @@ fn check_auth(req: Request<()>) -> Result<Request<()>, Status> {
 
     match req.metadata().get("authorization") {
         Some(token) => {
-            let tuple = token
-                .to_str()
-                .unwrap_or("")
-                .split("@_@")
-                .collect::<Vec<_>>();
+            let tuple = token.to_str().unwrap_or("").split("@_@").collect::<Vec<_>>();
 
             if tuple.len() == 2 {
                 if let Some(cfg) = G_CONFIG.get() {

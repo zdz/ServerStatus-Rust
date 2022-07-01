@@ -171,8 +171,7 @@ pub fn from_str(content: &str) -> Option<Config> {
     for (idx, group) in o.hosts_group.iter_mut().enumerate() {
         group.pos = idx;
         group.weight = (10000 - (1 + idx) * 100) as u64;
-        o.hosts_group_map
-            .insert(group.gid.to_owned(), group.clone());
+        o.hosts_group_map.insert(group.gid.to_owned(), group.clone());
     }
 
     if o.offline_threshold < 30 {
