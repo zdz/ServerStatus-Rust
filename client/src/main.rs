@@ -271,6 +271,7 @@ async fn main() -> Result<()> {
         online6: ipv6,
         vnstat: args.vnstat,
         weight: args.weight,
+        notify: true,
         version: env!("CARGO_PKG_VERSION").to_string(),
         ..Default::default()
     };
@@ -286,7 +287,7 @@ async fn main() -> Result<()> {
         }
     }
     if args.disable_notify {
-        stat_base.notify = args.disable_notify;
+        stat_base.notify = false;
     }
     if !args.host_type.is_empty() {
         stat_base.r#type = args.host_type.to_owned();

@@ -527,6 +527,7 @@ def main():
     stat_base['name'] = options.username
     stat_base['weight'] = options.weight
     stat_base['vnstat'] = options.vnstat
+    stat_base['notify'] = True
 
     if len(options.gid) > 0:
         stat_base["gid"] = options.gid
