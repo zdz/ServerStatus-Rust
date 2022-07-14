@@ -120,7 +120,7 @@ impl crate::notifier::Notifier for WeChat {
         render_template(
             self.kind(),
             get_tag(e),
-            context!(host => stat, config => self.config),
+            context!(host => stat, config => self.config, ip_info => stat.ip_info, sys_info => stat.sys_info),
             true,
         )
         .map(|content| match *e {
