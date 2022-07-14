@@ -214,10 +214,13 @@ pub fn collect_sys_info(args: &Args) -> SysInfo {
 }
 
 pub fn gen_sys_id(sys_info: &SysInfo) -> String {
+    let mut sys = System::new_all();
+    let bt = sys.boot_time();
+
     format!(
         "{:x}",
         md5::compute(format!(
-            "{}/{}/{}/{}/{}/{}/{}",
+            "{}/{}/{}/{}/{}/{}/{}/{}",
             sys_info.host_name,
             sys_info.os_name,
             sys_info.os_arch,
@@ -225,6 +228,7 @@ pub fn gen_sys_id(sys_info: &SysInfo) -> String {
             sys_info.os_release,
             sys_info.kernel_version,
             sys_info.cpu_brand,
+            bt,
         ))
     )
 }

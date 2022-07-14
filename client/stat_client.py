@@ -450,7 +450,7 @@ def get_sys_info(options):
 
 
 def gen_sys_id(sys_info):
-    s = "{}/{}/{}/{}/{}/{}/{}".format(
+    s = "{}/{}/{}/{}/{}/{}/{}/{}".format(
         sys_info.get("host_name", "unknown"),
         sys_info.get("os_name", "unknown"),
         sys_info.get("os_arch", "unknown"),
@@ -458,6 +458,7 @@ def gen_sys_id(sys_info):
         sys_info.get("os_release", "unknown"),
         sys_info.get("kernel_version", "unknown"),
         sys_info.get("cpu_brand", "unknown"),
+        psutil.boot_time(),
     )
     return hashlib.md5(s.encode("utf-8")).hexdigest()
 
