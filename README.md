@@ -36,16 +36,18 @@
   `cppla/ServerStatus` 的威力加强版，保持轻量和简化部署，增加主要特性如下：
 
 - 使用 `rust` 完全重写 `server`、`client`，单个执行文件部署
-- 支持上下线和简单自定义规则告警 (`telegram`、 `wechat`、 `email`)
+- 支持上下线和简单自定义规则告警 (`telegram`、 `wechat`、 `email`、 `webhook`)
 - 支持 `http` 协议上报，可配合 `cf` 等优化上报链路
 - 支持 `vnstat` 统计月流量，重启不丢流量数据
 - 支持 `railway` 快速部署
 - 支持 `systemd` 开机自启
 - 其它功能，如 🗺️  见 [wiki](https://github.com/zdz/ServerStatus-Rust/wiki)
 
-演示：[ssr.rs](https://d.ssr.rs) | [vercel.app](https://tz-rust.vercel.app)
+演示：[ssr.rs](https://ssr.rs)
 |
 下载：[Releases](https://github.com/zdz/ServerStatus-Rust/releases)
+|
+[Changelog](https://github.com/zdz/ServerStatus-Rust/releases)
 |
 反馈：[Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
 
@@ -189,14 +191,16 @@ notify_interval = 30
 # https://core.telegram.org/bots/api
 # https://jinja.palletsprojects.com/en/3.0.x/templates/#if
 [tgbot]
+# 开关 true 打开
 enabled = false
 bot_token = "<tg bot token>"
 chat_id = "<chat id>"
 # host 可用字段参见 payload.rs 文件 HostStat 结构, {{host.xxx}} 为占位变量
-# 例如 host.name 可替换为 host.alias，大家根据喜好来编写通知消息
+# 例如 host.name 可替换为 host.alias，大家根据自己的喜好来编写通知消息
+# {{ip_info.query}} 主机 ip,  {{sys_info.host_name}} 主机 hostname
 title = "❗<b>Server Status</b>"
-online_tpl  = "{{config.title}} \n😆 {{host.location}} 的 {{host.name}} 主机恢复上线啦"
-offline_tpl = "{{config.title}} \n😱 {{host.location}} 的 {{host.name}} 主机已经掉线啦"
+online_tpl =  "{{config.title}} \n😆 {{host.location}} {{host.name}} 主机恢复上线啦"
+offline_tpl = "{{config.title}} \n😱 {{host.location}} {{host.name}} 主机已经掉线啦"
 # custom 模板置空则停用自定义告警，只保留上下线通知
 custom_tpl = """
 {% if host.memory_used / host.memory_total > 0.5  %}

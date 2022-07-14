@@ -8,6 +8,7 @@ offline_threshold = 30
 admin_user = ""
 admin_pass = ""
 
+# hosts 跟 hosts_group 两种配置模式任挑一种配置即可
 # name 主机唯一标识，不可重复，alias 为展示名
 # 使用 ansible 批量部署时可以用主机 hostname 作为 name，统一密码
 # notify = false 单独禁止单台机器的告警，一般针对网络差，频繁上下线
@@ -44,11 +45,13 @@ notify_interval = 30
 # https://core.telegram.org/bots/api
 # https://jinja.palletsprojects.com/en/3.0.x/templates/#if
 [tgbot]
+# 开关 true 打开
 enabled = false
 bot_token = "<tg bot token>"
 chat_id = "<chat id>"
 # host 可用字段参见 payload.rs 文件 HostStat 结构, {{host.xxx}} 为占位变量
-# 例如 host.name 可替换为 host.alias，大家根据喜好来编写通知消息
+# 例如 host.name 可替换为 host.alias，大家根据自己的喜好来编写通知消息
+# {{ip_info.query}} 主机 ip,  {{sys_info.host_name}} 主机 hostname
 title = "❗<b>Server Status</b>"
 online_tpl =  "{{config.title}} \n😆 {{host.location}} {{host.name}} 主机恢复上线啦"
 offline_tpl = "{{config.title}} \n😱 {{host.location}} {{host.name}} 主机已经掉线啦"
@@ -62,7 +65,9 @@ custom_tpl = """
 <pre>😲 {{host.name}} 主机硬盘使用率超50%, 当前{{ (100 * host.hdd_used / host.hdd_total) | round }}% </pre>
 {% endif %}
 """
+###################### tgbot end ##########################
 
+## 可选 微信通知
 [wechat]
 enabled = false
 corp_id = "<corp id>"
@@ -80,7 +85,9 @@ custom_tpl = """
 😲 {{host.name}} 主机硬盘使用率超80%
 {% endif %}
 """
+###################### wechat end ##########################
 
+## 可选 邮件通知
 [email]
 enabled = false
 server = "smtp.gmail.com"
@@ -100,3 +107,149 @@ custom_tpl = """
 <pre>😲 {{host.name}} 主机硬盘使用率超80%, 当前{{ (100 * host.hdd_used / host.hdd_total) | round }}% </pre>
 {% endif %}
 """
+
+###################### email end ##########################
+
+## 可选 单纯记录 event 到日志文件
+[log]
+enabled = false
+log_dir = "/opt/ServerStatus/logs"
+tpl = """{% set obj = dict(event=event, host=host, ip_info=ip_info, sys_info=sys_info) %} {{ obj | tojson}}"""
+
+
+## 可选 webhook
+[webhook]
+# 总开关
+enabled = false
+  # 可多个 webhook.receiver
+  [[webhook.receiver]] # 通用型 webhook
+  # 局部开关
+  enabled = false
+  # https://webhook.site/#!/2b1ad731-45fe-49a8-ae91-614167019db2
+  url = "https://webhook.site/2b1ad731-45fe-49a8-ae91-614167019db2"
+  headers = { content-type = "application/json", x-data = "y-data" }
+  # headers = { content-type = "text/plain" }
+  # 可选 HTTP Basic Auth
+  username = "u"
+  password = "p"
+  timeout = 5 #s
+  # 简单发送一个 json 对象，#{} 为 Object 对象, [] 为数组
+  # 最终结果, 固定结构 [是否发送通知，结果对象]
+  script = """[true, #{config: config, event: event, host: host, ip_info: ip_info, sys_info:sys_info} ]"""
+
+  [[webhook.receiver]] # Discord
+  enabled = false
+  # https://discord.com/developers/docs/resources/webhook
+  url = "https://discord.com/api/webhooks/xxxxxxxxxxxxxxxxxxxxxxx"
+  headers = { content-type = "application/json" }
+  timeout = 5 #s
+  script = """
+    let message = "";
+    switch event {
+      "Custom" => {      // 自定义事件
+          let threshold = 10;
+          let msgs = [];
+          let memory_usage = round(host.memory_used * 100.0 / host.memory_total);
+          if memory_usage > threshold {
+             msgs.push(`😲 ${host.location} ${host.name} 主机内存使用率超${threshold}%, 当前 ${memory_usage}%`);
+          }
+          let hdd_usage = round(host.hdd_used * 100.0 / host.hdd_total);
+          if hdd_usage > threshold {
+              msgs.push(`😲 ${host.location} ${host.name} 主机硬盘使用率超${threshold}%, 当前 ${hdd_usage}%`);
+          }
+          message = join(msgs, "\\n");
+      },
+      "NodeDown" => {   // 掉线
+          message = `😱 ${host.location} ${host.name} 主机已经掉线啦`;
+      },
+      "NodeUp" => {     // 上线
+          message = `😆 ${host.location} ${host.name} 主机恢复上线啦`;
+      }
+    }
+
+    // 返回的 json 结构，#{} 为 Object 对象, [] 为数组
+    // 最终结果, 固定结构 [是否发送通知，结果对象]
+    [message.len() > 0, #{ embeds: [ #{
+      title: ":bell: ServerStatus-Rust :bell:",
+      fields: [
+        #{ name: "Event", value: event, },
+        #{ name: "Datetime", value: now_str(), },
+        #{ name: "Message", value: message, },
+      ]
+    }]}]
+  """
+
+  [[webhook.receiver]] # Slack
+  enabled = false
+  # https://api.slack.com/messaging/webhooks
+  url = "https://hooks.slack.com/services/xxxxxxxxxxxxxxxxxxxxxxx"
+  headers = { content-type = "application/json" }
+  timeout = 5 #s
+  script = """
+    let message = "";
+    switch event {
+      "Custom" => {      // 自定义事件
+          let threshold = 80;
+          let msgs = [];
+          let memory_usage = round(host.memory_used * 100.0 / host.memory_total);
+          if memory_usage > threshold {
+             msgs.push(`😲 ${host.location} ${host.name} 主机内存使用率超${threshold}%, 当前 ${memory_usage}%`);
+          }
+          let hdd_usage = round(host.hdd_used * 100.0 / host.hdd_total);
+          if hdd_usage > threshold {
+              msgs.push(`😲 ${host.location} ${host.name} 主机硬盘使用率超${threshold}%, 当前 ${hdd_usage}%`);
+          }
+          message = join(msgs, "\\n");
+      },
+      "NodeDown" => {   // 掉线
+          message = `😱 ${host.location} ${host.name} 主机已经掉线啦`;
+      },
+      "NodeUp" => {     // 上线
+          message = `😆 ${host.location} ${host.name} 主机恢复上线啦`;
+      }
+    }
+
+    // 最终结果, 固定结构 [是否发送通知，结果对象]
+    [message.len() > 0, #{text: message}]
+  """
+
+  [[webhook.receiver]] # WorkWechat
+  enabled = false
+  # https://developer.work.weixin.qq.com/document/path/91770
+  url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxxxxxxxxxxxxxxxxxxxx"
+  headers = { content-type = "application/json" }
+  timeout = 5 #s
+  script = """
+    let message = "";
+    switch event {
+      "Custom" => {      // 自定义事件
+          let threshold = 80;
+          let msgs = [];
+          let memory_usage = round(host.memory_used * 100.0 / host.memory_total);
+          if memory_usage > threshold {
+             msgs.push(`😲 ${host.location} ${host.name} 主机内存使用率超${threshold}%, 当前 ${memory_usage}%`);
+          }
+          let hdd_usage = round(host.hdd_used * 100.0 / host.hdd_total);
+          if hdd_usage > threshold {
+              msgs.push(`😲 ${host.location} ${host.name} 主机硬盘使用率超${threshold}%, 当前 ${hdd_usage}%`);
+          }
+          message = join(msgs, "\\n");
+      },
+      "NodeDown" => {   // 掉线
+          message = `😱 ${host.location} ${host.name} 主机已经掉线啦`;
+      },
+      "NodeUp" => {     // 上线
+          message = `😆 ${host.location} ${host.name} 主机恢复上线啦`;
+      }
+    }
+
+    // 最终结果, 固定结构 [是否发送通知，结果对象]
+    [message.len() > 0, #{
+      msgtype: "text",
+      text: #{
+        content: message
+      }
+    }]
+  """
+
+###################### webhook end ##########################

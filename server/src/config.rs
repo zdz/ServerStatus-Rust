@@ -104,6 +104,10 @@ pub struct Config {
     pub wechat: notifier::wechat::Config,
     #[serde(default = "Default::default")]
     pub email: notifier::email::Config,
+    #[serde(default = "Default::default")]
+    pub log: notifier::log::Config,
+    #[serde(default = "Default::default")]
+    pub webhook: notifier::webhook::Config,
 
     #[serde(default = "Default::default")]
     pub hosts: Vec<Host>,

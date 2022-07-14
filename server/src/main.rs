@@ -194,7 +194,7 @@ async fn main() -> Result<()> {
         eprintln!("✨ run in normal mode, load conf from local file `{}", &args.config);
         config::from_file(&args.config)
     } {
-        debug!("{:?}", cfg);
+        debug!("{}", serde_json::to_string_pretty(&cfg).unwrap());
         G_CONFIG.set(cfg).unwrap();
     } else {
         error!("can't parse config");
@@ -218,6 +218,14 @@ async fn main() -> Result<()> {
     }
     if cfg.email.enabled {
         let o = Box::new(notifier::email::Email::new(&cfg.email));
+        notifies.lock().unwrap().push(o);
+    }
+    if cfg.log.enabled {
+        let o = Box::new(notifier::log::Log::new(&cfg.log));
+        notifies.lock().unwrap().push(o);
+    }
+    if cfg.webhook.enabled {
+        let o = Box::new(notifier::webhook::Webhook::new(&cfg.webhook));
         notifies.lock().unwrap().push(o);
     }
     // init notifier end
