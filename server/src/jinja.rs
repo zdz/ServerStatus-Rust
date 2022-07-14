@@ -23,7 +23,7 @@ where
         .unwrap();
 }
 
-pub fn render_template(kind: &'static str, tag: &'static str, ctx: Value, trim: bool) -> Result<String> {
+pub fn render_template<'a>(kind: &'a str, tag: &'a str, ctx: Value, trim: bool) -> Result<String> {
     let name = format!("{}.{}", kind, tag);
     Ok(JINJA_ENV
         .lock()

@@ -4,6 +4,7 @@ use hyper::{header, Body, Request, Response, StatusCode};
 use minijinja::context;
 use prettytable::Table;
 use std::collections::HashMap;
+use std::fmt::Write as _;
 
 use crate::jinja;
 use crate::Asset;
@@ -134,23 +135,23 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
         client_opts.push_str(" --disable-extra");
     }
     if weight > 0 {
-        client_opts.push_str(&format!(r#" -w {}"#, weight));
+        let _ = write!(client_opts, r#" -w {}"#, weight);
     }
     if !gid.is_empty() {
-        client_opts.push_str(&format!(r#" -g "{}""#, gid));
-        client_opts.push_str(&format!(r#" --alias "{}""#, alias));
+        let _ = write!(client_opts, r#" -g "{}""#, gid);
+        let _ = write!(client_opts, r#" --alias "{}""#, alias);
     }
     if !uid.is_empty() {
-        client_opts.push_str(&format!(r#" -u "{}""#, uid));
+        let _ = write!(client_opts, r#" -u "{}""#, uid);
     }
     if !notify {
         client_opts.push_str(" --disable-notify");
     }
     if !host_type.is_empty() {
-        client_opts.push_str(&format!(r#" -t "{}""#, host_type));
+        let _ = write!(client_opts, r#" -t "{}""#, host_type);
     }
     if !location.is_empty() {
-        client_opts.push_str(&format!(r#" --location "{}""#, location));
+        let _ = write!(client_opts, r#" --location "{}""#, location);
     }
 
     Ok(jinja::render_template(
