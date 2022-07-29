@@ -31,7 +31,7 @@ reqwest = {version = "0.11", features = ["json", "rustls-tls", "brotli", "gzip",
 serde = {version = "1.0", default-features = false, features = ["derive", "alloc"]}
 serde_json = {version = "1.0", default-features = false, features = ["alloc"]}
 stat_common = {path = "../common"}
-sysinfo = "0.24"
+sysinfo = "0.25"
 tokio = {version = "1", features = ["full"]}
 tonic = {version = "0.7", features = ["tokio-rustls"]}
 tower = { version = "0.4" }
