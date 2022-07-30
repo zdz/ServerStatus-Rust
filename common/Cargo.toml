@@ -23,4 +23,4 @@ tokio = {version = "1", features = ["full"]}
 tonic = {version = "0.7", features = ["tokio-rustls"]}
 
 [build-dependencies]
-tonic-build = "0.7"
+tonic-build = "0.8"
