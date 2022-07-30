@@ -20,7 +20,7 @@ prost = "0.10"
 serde = {version = "1.0", default-features = false, features = ["derive", "alloc"]}
 serde_json = {version = "1.0", default-features = false, features = ["alloc"]}
 tokio = {version = "1", features = ["full"]}
-tonic = {version = "0.7", features = ["tokio-rustls"]}
+tonic = {version = "0.8", features = ["tokio-rustls"]}
 
 [build-dependencies]
 tonic-build = "0.7"
