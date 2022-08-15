@@ -1,7 +1,7 @@
 [package]
 edition = "2021"
 name = "stat_common"
-version = "1.1.0"
+version = "1.1.1"
 
 authors = ["doge <doge.py@gmail.com>"]
 categories = ["monitoring-tools"]
@@ -16,11 +16,11 @@ repository = "https://github.com/zdz/ServerStatus-Rust"
 [dependencies]
 anyhow = "1"
 bytes = {version = "1", features = ["serde"]}
-prost = "0.10"
+prost = "0.11"
 serde = {version = "1.0", default-features = false, features = ["derive", "alloc"]}
 serde_json = {version = "1.0", default-features = false, features = ["alloc"]}
-tokio = {version = "1", features = ["full"]}
-tonic = {version = "0.7", features = ["tokio-rustls"]}
+tonic = {version = "0.8", features = ["tokio-rustls"]}
 
 [build-dependencies]
-tonic-build = "0.7"
+protobuf-src = "1"
+tonic-build = "0.8"
