@@ -224,7 +224,7 @@ async fn main() -> Result<()> {
     }
 
     // support check
-    if !System::IS_SUPPORTED {
+    if !SystemExt::IS_SUPPORTED {
         panic!("当前系统不支持，请切换到Python跨平台版本!");
     }
 
