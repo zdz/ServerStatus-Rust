@@ -36,32 +36,56 @@ pub struct ClientConfig {
 
 pub static G_CONFIG: Lazy<Mutex<ClientConfig>> = Lazy::new(|| Mutex::new(ClientConfig::default()));
 
+// https://docs.rs/clap/latest/clap/_derive/index.html#command-attributes
 #[derive(Parser, Debug, Clone)]
 #[clap(author, version = env!("APP_VERSION"), about, long_about = None)]
 pub struct Args {
-    #[clap(short, long, value_parser, default_value = "http://127.0.0.1:8080/report")]
+    #[clap(
+        short,
+        long,
+        value_parser,
+        env = "SSR_ADDR",
+        default_value = "http://127.0.0.1:8080/report"
+    )]
     addr: String,
-    #[clap(short, long, value_parser, default_value = "h1", help = "username")]
+    #[clap(short, long, value_parser, env = "SSR_USER", default_value = "h1", help = "username")]
     user: String,
-    #[clap(short, long, value_parser, default_value = "p1", help = "password")]
+    #[clap(short, long, value_parser, env = "SSR_PASS", default_value = "p1", help = "password")]
     pass: String,
-    #[clap(short = 'n', long, value_parser, help = "enable vnstat, default:false")]
+    #[clap(
+        short = 'n',
+        long,
+        value_parser,
+        env = "SSR_VNSTAT",
+        help = "enable vnstat, default:false"
+    )]
     vnstat: bool,
-    #[clap(long = "disable-tupd", value_parser, help = "disable t/u/p/d, default:false")]
+    #[clap(
+        long = "disable-tupd",
+        value_parser,
+        env = "SSR_DISABLE_TUPD",
+        help = "disable t/u/p/d, default:false"
+    )]
     disable_tupd: bool,
-    #[clap(long = "disable-ping", value_parser, help = "disable ping, default:false")]
+    #[clap(
+        long = "disable-ping",
+        value_parser,
+        env = "SSR_DISABLE_PING",
+        help = "disable ping, default:false"
+    )]
     disable_ping: bool,
     #[clap(
         long = "disable-extra",
         value_parser,
+        env = "SSR_DISABLE_EXTRA",
         help = "disable extra info report, default:false"
     )]
     disable_extra: bool,
-    #[clap(long = "ct", value_parser, default_value = CT, help = "China Telecom probe addr")]
+    #[clap(long = "ct", value_parser, env = "SSR_CT_ADDR", default_value = CT, help = "China Telecom probe addr")]
     ct_addr: String,
-    #[clap(long = "cm", value_parser, default_value = CM, help = "China Mobile probe addr")]
+    #[clap(long = "cm", value_parser, env = "SSR_CM_ADDR", default_value = CM, help = "China Mobile probe addr")]
     cm_addr: String,
-    #[clap(long = "cu", value_parser, default_value = CU, help = "China Unicom probe addr")]
+    #[clap(long = "cu", value_parser, env = "SSR_CU_ADDR", default_value = CU, help = "China Unicom probe addr")]
     cu_addr: String,
     #[clap(long = "ip-info", value_parser, help = "show ip info, default:false")]
     ip_info: bool,
@@ -70,25 +94,51 @@ pub struct Args {
     #[clap(short = '6', value_parser, long = "ipv6", help = "ipv6 only, default:false")]
     ipv6: bool,
     // for group
-    #[clap(short, long, value_parser, default_value = "", help = "group id")]
+    #[clap(short, long, value_parser, env = "SSR_GID", default_value = "", help = "group id")]
     gid: String,
-    #[clap(long = "alias", value_parser, default_value = "unknown", help = "alias for host")]
+    #[clap(
+        long = "alias",
+        value_parser,
+        env = "SSR_ALIAS",
+        default_value = "unknown",
+        help = "alias for host"
+    )]
     alias: String,
-    #[clap(short, long, value_parser, default_value = "0", help = "weight for rank")]
+    #[clap(
+        short,
+        long,
+        value_parser,
+        env = "SSR_WEIGHT",
+        default_value = "0",
+        help = "weight for rank"
+    )]
     weight: u64,
-    #[clap(long = "disable-notify", value_parser, help = "disable notify, default:false")]
+    #[clap(
+        long = "disable-notify",
+        env = "SSR_DISABLE_NOTIFY",
+        value_parser,
+        help = "disable notify, default:false"
+    )]
     disable_notify: bool,
-    #[clap(short = 't', long = "type", value_parser, default_value = "", help = "host type")]
+    #[clap(
+        short = 't',
+        long = "type",
+        value_parser,
+        env = "SSR_TYPE",
+        default_value = "",
+        help = "host type"
+    )]
     host_type: String,
-    #[clap(long, value_parser, default_value = "", help = "location")]
+    #[clap(long, value_parser, env = "SSR_LOC", default_value = "", help = "location")]
     location: String,
-    // #[clap(long = "debug", help = "debug mode, default:false")]
-    // debug: bool,
+    #[clap(short = 'd', long = "debug", env = "SSR_DEBUG", help = "debug mode, default:false")]
+    debug: bool,
     #[clap(
         short = 'i',
         long = "iface",
         value_parser,
-        default_value = "",
+        env = "SSR_IFACE",
+        default_values_t = Vec::<String>::new(),
         value_delimiter = ',',
         require_delimiter = true,
         help = "iface list, eg: eth0,eth1"
@@ -98,6 +148,7 @@ pub struct Args {
         short = 'e',
         long = "exclude-iface",
         value_parser,
+        env = "SSR_EXCLUDE_IFACE",
         default_value = "lo,docker,vnet,veth,vmbr,kube,br-",
         value_delimiter = ',',
         help = "exclude iface"
@@ -249,7 +300,9 @@ async fn main() -> Result<()> {
     let mut args = Args::parse();
     args.iface.retain(|e| !e.trim().is_empty());
     args.exclude_iface.retain(|e| !e.trim().is_empty());
-    dbg!(&args);
+    if args.debug {
+        dbg!(&args);
+    }
 
     if args.ip_info {
         let info = ip_api::get_ip_info(args.ipv6).await?;
