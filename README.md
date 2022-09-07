@@ -37,7 +37,7 @@
 
 - 使用 `rust` 完全重写 `server`、`client`，单个执行文件部署
 - 支持上下线和简单自定义规则告警 (`telegram`、 `wechat`、 `email`、 `webhook`)
-- 支持 `http` 协议上报，可配合 `cf` 等优化上报链路
+- 支持 `http` 协议上报，可以方便部署到各免费容器服务和配合 `cf` 等优化上报链路
 - 支持 `vnstat` 统计月流量，重启不丢流量数据
 - 支持 `railway` 快速部署
 - 支持 `systemd` 开机自启
@@ -143,7 +143,7 @@ help:
 ### 2.4 Railway 部署
 
 懒得配置 `Nginx`，`SSL` 证书？试试
-[在 Railway 部署 Server 教程](https://github.com/zdz/ServerStatus-Rust/wiki/Railway)
+[在 Railway 部署 Server](https://github.com/zdz/ServerStatus-Rust/wiki/Railway)
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/kzT46l?referralCode=pJYbdU)
 
@@ -289,6 +289,9 @@ OPTIONS:
 -w, --weight    # 排序加分，微调让主机靠前显示，无强迫症可忽略
 -g, --gid       # 动态注册的组id
 --alias         # 动态注册模式下，指定主机的展示名字
+# 总流量，网卡流量/网速统计
+-i, --iface         # 非空时，只统计指定网口
+-e, --exclude-iface # 排除指定网口，默认排除 "lo,docker,vnet,veth,vmbr,kube,br-"
 ```
 
 ### 4.2 跨平台版本 (`Window`, `Linux`, `...`)
