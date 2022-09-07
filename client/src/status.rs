@@ -19,6 +19,7 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
+use crate::skip_iface;
 use crate::Args;
 use stat_common::server_status::StatRequest;
 
@@ -101,8 +102,7 @@ pub fn tupd() -> (u32, u32, u32, u32) {
     (t, u, p, d)
 }
 
-static IFACE_IGNORE_VEC: &[&str] = &["lo", "docker", "vnet", "veth", "vmbr", "kube", "br-"];
-pub fn get_vnstat_traffic() -> (u64, u64, u64, u64) {
+pub fn get_vnstat_traffic(args: &Args) -> (u64, u64, u64, u64) {
     let local_now = Local::now();
     let (mut network_in, mut network_out, mut m_network_in, mut m_network_out) = (0, 0, 0, 0);
     let a = Command::new("/usr/bin/vnstat")
@@ -114,9 +114,12 @@ pub fn get_vnstat_traffic() -> (u64, u64, u64, u64) {
     let j: HashMap<&str, serde_json::Value> = serde_json::from_str(b).unwrap();
     for iface in j["interfaces"].as_array().unwrap() {
         let name = iface["name"].as_str().unwrap();
-        if IFACE_IGNORE_VEC.iter().any(|sk| name.contains(*sk)) {
+
+        // spec iface
+        if skip_iface(name, args) {
             continue;
         }
+
         let total_o = iface["traffic"]["total"].as_object().unwrap();
         let month_v = iface["traffic"]["month"].as_array().unwrap();
         network_in += total_o["rx"].as_u64().unwrap();
@@ -142,7 +145,7 @@ static TRAFFIC_REGEX: &str =
 lazy_static! {
     static ref TRAFFIC_REGEX_RE: Regex = Regex::new(TRAFFIC_REGEX).unwrap();
 }
-pub fn get_sys_traffic() -> (u64, u64) {
+pub fn get_sys_traffic(args: &Args) -> (u64, u64) {
     let (mut network_in, mut network_out) = (0, 0);
     let file = File::open("/proc/net/dev").unwrap();
     let buf_reader = BufReader::new(file);
@@ -152,9 +155,12 @@ pub fn get_sys_traffic() -> (u64, u64) {
         TRAFFIC_REGEX_RE.captures(&l).and_then(|caps| {
             // println!("caps[0]=>{:?}", caps.get(0).unwrap().as_str());
             let name = caps.get(1).unwrap().as_str();
-            if IFACE_IGNORE_VEC.iter().any(|sk| name.contains(*sk)) {
+
+            // spec iface
+            if skip_iface(name, args) {
                 return None;
             }
+
             let net_in = caps.get(2).unwrap().as_str().parse::<u64>().unwrap();
             let net_out = caps.get(10).unwrap().as_str().parse::<u64>().unwrap();
 
@@ -203,8 +209,9 @@ lazy_static! {
 }
 
 #[allow(unused)]
-pub fn start_net_speed_collect_t() {
-    thread::spawn(|| loop {
+pub fn start_net_speed_collect_t(args: &Args) {
+    let args_1 = args.clone();
+    thread::spawn(move || loop {
         let _ = File::open("/proc/net/dev").map(|file| {
             let buf_reader = BufReader::new(file);
             let (mut avgrx, mut avgtx) = (0, 0);
@@ -215,9 +222,11 @@ pub fn start_net_speed_collect_t() {
                     continue;
                 }
 
-                if IFACE_IGNORE_VEC.iter().any(|sk| v[0].contains(*sk)) {
+                // spec iface
+                if skip_iface(v[0], &args_1) {
                     continue;
                 }
+
                 let v1: Vec<&str> = v[1].split_whitespace().collect();
                 avgrx += v1[0].parse::<u64>().unwrap();
                 avgtx += v1[8].parse::<u64>().unwrap();
@@ -420,13 +429,13 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
     stat.thread = d;
 
     if args.vnstat {
-        let (network_in, network_out, m_network_in, m_network_out) = get_vnstat_traffic();
+        let (network_in, network_out, m_network_in, m_network_out) = get_vnstat_traffic(args);
         stat.network_in = network_in;
         stat.network_out = network_out;
         stat.last_network_in = network_in - m_network_in;
         stat.last_network_out = network_out - m_network_out;
     } else {
-        let (network_in, network_out) = get_sys_traffic();
+        let (network_in, network_out) = get_sys_traffic(args);
         stat.network_in = network_in;
         stat.network_out = network_out;
     }

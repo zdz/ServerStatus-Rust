@@ -71,11 +71,11 @@ def get_cpu():
     return psutil.cpu_percent(interval=INTERVAL)
 
 
-def get_sys_traffic():
+def get_sys_traffic(options):
     net_in, net_out = 0, 0
     net = psutil.net_io_counters(pernic=True)
     for k, v in net.items():
-        if any([e in k for e in IFACE_IGNORE_LIST]):
+        if skip_iface(k, options):
             continue
         else:
             net_in += v[1]
@@ -83,7 +83,7 @@ def get_sys_traffic():
     return net_in, net_out
 
 
-def get_vnstat_traffic():
+def get_vnstat_traffic(options):
     now = datetime.now()
     vnstat_res = subprocess.check_output(
         "/usr/bin/vnstat --json m", shell=True)
@@ -92,7 +92,7 @@ def get_vnstat_traffic():
     for iface in json_dict.get("interfaces", []):
         name = iface["name"]
 
-        if any([e in name for e in IFACE_IGNORE_LIST]):
+        if skip_iface(name, options):
             continue
 
         traffic = iface["traffic"]
@@ -200,11 +200,11 @@ def _ping_thread(target, mark):
         time.sleep(INTERVAL)
 
 
-def _net_speed():
+def _net_speed(options):
     while True:
         avgrx, avgtx = 0, 0
         for name, stats in psutil.net_io_counters(pernic=True).items():
-            if any([e in name for e in IFACE_IGNORE_LIST]):
+            if skip_iface(name, options):
                 continue
             avgrx += stats.bytes_recv
             avgtx += stats.bytes_sent
@@ -255,6 +255,9 @@ def start_rt_collect_t(options):
     # net speed
     t_list.append(threading.Thread(
         target=_net_speed,
+        kwargs={
+            'options': options,
+        }
     ))
 
     for t in t_list:
@@ -308,13 +311,13 @@ def sample(options, stat_base):
 
     if options.vnstat:
         (network_in, network_out, m_network_in,
-         m_network_out) = get_vnstat_traffic()
+         m_network_out) = get_vnstat_traffic(options)
         stat_data['network_in'] = network_in
         stat_data['network_out'] = network_out
         stat_data['last_network_in'] = network_in - m_network_in
         stat_data['last_network_out'] = network_out - m_network_out
     else:
-        net_in, net_out = get_sys_traffic()
+        net_in, net_out = get_sys_traffic(options)
         stat_data['network_in'] = net_in
         stat_data['network_out'] = net_out
 
@@ -462,6 +465,14 @@ def gen_sys_id(sys_info):
     )
     return hashlib.md5(s.encode("utf-8")).hexdigest()
 
+def skip_iface(name, options):
+    if len(options.iface) > 0:
+        if any([name == e for e in options.iface]):
+            return False
+        return True
+    if any([e in name for e in options.exclude_iface]):
+        return True
+    return False
 
 def main():
     usage = """usage: python3 %prog [options] arg
@@ -503,8 +514,16 @@ def main():
                       default="", help="host type [default: %default]")
     parser.add_option("--location", dest="location",
                       default="", help="location [default: %default]")
+    parser.add_option("-i", "--iface", dest="iface",
+                      default="", help="iface list, eg: eth0,eth1 [default: %default]")
+    parser.add_option("-e", "--exclude-iface", dest="exclude_iface",
+                      default="lo,docker,vnet,veth,vmbr,kube,br-",
+                      help="exclude iface [default: %default]")
 
     (options, args) = parser.parse_args()
+    parse_iface_list = lambda ifaces: list(filter(lambda s: len(s), map(str.strip, ifaces.split(","))))
+    options.iface = parse_iface_list(options.iface)
+    options.exclude_iface = parse_iface_list(options.exclude_iface)
     print(json.dumps(options.__dict__, indent=2))
 
     if options.vnstat:

@@ -84,6 +84,38 @@ pub struct Args {
     location: String,
     // #[clap(long = "debug", help = "debug mode, default:false")]
     // debug: bool,
+    #[clap(
+        short = 'i',
+        long = "iface",
+        value_parser,
+        default_value = "",
+        value_delimiter = ',',
+        require_delimiter = true,
+        help = "iface list, eg: eth0,eth1"
+    )]
+    iface: Vec<String>,
+    #[clap(
+        short = 'e',
+        long = "exclude-iface",
+        value_parser,
+        default_value = "lo,docker,vnet,veth,vmbr,kube,br-",
+        value_delimiter = ',',
+        help = "exclude iface"
+    )]
+    exclude_iface: Vec<String>,
+}
+
+pub fn skip_iface(name: &str, args: &Args) -> bool {
+    if !args.iface.is_empty() {
+        if args.iface.iter().any(|fa| name.eq(fa)) {
+            return false;
+        }
+        return true;
+    }
+    if args.exclude_iface.iter().any(|sk| name.contains(sk)) {
+        return true;
+    }
+    false
 }
 
 fn sample_all(args: &Args, stat_base: &StatRequest) -> StatRequest {
@@ -215,6 +247,8 @@ async fn refresh_ip_info(args: &Args) {
 async fn main() -> Result<()> {
     pretty_env_logger::init();
     let mut args = Args::parse();
+    args.iface.retain(|e| !e.trim().is_empty());
+    args.exclude_iface.retain(|e| !e.trim().is_empty());
     dbg!(&args);
 
     if args.ip_info {
@@ -243,7 +277,7 @@ async fn main() -> Result<()> {
     {
         eprintln!("enable feature native");
         status::start_cpu_percent_collect_t();
-        status::start_net_speed_collect_t();
+        status::start_net_speed_collect_t(&args);
     }
 
     // use sysinfo
