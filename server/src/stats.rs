@@ -341,4 +341,27 @@ impl StatsMgr {
         };
         Ok(())
     }
+
+    pub fn get_all_info(&self) -> Result<serde_json::Value> {
+        let data = self.stats_data.lock().unwrap();
+        let mut resp_json = serde_json::to_value(&*data)?;
+        // for skip_serializing
+        if let Some(srv_list) = resp_json["servers"].as_array_mut() {
+            for (idx, stat) in data.servers.iter().enumerate() {
+                match srv_list[idx].as_object_mut() {
+                    Some(srv) => {
+                        srv.insert("ip_info".into(), serde_json::to_value(stat.ip_info.as_ref())?);
+                        srv.insert("sys_info".into(), serde_json::to_value(stat.sys_info.as_ref())?);
+                    }
+                    None => {
+                        // todo!()
+                    }
+                }
+            }
+        } else {
+            // todo!()
+        };
+
+        Ok(resp_json)
+    }
 }

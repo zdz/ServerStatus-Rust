@@ -7,7 +7,6 @@ extern crate pretty_env_logger;
 extern crate prettytable;
 use bytes::Buf;
 use clap::Parser;
-use http_auth_basic::Credentials;
 use once_cell::sync::OnceCell;
 use prost::Message;
 use rust_embed::RustEmbed;
@@ -59,33 +58,15 @@ struct Args {
 
 // stat report
 async fn stats_report(req: Request<Body>) -> Result<Response<Body>> {
-    let req_header = req.headers();
     // auth
-    let mut auth_ok = false;
-    let mut group_auth = false;
-    if let Some(ssr_auth) = req_header.get("ssr-auth") {
-        group_auth = "group".eq(ssr_auth);
-    }
-
-    if let Some(auth) = req_header.get(hyper::header::AUTHORIZATION) {
-        let auth_header_value = auth.to_str()?.to_string();
-        if let Ok(credentials) = Credentials::from_header(auth_header_value) {
-            if let Some(cfg) = G_CONFIG.get() {
-                if group_auth {
-                    auth_ok = cfg.group_auth(&credentials.user_id, &credentials.password);
-                } else {
-                    auth_ok = cfg.auth(&credentials.user_id, &credentials.password);
-                }
-            }
-        }
-    }
-    if !auth_ok {
+    if !http::client_auth(&req) {
         return Ok(Response::builder()
             .status(StatusCode::UNAUTHORIZED)
             .body(UNAUTHORIZED.into())?);
     }
     // auth end
 
+    let req_header = req.headers();
     let mut json_data: Option<serde_json::Value> = None;
     if let Ok(content_type) = req_header.get(hyper::header::CONTENT_TYPE).unwrap().clone().to_str() {
         let whole_body = hyper::body::aggregate(req).await?;
@@ -122,13 +103,27 @@ async fn get_stats_json() -> Result<Response<Body>> {
         .body(Body::from(G_STATS_MGR.get().unwrap().get_stats_json()))?)
 }
 
+async fn get_config(req: Request<Body>) -> Result<Response<Body>> {
+    if !http::admin_auth(&req) {
+        return Ok(Response::builder()
+            .header(header::WWW_AUTHENTICATE, "Basic realm=\"Restricted\"")
+            .status(StatusCode::UNAUTHORIZED)
+            .body(UNAUTHORIZED.into())?);
+    }
+
+    Ok(Response::builder()
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(G_CONFIG.get().unwrap().to_string()?))?)
+}
+
 async fn main_service_func(req: Request<Body>) -> Result<Response<Body>> {
     let req_path = req.uri().path();
     match (req.method(), req_path) {
         (&Method::POST, "/report") => stats_report(req).await,
-        (&Method::GET, "/json/stats.json") => get_stats_json().await,
+        (&Method::GET, "/json/stats.json") => get_stats_json().await, // 兼容
+        (&Method::GET, "/admin/stats.json") => http::get_admin_stats_json(req).await, // for admin
+        (&Method::GET, "/admin/config.json") => get_config(req).await,
         (&Method::GET, "/detail") => http::get_detail(req).await,
-        (&Method::GET, "/detail_ht") => http::render_jinja_ht_tpl("detail_ht", req).await,
         (&Method::GET, "/map") => http::render_jinja_ht_tpl("map", req).await,
         (&Method::GET, "/i") => http::init_client(req).await,
         (&Method::GET, "/") | (&Method::GET, "/index.html") => {

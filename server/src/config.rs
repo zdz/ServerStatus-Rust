@@ -148,12 +148,9 @@ impl Config {
         }
         false
     }
-    // pub fn get_host(&self, name: &str) -> Option<&Host> {
-    //     self.hosts_map.get(name)
-    // }
-    // pub fn get_host_group(&self, gid: &str) -> Option<&HostGroup> {
-    //     self.hosts_group_map.get(gid)
-    // }
+    pub fn to_string(&self) -> Result<String> {
+        serde_json::to_string(&self).map_err(anyhow::Error::new)
+    }
 }
 
 pub fn from_str(content: &str) -> Option<Config> {
