@@ -89,22 +89,29 @@ def get_vnstat_traffic(options):
         "/usr/bin/vnstat --json m", shell=True)
     json_dict = json.loads(vnstat_res)
     network_in, network_out, m_network_in, m_network_out = (0, 0, 0, 0)
+    json_version = json_dict.get("jsonversion", "2")
     for iface in json_dict.get("interfaces", []):
-        name = iface["name"]
+        name, bandwith_factor, mouth_field = "invalid", 1, "month"
+        if json_version == "1":
+            name = iface["id"]
+            bandwith_factor = 1024
+            mouth_field = "months"
+        else:
+            name = iface["name"]
 
         if skip_iface(name, options):
             continue
 
         traffic = iface["traffic"]
-        network_out += traffic["total"]["tx"]
-        network_in += traffic["total"]["rx"]
+        network_out += traffic["total"]["tx"] * bandwith_factor
+        network_in += traffic["total"]["rx"] * bandwith_factor
         # print(name, json.dumps(iface["traffic"], indent=2))
 
-        for month in traffic.get("month", []):
+        for month in traffic.get(mouth_field, []):
             if now.year != month["date"]["year"] or month["date"]["month"] != now.month:
                 continue
-            m_network_out += month["tx"]
-            m_network_in += month["rx"]
+            m_network_out += month["tx"] * bandwith_factor
+            m_network_in += month["rx"] * bandwith_factor
 
     return (network_in, network_out, m_network_in, m_network_out)
 
@@ -129,9 +136,9 @@ def tupd():
 
 
 def get_network(ip_version):
-    if(ip_version == 4):
+    if (ip_version == 4):
         domain = "ipv4.google.com"
-    elif(ip_version == 6):
+    elif (ip_version == 6):
         domain = "ipv6.google.com"
     try:
         socket.create_connection((domain, 80), 2).close()
@@ -465,6 +472,7 @@ def gen_sys_id(sys_info):
     )
     return hashlib.md5(s.encode("utf-8")).hexdigest()
 
+
 def skip_iface(name, options):
     if len(options.iface) > 0:
         if any([name == e for e in options.iface]):
@@ -473,6 +481,7 @@ def skip_iface(name, options):
     if any([e in name for e in options.exclude_iface]):
         return True
     return False
+
 
 def main():
     usage = """usage: python3 %prog [options] arg
@@ -521,7 +530,9 @@ def main():
                       help="exclude iface [default: %default]")
 
     (options, args) = parser.parse_args()
-    parse_iface_list = lambda ifaces: list(filter(lambda s: len(s), map(str.strip, ifaces.split(","))))
+
+    def parse_iface_list(ifaces): return list(
+        filter(lambda s: len(s), map(str.strip, ifaces.split(","))))
     options.iface = parse_iface_list(options.iface)
     options.exclude_iface = parse_iface_list(options.exclude_iface)
     print(json.dumps(options.__dict__, indent=2))
