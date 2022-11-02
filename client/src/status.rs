@@ -120,7 +120,7 @@ pub fn get_vnstat_traffic(args: &Args) -> (u64, u64, u64, u64) {
             iface["name"].as_str().unwrap()
         };
         let month_field = if json_version == "1" { "months" } else { "month" };
-        let bandwith_factor: u64 = if json_version == "1" { 1024 } else { 1 };
+        let bandwidth_factor: u64 = if json_version == "1" { 1024 } else { 1 };
 
         // spec iface
         if skip_iface(name, args) {
@@ -129,8 +129,8 @@ pub fn get_vnstat_traffic(args: &Args) -> (u64, u64, u64, u64) {
 
         let total_o = iface["traffic"]["total"].as_object().unwrap();
         let month_v = iface["traffic"][month_field].as_array().unwrap();
-        network_in += total_o["rx"].as_u64().unwrap() * bandwith_factor;
-        network_out += total_o["tx"].as_u64().unwrap() * bandwith_factor;
+        network_in += total_o["rx"].as_u64().unwrap() * bandwidth_factor;
+        network_out += total_o["tx"].as_u64().unwrap() * bandwidth_factor;
 
         for data in month_v {
             let year = data["date"]["year"].as_i64().unwrap() as i32;
@@ -139,8 +139,8 @@ pub fn get_vnstat_traffic(args: &Args) -> (u64, u64, u64, u64) {
                 continue;
             }
 
-            m_network_in += data["rx"].as_u64().unwrap() * bandwith_factor;
-            m_network_out += data["tx"].as_u64().unwrap() * bandwith_factor;
+            m_network_in += data["rx"].as_u64().unwrap() * bandwidth_factor;
+            m_network_out += data["tx"].as_u64().unwrap() * bandwidth_factor;
         }
     }
 

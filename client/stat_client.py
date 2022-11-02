@@ -91,10 +91,10 @@ def get_vnstat_traffic(options):
     network_in, network_out, m_network_in, m_network_out = (0, 0, 0, 0)
     json_version = json_dict.get("jsonversion", "2")
     for iface in json_dict.get("interfaces", []):
-        name, bandwith_factor, mouth_field = "invalid", 1, "month"
+        name, bandwidth_factor, mouth_field = "invalid", 1, "month"
         if json_version == "1":
             name = iface["id"]
-            bandwith_factor = 1024
+            bandwidth_factor = 1024
             mouth_field = "months"
         else:
             name = iface["name"]
@@ -103,15 +103,15 @@ def get_vnstat_traffic(options):
             continue
 
         traffic = iface["traffic"]
-        network_out += traffic["total"]["tx"] * bandwith_factor
-        network_in += traffic["total"]["rx"] * bandwith_factor
+        network_out += traffic["total"]["tx"] * bandwidth_factor
+        network_in += traffic["total"]["rx"] * bandwidth_factor
         # print(name, json.dumps(iface["traffic"], indent=2))
 
         for month in traffic.get(mouth_field, []):
             if now.year != month["date"]["year"] or month["date"]["month"] != now.month:
                 continue
-            m_network_out += month["tx"] * bandwith_factor
-            m_network_in += month["rx"] * bandwith_factor
+            m_network_out += month["tx"] * bandwidth_factor
+            m_network_in += month["rx"] * bandwidth_factor
 
     return (network_in, network_out, m_network_in, m_network_out)
 
