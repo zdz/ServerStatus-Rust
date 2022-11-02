@@ -1839,7 +1839,7 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "stat_client"
-version = "1.5.5"
+version = "1.5.6"
 dependencies = [
  "anyhow",
  "bytes",
@@ -1879,7 +1879,7 @@ dependencies = [
 
 [[package]]
 name = "stat_server"
-version = "1.5.5"
+version = "1.5.6"
 dependencies = [
  "anyhow",
  "bytes",

@@ -1,9 +1,9 @@
 [package]
 edition = "2021"
 name = "stat_server"
-version = "1.5.5"
+version = "1.5.6"
 
-rust-version = "1.62"
+rust-version = "1.64"
 
 authors = ["doge <doge.py@gmail.com>"]
 categories = ["monitoring-tools"]
