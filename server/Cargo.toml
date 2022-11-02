@@ -44,4 +44,4 @@ tokio = {version = "1", features = ["full"]}
 toml = "0.5"
 tonic = {version = "0.8", features = ["tokio-rustls"]}
 url = "2.3.1"
-uuid = {version = "1.1", default-features = false, features = ["serde", "v4"]}
+uuid = {version = "1.2", default-features = false, features = ["serde", "v4"]}
