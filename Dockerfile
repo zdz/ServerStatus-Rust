@@ -18,6 +18,7 @@ LABEL version="1.0.0" \
 
 RUN apk add --no-cache libgcc
 COPY --from=builder /app/target/release/stat_server /stat_server
+COPY --from=builder /app/config.toml /config.toml
 
 WORKDIR /
 EXPOSE 8080 9394
