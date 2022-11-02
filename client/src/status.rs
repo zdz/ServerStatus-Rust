@@ -114,7 +114,11 @@ pub fn get_vnstat_traffic(args: &Args) -> (u64, u64, u64, u64) {
     let j: HashMap<&str, serde_json::Value> = serde_json::from_str(b).unwrap();
     let json_version = j["jsonversion"].as_str().unwrap();
     for iface in j["interfaces"].as_array().unwrap() {
-        let name = if json_version == "1" { iface["id"].as_str().unwrap() } else { iface["name"].as_str().unwrap() };
+        let name = if json_version == "1" {
+            iface["id"].as_str().unwrap()
+        } else {
+            iface["name"].as_str().unwrap()
+        };
         let month_field = if json_version == "1" { "months" } else { "month" };
         let bandwith_factor: u64 = if json_version == "1" { 1024 } else { 1 };
 

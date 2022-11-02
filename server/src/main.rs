@@ -45,15 +45,15 @@ static G_STATS_MGR: OnceCell<crate::stats::StatsMgr> = OnceCell::new();
 struct Asset;
 
 #[derive(Parser, Debug)]
-#[clap(author, version = env!("APP_VERSION"), about, long_about = None)]
+#[command(author, version = env!("APP_VERSION"), about, long_about = None)]
 struct Args {
-    #[clap(short, long, value_parser, default_value = "config.toml")]
+    #[arg(short, long, default_value = "config.toml")]
     config: String,
-    #[clap(short = 't', long, value_parser, help = "config test, default:false")]
+    #[arg(short = 't', long, help = "config test, default:false")]
     config_test: bool,
-    #[clap(long = "notify-test", value_parser, help = "notify test, default:false")]
+    #[arg(long = "notify-test", help = "notify test, default:false")]
     notify_test: bool,
-    #[clap(long = "cloud", value_parser, help = "cloud mode, load cfg from env var: SRV_CONF")]
+    #[arg(long = "cloud", help = "cloud mode, load cfg from env var: SRV_CONF")]
     cloud: bool,
 }
 
