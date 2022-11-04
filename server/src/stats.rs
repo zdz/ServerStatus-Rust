@@ -79,7 +79,7 @@ impl StatsMgr {
 
         // load last_network_in/out
         if let Ok(mut hosts_map) = hosts_map_base.lock() {
-            self.load_last_network(&mut *hosts_map);
+            self.load_last_network(&mut hosts_map);
         }
 
         let (stat_tx, stat_rx) = sync_channel(512);
@@ -194,7 +194,7 @@ impl StatsMgr {
 
                             if stat_t.notify && (pre_stat.latest_ts + cfg.offline_threshold < stat_t.latest_ts) {
                                 // node up notify
-                                notifier_tx_1.send((Event::NodeUp, stat_c.to_owned()));
+                                notifier_tx_1.send((Event::NodeUp, stat_c.clone()));
                             }
                         }
                         host_stat_map.insert(stat_c.name.to_string(), stat_c);
@@ -236,7 +236,7 @@ impl StatsMgr {
             if let Ok(mut host_stat_map) = stat_map_2.lock() {
                 for (_, stat) in host_stat_map.iter_mut() {
                     if stat.disabled {
-                        resp.servers.push(stat.to_owned().into_owned());
+                        resp.servers.push(stat.as_ref().clone());
                         continue;
                     }
                     let stat_c = stat.borrow_mut();
@@ -252,16 +252,16 @@ impl StatsMgr {
                         // notify check /30 s
                         if latest_notify_ts + cfg.notify_interval < now {
                             if o.online4 || o.online6 {
-                                notifier_tx_2.send((Event::Custom, stat_c.to_owned()));
+                                notifier_tx_2.send((Event::Custom, stat_c.clone()));
                             } else {
                                 o.disabled = true;
-                                notifier_tx_2.send((Event::NodeDown, stat_c.to_owned()));
+                                notifier_tx_2.send((Event::NodeDown, stat_c.clone()));
                             }
                             notified = true;
                         }
                     }
 
-                    resp.servers.push(stat_c.to_owned().into_owned());
+                    resp.servers.push(stat_c.as_ref().clone());
                 }
                 if notified {
                     latest_notify_ts = now;
@@ -348,14 +348,9 @@ impl StatsMgr {
         // for skip_serializing
         if let Some(srv_list) = resp_json["servers"].as_array_mut() {
             for (idx, stat) in data.servers.iter().enumerate() {
-                match srv_list[idx].as_object_mut() {
-                    Some(srv) => {
-                        srv.insert("ip_info".into(), serde_json::to_value(stat.ip_info.as_ref())?);
-                        srv.insert("sys_info".into(), serde_json::to_value(stat.sys_info.as_ref())?);
-                    }
-                    None => {
-                        // todo!()
-                    }
+                if let Some(srv) = srv_list[idx].as_object_mut() {
+                    srv.insert("ip_info".into(), serde_json::to_value(stat.ip_info.as_ref())?);
+                    srv.insert("sys_info".into(), serde_json::to_value(stat.sys_info.as_ref())?);
                 }
             }
         } else {

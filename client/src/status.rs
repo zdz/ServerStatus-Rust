@@ -106,7 +106,7 @@ pub fn get_vnstat_traffic(args: &Args) -> (u64, u64, u64, u64) {
     let local_now = Local::now();
     let (mut network_in, mut network_out, mut m_network_in, mut m_network_out) = (0, 0, 0, 0);
     let a = Command::new("/usr/bin/vnstat")
-        .args(&["--json", "m"])
+        .args(["--json", "m"])
         .output()
         .expect("failed to execute vnstat")
         .stdout;
@@ -184,7 +184,7 @@ static DF_CMD:&str = "df -Tlm --total -t ext4 -t ext3 -t ext2 -t reiserfs -t jfs
 pub fn get_hdd() -> (u64, u64) {
     let (mut hdd_total, mut hdd_used) = (0, 0);
     let a = &Command::new("/bin/sh")
-        .args(&["-c", DF_CMD])
+        .args(["-c", DF_CMD])
         .output()
         .expect("failed to execute df")
         .stdout;

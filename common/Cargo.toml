@@ -22,5 +22,6 @@ serde_json = {version = "1.0", default-features = false, features = ["alloc"]}
 tonic = {version = "0.8", features = ["tokio-rustls"]}
 
 [build-dependencies]
+chrono = "0.4"
 protobuf-src = "1"
 tonic-build = "0.8"
