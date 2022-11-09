@@ -252,4 +252,54 @@ enabled = false
     }]
   """
 
+  [[webhook.receiver]] # Bark
+  enabled = false
+  # https://github.com/Finb/Bark
+  # https://day.app/2021/06/barkfaq/
+  url = "https://api.day.app/push"
+  headers = { content-type = "application/json; charset=utf-8" }
+  timeout = 5 #s
+  script = """
+    let message = "";
+    switch event {
+      "Custom" => {      // 自定义事件
+          // 使用率阈值，这里是磁盘 超 70% 告警
+          let threshold = 70;
+          let msgs = [];
+          let memory_usage = round(host.memory_used * 100.0 / host.memory_total);
+          if memory_usage > threshold {
+             msgs.push(`😲 ${host.location} ${host.name} 主机内存使用率超${threshold}%, 当前 ${memory_usage}%`);
+          }
+          let hdd_usage = round(host.hdd_used * 100.0 / host.hdd_total);
+          if hdd_usage > threshold {
+              msgs.push(`😲 ${host.location} ${host.name} 主机硬盘使用率超${threshold}%, 当前 ${hdd_usage}%`);
+          }
+          message = join(msgs, "\\n");
+      },
+      "NodeDown" => {   // 掉线
+          message = `😱 ${host.location} ${host.name} 主机已经掉线啦`;
+      },
+      "NodeUp" => {     // 上线
+          message = `😆 ${host.location} ${host.name} 主机恢复上线啦`;
+      }
+    }
+
+    // 最终结果, 固定结构 [是否发送通知，结果对象]
+    [message.len() > 0, #{
+      // 标题
+      title: "ServerStatusRust",
+      // 告警内容
+      body: message,
+      // 你的设备 key, app 内获取
+      device_key: "fLLBrV****kM5H",
+      // 其它角标, 铃声, icon, 参考 app 里面的说明即可
+      badge: 1,
+      sound: "minuet.caf",
+      icon: "https://day.app/assets/images/avatar.jpg",
+      group: "SSR",
+      url: "https://github.com/zdz/ServerStatus-Rust"
+
+    }]
+  """
+
 ###################### webhook end ##########################
