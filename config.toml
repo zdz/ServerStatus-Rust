@@ -117,6 +117,7 @@ log_dir = "/opt/ServerStatus/logs"
 tpl = """{% set obj = dict(event=event, host=host, ip_info=ip_info, sys_info=sys_info) %} {{ obj | tojson}}"""
 
 
+## script 使用脚本引擎 https://rhai.rs/book/
 ## 可选 webhook
 [webhook]
 # 总开关
@@ -290,8 +291,9 @@ enabled = false
       title: "ServerStatusRust",
       // 告警内容
       body: message,
-      // 你的设备 key, app 内获取
+      // 修改成你的设备 key, app 内获取
       device_key: "fLLBrV****kM5H",
+      // 后面为可选字段参考 https://github.com/Finb/bark-server/blob/master/docs/API_V2.md
       // 其它角标, 铃声, icon, 参考 app 里面的说明即可
       badge: 1,
       sound: "minuet.caf",
