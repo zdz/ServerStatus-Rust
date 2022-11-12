@@ -22,6 +22,7 @@ mod grpc;
 mod ip_api;
 mod status;
 mod sys_info;
+mod vnstat;
 
 const INTERVAL_MS: u64 = 1000;
 static CU: &str = "cu.tz.cloudcpp.com:80";
@@ -48,6 +49,13 @@ pub struct Args {
     pass: String,
     #[arg(short = 'n', long, env = "SSR_VNSTAT", help = "enable vnstat, default:false")]
     vnstat: bool,
+    #[arg(
+        long = "vnstat-mr",
+        env = "SSR_VNSTAT_MR",
+        default_value_t = 1,
+        help = "vnstat month rotate 1-28"
+    )]
+    vnstat_mr: u32,
     #[arg(
         long = "disable-tupd",
         env = "SSR_DISABLE_TUPD",
@@ -123,17 +131,19 @@ pub struct Args {
     exclude_iface: Vec<String>,
 }
 
-pub fn skip_iface(name: &str, args: &Args) -> bool {
-    if !args.iface.is_empty() {
-        if args.iface.iter().any(|fa| name.eq(fa)) {
-            return false;
+impl Args {
+    pub fn skip_iface(&self, name: &str) -> bool {
+        if !self.iface.is_empty() {
+            if self.iface.iter().any(|fa| name.eq(fa)) {
+                return false;
+            }
+            return true;
         }
-        return true;
+        if self.exclude_iface.iter().any(|sk| name.contains(sk)) {
+            return true;
+        }
+        false
     }
-    if args.exclude_iface.iter().any(|sk| name.contains(sk)) {
-        return true;
-    }
-    false
 }
 
 fn sample_all(args: &Args, stat_base: &StatRequest) -> StatRequest {

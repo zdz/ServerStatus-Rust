@@ -7,9 +7,8 @@ use std::thread;
 use std::time::Duration;
 use sysinfo::{CpuExt, DiskExt, NetworkExt, RefreshKind, System, SystemExt};
 
-use crate::skip_iface;
 use crate::status;
-use crate::status::get_vnstat_traffic;
+use crate::vnstat;
 use crate::Args;
 use stat_common::server_status::{StatRequest, SysInfo};
 
@@ -69,7 +68,7 @@ pub fn start_net_speed_collect_t(args: &Args) {
         let (mut net_rx, mut net_tx) = (0_u64, 0_u64);
         for (name, data) in sys.networks() {
             // spec iface
-            if skip_iface(name, &args_1) {
+            if args_1.skip_iface(name) {
                 continue;
             }
             net_rx += data.received();
@@ -146,7 +145,7 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
 
     // traffic
     if args.vnstat {
-        let (network_in, network_out, m_network_in, m_network_out) = get_vnstat_traffic(args);
+        let (network_in, network_out, m_network_in, m_network_out) = vnstat::get_traffic(args).unwrap();
         stat.network_in = network_in;
         stat.network_out = network_out;
         stat.last_network_in = network_in - m_network_in;
@@ -156,7 +155,7 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
         let (mut network_in, mut network_out) = (0_u64, 0_u64);
         for (name, data) in sys.networks() {
             // spec iface
-            if skip_iface(name, args) {
+            if args.skip_iface(name) {
                 continue;
             }
             network_in += data.total_received();

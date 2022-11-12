@@ -1,5 +1,4 @@
 // #![allow(unused)]
-use chrono::{Datelike, Local};
 use lazy_static::lazy_static;
 use once_cell::sync::OnceCell;
 use regex::Regex;
@@ -19,7 +18,7 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use crate::skip_iface;
+use crate::vnstat;
 use crate::Args;
 use stat_common::server_status::StatRequest;
 
@@ -102,51 +101,6 @@ pub fn tupd() -> (u32, u32, u32, u32) {
     (t, u, p, d)
 }
 
-pub fn get_vnstat_traffic(args: &Args) -> (u64, u64, u64, u64) {
-    let local_now = Local::now();
-    let (mut network_in, mut network_out, mut m_network_in, mut m_network_out) = (0, 0, 0, 0);
-    let a = Command::new("/usr/bin/vnstat")
-        .args(["--json", "m"])
-        .output()
-        .expect("failed to execute vnstat")
-        .stdout;
-    let b = str::from_utf8(&a).unwrap();
-    let j: HashMap<&str, serde_json::Value> = serde_json::from_str(b).unwrap();
-    let json_version = j["jsonversion"].as_str().unwrap();
-    for iface in j["interfaces"].as_array().unwrap() {
-        let name = if json_version == "1" {
-            iface["id"].as_str().unwrap()
-        } else {
-            iface["name"].as_str().unwrap()
-        };
-        let month_field = if json_version == "1" { "months" } else { "month" };
-        let bandwidth_factor: u64 = if json_version == "1" { 1024 } else { 1 };
-
-        // spec iface
-        if skip_iface(name, args) {
-            continue;
-        }
-
-        let total_o = iface["traffic"]["total"].as_object().unwrap();
-        let month_v = iface["traffic"][month_field].as_array().unwrap();
-        network_in += total_o["rx"].as_u64().unwrap() * bandwidth_factor;
-        network_out += total_o["tx"].as_u64().unwrap() * bandwidth_factor;
-
-        for data in month_v {
-            let year = data["date"]["year"].as_i64().unwrap() as i32;
-            let month = data["date"]["month"].as_i64().unwrap() as u32;
-            if local_now.year() != year || local_now.month() != month {
-                continue;
-            }
-
-            m_network_in += data["rx"].as_u64().unwrap() * bandwidth_factor;
-            m_network_out += data["tx"].as_u64().unwrap() * bandwidth_factor;
-        }
-    }
-
-    (network_in, network_out, m_network_in, m_network_out)
-}
-
 static TRAFFIC_REGEX: &str =
     r#"([^\s]+):[\s]{0,}(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)"#;
 lazy_static! {
@@ -164,7 +118,7 @@ pub fn get_sys_traffic(args: &Args) -> (u64, u64) {
             let name = caps.get(1).unwrap().as_str();
 
             // spec iface
-            if skip_iface(name, args) {
+            if args.skip_iface(name) {
                 return None;
             }
 
@@ -230,7 +184,7 @@ pub fn start_net_speed_collect_t(args: &Args) {
                 }
 
                 // spec iface
-                if skip_iface(v[0], &args_1) {
+                if args_1.skip_iface(v[0]) {
                     continue;
                 }
 
@@ -436,7 +390,7 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
     stat.thread = d;
 
     if args.vnstat {
-        let (network_in, network_out, m_network_in, m_network_out) = get_vnstat_traffic(args);
+        let (network_in, network_out, m_network_in, m_network_out) = vnstat::get_traffic(args).unwrap();
         stat.network_in = network_in;
         stat.network_out = network_out;
         stat.last_network_in = network_in - m_network_in;

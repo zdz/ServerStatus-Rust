@@ -156,6 +156,11 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
         .get("weight")
         .map(|p| p.parse::<u64>().unwrap_or(0_u64))
         .unwrap_or(0_u64);
+    let vnstat_mr = params
+        .get("vnstat-mr")
+        .map(|p| p.parse::<u32>().unwrap_or(1_u32))
+        .unwrap_or(1_u32);
+
     let notify = params.get("notify").map(|p| !p.eq("0")).unwrap_or(true);
     let host_type = params.get("type").unwrap_or(&invalid);
     let location = params.get("loc").unwrap_or(&invalid);
@@ -164,6 +169,9 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
     let mut client_opts = format!(r#"-a "{}" -p "{}""#, server_url, pass);
     if vnstat {
         client_opts.push_str(" -n");
+    }
+    if 1 < vnstat_mr && vnstat_mr <= 28 {
+        let _ = write!(client_opts, r#" --vnstat-mr "{}""#, vnstat_mr);
     }
     if disable_ping {
         client_opts.push_str(" --disable-ping");
