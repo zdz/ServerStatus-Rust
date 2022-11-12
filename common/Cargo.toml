@@ -14,11 +14,9 @@ repository = "https://github.com/zdz/ServerStatus-Rust"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1"
 bytes = {version = "1", features = ["serde"]}
 prost = "0.11"
 serde = {version = "1.0", default-features = false, features = ["derive", "alloc"]}
-serde_json = {version = "1.0", default-features = false, features = ["alloc"]}
 tonic = {version = "0.8", features = ["tokio-rustls"]}
 
 [build-dependencies]
