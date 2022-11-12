@@ -94,11 +94,10 @@ impl StatsMgr {
         let stat_map_1 = stat_map.clone();
         let notifier_tx_1 = notifier_tx.clone();
         thread::spawn(move || loop {
-            while let Ok(stat) = stat_rx.recv() {
+            while let Ok(mut stat) = stat_rx.recv() {
                 trace!("recv stat `{:?}", stat);
 
-                let mut stat_c = stat;
-                let mut stat_t = stat_c.to_mut();
+                let mut stat_t = stat.to_mut();
 
                 // group mode
                 if !stat_t.gid.is_empty() {
@@ -194,10 +193,10 @@ impl StatsMgr {
 
                             if stat_t.notify && (pre_stat.latest_ts + cfg.offline_threshold < stat_t.latest_ts) {
                                 // node up notify
-                                notifier_tx_1.send((Event::NodeUp, stat_c.clone()));
+                                notifier_tx_1.send((Event::NodeUp, stat.clone()));
                             }
                         }
-                        host_stat_map.insert(stat_c.name.to_string(), stat_c);
+                        host_stat_map.insert(stat.name.to_string(), stat);
                         //trace!("{:?}", host_stat_map);
                     }
                 }
@@ -239,8 +238,8 @@ impl StatsMgr {
                         resp.servers.push(stat.as_ref().clone());
                         continue;
                     }
-                    let stat_c = stat.borrow_mut();
-                    let o = stat_c.to_mut();
+                    let stat = stat.borrow_mut();
+                    let o = stat.to_mut();
                     // 30s 下线
                     if o.latest_ts + cfg.offline_threshold < now {
                         o.online4 = false;
@@ -252,16 +251,16 @@ impl StatsMgr {
                         // notify check /30 s
                         if latest_notify_ts + cfg.notify_interval < now {
                             if o.online4 || o.online6 {
-                                notifier_tx_2.send((Event::Custom, stat_c.clone()));
+                                notifier_tx_2.send((Event::Custom, stat.clone()));
                             } else {
                                 o.disabled = true;
-                                notifier_tx_2.send((Event::NodeDown, stat_c.clone()));
+                                notifier_tx_2.send((Event::NodeDown, stat.clone()));
                             }
                             notified = true;
                         }
                     }
 
-                    resp.servers.push(stat_c.as_ref().clone());
+                    resp.servers.push(stat.as_ref().clone());
                 }
                 if notified {
                     latest_notify_ts = now;
