@@ -14,6 +14,7 @@ admin_pass = ""
 # notify = false 单独禁止单台机器的告警，一般针对网络差，频繁上下线
 # monthstart = 1 没启用vnstat时，表示月流量从每月哪天开始统计
 # disabled = true 单机禁用，跟删除这条配置的效果一样
+# 国旗 https://emojixd.com/group/flags
 hosts = [
   {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm"},
   {name = "h2", password = "p2", alias = "n2", location = "🏢", type = "kvm", disabled = false},
