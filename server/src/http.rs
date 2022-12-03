@@ -171,7 +171,7 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
         client_opts.push_str(" -n");
     }
     if 1 < vnstat_mr && vnstat_mr <= 28 {
-        let _ = write!(client_opts, r#" --vnstat-mr "{}""#, vnstat_mr);
+        let _ = write!(client_opts, r#" --vnstat-mr {}"#, vnstat_mr);
     }
     if disable_ping {
         client_opts.push_str(" --disable-ping");

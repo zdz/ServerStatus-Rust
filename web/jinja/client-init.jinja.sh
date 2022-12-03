@@ -85,7 +85,7 @@ function install_deps() {
 
         if [ -x "$(command -v apk 2>/dev/null)" ]; then
             apk update > /dev/null 2>&1
-            apk --no-cache add ${need_deps} > /dev/null 2>&1
+            apk --no-cache add procps iproute2 coreutils ${need_deps} > /dev/null 2>&1
         elif [ -x "$(command -v apt-get 2>/dev/null)" ]; then
             apt-get update -y > /dev/null 2>&1
             apt-get install -y  ${need_deps} > /dev/null 2>&1
