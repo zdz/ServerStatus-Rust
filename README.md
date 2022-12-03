@@ -173,7 +173,7 @@ admin_pass = ""
 # os 标签可选，不填则使用上报数据，ndd(next due date) 下次续费时间, spec 为主机规格
 # os 可用值 centos debian ubuntu alpine pi arch windows linux
 hosts = [
-  {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm", labels = "os=arch,ndd=2022/11/25;spec=2C/4G/60G;"},
+  {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm", labels = "os=arch;ndd=2022/11/25;spec=2C/4G/60G;"},
   {name = "h2", password = "p2", alias = "n2", location = "🏢", type = "kvm", disabled = false},
   {name = "h3", password = "p3", alias = "n3", location = "🏡", type = "kvm", monthstart = 1},
   {name = "h4", password = "p4", alias = "n4", location = "cn", type = "kvm", notify = true, labels = "ndd=2022/11/25;spec=2C/4G/60G;"},
