@@ -8,7 +8,7 @@
 [![GitHub all releases](https://img.shields.io/github/downloads/zdz/ServerStatus-Rust/total)](https://github.com/zdz/ServerStatus-Rust/releases)
 
 
-<img width="1215" alt="image" src="https://user-images.githubusercontent.com/152173/165957689-d35714a9-f7f8-49f7-9573-97d4cf3c2f79.png">
+<img width="1351" alt="image" src="https://user-images.githubusercontent.com/152173/205429787-5afc1590-dfae-4808-b2cc-b89889b3a6b9.png">
 <img width="1436" alt="image" src="https://user-images.githubusercontent.com/152173/165958225-25fc8fda-5798-42f8-bac5-72d778c0bab5.png">
 
 <h2>Table of Contents</h2>
@@ -43,7 +43,7 @@
 - 支持 `systemd` 开机自启
 - 其它功能，如 🗺️  见 [wiki](https://github.com/zdz/ServerStatus-Rust/wiki)
 
-演示：[ssr.rs](https://ssr.rs)
+演示：[ssr.rs](https://ssr.rs) | [cn dns](https://ck.ssr.rs)
 |
 下载：[Releases](https://github.com/zdz/ServerStatus-Rust/releases)
 |
@@ -75,7 +75,13 @@ ServerStatus-web 主题由 [@mjjrock](https://github.com/mjjrock) 修改提供�
 
 <img width="1425" alt="image" src="https://user-images.githubusercontent.com/102237118/171837653-3a5b2cd6-bf02-4602-a132-2c80a6707f68.png">
 
+</details>
 
+
+<details>
+  <summary>v1.5.7版本主题</summary>
+
+<img width="1215" alt="image" src="https://user-images.githubusercontent.com/152173/165957689-d35714a9-f7f8-49f7-9573-97d4cf3c2f79.png">
 </details>
 
 ## 2. 安装部署
@@ -455,8 +461,8 @@ OPTIONS:
 - https://github.com/BotoX/ServerStatus
 - https://github.com/cppla/ServerStatus
 - https://github.com/mojeda/ServerStatus
-- https://github.com/ToyoDAdoubiBackup/ServerStatus-Toyo
 - https://github.com/cokemine/ServerStatus-Hotaru
+- https://github.com/ToyoDAdoubiBackup/ServerStatus-Toyo
 
 ## 8. 最后
 
