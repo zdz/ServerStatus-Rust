@@ -70,6 +70,8 @@ pub struct HostStat {
     pub hdd_used: u64,
 
     #[serde(skip_deserializing)]
+    pub labels: String,
+    #[serde(skip_deserializing)]
     pub custom: String,
 
     #[serde(skip_serializing)]

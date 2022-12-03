@@ -134,10 +134,11 @@ async fn main_service_func(req: Request<Body>) -> Result<Response<Body>> {
         }
         _ => {
             if req.method() == Method::GET
-                && (req_path.starts_with("/js/")
-                    || req_path.starts_with("/css/")
-                    || req_path.starts_with("/img/")
-                    || req_path.eq("/favicon.ico"))
+                && (req_path.starts_with("/static/")
+                    || req_path.starts_with("/favicon")
+                    || req_path.starts_with("/logo")
+                    || req_path.eq("/manifest.json")
+                    || req_path.eq("/asset-manifest.json"))
             {
                 if let Some(data) = Asset::get(req_path) {
                     let ct = mime_guess::from_path(req_path);

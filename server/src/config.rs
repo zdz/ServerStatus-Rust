@@ -35,6 +35,8 @@ pub struct Host {
     pub notify: bool,
     #[serde(default = "bool::default")]
     pub disabled: bool,
+    #[serde(default = "Default::default")]
+    pub labels: String,
 
     #[serde(skip_deserializing)]
     pub last_network_in: u64,
@@ -65,6 +67,8 @@ pub struct HostGroup {
     pub pos: usize,
     #[serde(default = "Default::default", skip_serializing)]
     pub weight: u64,
+    #[serde(default = "Default::default")]
+    pub labels: String,
 }
 
 impl HostGroup {
@@ -79,6 +83,7 @@ impl HostGroup {
             notify: self.notify,
             pos: self.pos,
             weight: self.weight,
+            labels: self.labels.to_owned(),
             ..Default::default()
         }
     }

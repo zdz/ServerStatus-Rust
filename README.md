@@ -162,16 +162,21 @@ offline_threshold = 30
 admin_user = ""
 admin_pass = ""
 
+# hosts 跟 hosts_group 两种配置模式任挑一种配置即可
 # name 主机唯一标识，不可重复，alias 为展示名
-# 使用 ansible 批量部署时可以用主机 hostname 作为 name，统一密码
 # notify = false 单独禁止单台机器的告警，一般针对网络差，频繁上下线
 # monthstart = 1 没启用vnstat时，表示月流量从每月哪天开始统计
-# disabled = true 单机禁用，跟删除这条配置的效果一样
-# 国旗 https://emojixd.com/group/flags
+# disabled = true 单机禁用
+# location 支持国旗 emoji https://emojixd.com/group/flags
+# 或国家缩写，如 cn us 等等，所有国家见目录 web/static/flags
+# 自定义标签 labels = "os=centos;ndd=2022/11/25;spec=2C/4G/60G;"
+# os 标签可选，不填则使用上报数据，ndd(next due date) 下次续费时间, spec 为主机规格
+# os 可用值 centos debian ubuntu alpine pi arch windows linux
 hosts = [
-  {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm", notify = true},
+  {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm", labels = "os=arch,ndd=2022/11/25;spec=2C/4G/60G;"},
   {name = "h2", password = "p2", alias = "n2", location = "🏢", type = "kvm", disabled = false},
   {name = "h3", password = "p3", alias = "n3", location = "🏡", type = "kvm", monthstart = 1},
+  {name = "h4", password = "p4", alias = "n4", location = "cn", type = "kvm", notify = true, labels = "ndd=2022/11/25;spec=2C/4G/60G;"},
 ]
 
 # 动态注册模式，不再需要针对每一个主机做单独配置

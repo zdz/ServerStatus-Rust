@@ -6,7 +6,9 @@ use once_cell::sync::OnceCell;
 use std::borrow::Borrow;
 use std::borrow::BorrowMut;
 use std::borrow::Cow;
+use std::collections::binary_heap::Iter;
 use std::collections::HashMap;
+use std::fmt::Write as _;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
@@ -147,6 +149,7 @@ impl StatsMgr {
                     stat_t.pos = info.pos;
                     stat_t.disabled = info.disabled;
                     stat_t.weight += info.weight;
+                    stat_t.labels = info.labels.to_owned();
 
                     // !group
                     if !info.alias.is_empty() {
@@ -244,6 +247,20 @@ impl StatsMgr {
                     if o.latest_ts + cfg.offline_threshold < now {
                         o.online4 = false;
                         o.online6 = false;
+                    }
+
+                    // labels
+                    const OS_LIST: [&str; 7] = ["centos", "debian", "ubuntu", "pi", "arch", "windows", "linux"];
+                    if !o.labels.contains("os=") {
+                        if let Some(sys_info) = &o.sys_info {
+                            let os_r = sys_info.os_release.to_lowercase();
+                            for s in OS_LIST.iter() {
+                                if os_r.contains(s) {
+                                    write!(o.labels, ";os={}", s);
+                                    break;
+                                }
+                            }
+                        }
                     }
 
                     // client notify
