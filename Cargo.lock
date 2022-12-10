@@ -2048,9 +2048,9 @@ checksum = "20518fe4a4c9acf048008599e464deb21beeae3d3578418951a189c235a7a9a8"
 
 [[package]]
 name = "sysinfo"
-version = "0.27.0"
+version = "0.26.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d08ba83d6dde63d053e42d7230f0dc7f8d8efeb8d30d3681580d158156461ba"
+checksum = "29ddf41e393a9133c81d5f0974195366bd57082deac6e0eb02ed39b8341c2bb6"
 dependencies = [
  "cfg-if",
  "core-foundation-sys",
@@ -2590,9 +2590,9 @@ dependencies = [
 
 [[package]]
 name = "webpki-roots"
-version = "0.22.5"
+version = "0.22.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "368bfe657969fb01238bb756d351dcade285e0f6fcbd36dcb23359a5169975be"
+checksum = "b6c71e40d7d2c34a5106301fb632274ca37242cd0c9d3e64dbece371a40a2d87"
 dependencies = [
  "webpki",
 ]
