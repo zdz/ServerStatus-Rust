@@ -7,8 +7,7 @@
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/zdz/ServerStatus-Rust)](https://github.com/zdz/ServerStatus-Rust/releases)
 [![GitHub all releases](https://img.shields.io/github/downloads/zdz/ServerStatus-Rust/total)](https://github.com/zdz/ServerStatus-Rust/releases)
 
-
-<img width="1351" alt="image" src="https://user-images.githubusercontent.com/152173/205429787-5afc1590-dfae-4808-b2cc-b89889b3a6b9.png">
+<img width="1317" alt="image" src="https://user-images.githubusercontent.com/152173/206825541-6eaeb856-0c03-479a-b07e-006b60b41c02.png">
 <img width="1436" alt="image" src="https://user-images.githubusercontent.com/152173/165958225-25fc8fda-5798-42f8-bac5-72d778c0bab5.png">
 
 <h2>Table of Contents</h2>
@@ -33,7 +32,7 @@
   - [8. 最后](#8-最后)
 
 ## 1. 介绍
-  `ServerStatus` 威力加强版，保持轻量和简化部署，增加主要特性如下：
+  `ServerStatus` 威力加强版，保持轻量和简单部署，增加以下主要特性：
 
 - 使用 `rust` 完全重写 `server`、`client`，单个执行文件部署
 - 支持上下线和简单自定义规则告警 (`telegram`、 `wechat`、 `email`、 `webhook`)
@@ -224,7 +223,7 @@ custom_tpl = """
 {% endif %}
 """
 
-# wechat, email 等其它通知方式 配置详细见 config.toml
+# wechat, email, webhook 等其它通知方式 配置详细见 config.toml
 ```
 
 ### 3.2 服务端运行
@@ -259,6 +258,7 @@ docker-compose up -d
 # Rust 版只在 CentOS, Ubuntu, Debian 测试过
 # alpine linux 需要安装相关命令 apk add procps iproute2 coreutils
 # 如果 Rust 版客户端在你的系统无法使用，请切换到下面 4.2 跨平台版本
+
 # systemd 方式， 参照 one-touch.sh 脚本 (推荐)
 
 # 💪 手动方式
@@ -287,6 +287,7 @@ OPTIONS:
         --json                   use json protocol, default:false
         --location <LOCATION>    location [default: ]
     -n, --vnstat                 enable vnstat, default:false
+        --vnstat-mr <VNSTAT_MR>  vnstat month rotate 1-28 [default: 1]
     -p, --pass <PASS>            password [default: p1]
     -t, --type <HOST_TYPE>       host type [default: ]
     -u, --user <USER>            username [default: h1]

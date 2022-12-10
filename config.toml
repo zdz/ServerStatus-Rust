@@ -13,7 +13,7 @@ admin_pass = ""
 # notify = false 单独禁止单台机器的告警，一般针对网络差，频繁上下线
 # monthstart = 1 没启用vnstat时，表示月流量从每月哪天开始统计
 # disabled = true 单机禁用
-# location 支持国旗emoji https://emojixd.com/group/flags
+# location 支持国旗 emoji https://emojixd.com/group/flags
 # 或国家缩写，如 cn us 等等，所有国家见目录 web/static/flags
 # 自定义标签 labels = "os=centos;ndd=2022/11/25;spec=2C/4G/60G;"
 # os 标签可选，不填则使用上报数据，ndd(next due date) 下次续费时间, spec 为主机规格
@@ -53,9 +53,9 @@ notify_interval = 30
 enabled = false
 bot_token = "<tg bot token>"
 chat_id = "<chat id>"
-# host 可用字段参见 payload.rs 文件 HostStat 结构, {{host.xxx}} 为占位变量
+# host 可用字段见 payload.rs 文件 HostStat 结构, {{host.xxx}} 为占位变量
 # 例如 host.name 可替换为 host.alias，大家根据自己的喜好来编写通知消息
-# {{ip_info.query}} 主机 ip,  {{sys_info.host_name}} 主机 hostname
+# {{ip_info.query}} 主机 ip, {{sys_info.host_name}} 主机 hostname，见 server_status.proto
 title = "❗<b>Server Status</b>"
 online_tpl =  "{{config.title}} \n😆 {{host.location}} {{host.name}} 主机恢复上线啦"
 offline_tpl = "{{config.title}} \n😱 {{host.location}} {{host.name}} 主机已经掉线啦"
@@ -70,6 +70,14 @@ custom_tpl = """
 {% endif %}
 """
 ###################### tgbot end ##########################
+
+## 可选 单纯记录 event 到日志文件，调试自定义告警使用
+[log]
+enabled = false
+log_dir = "/opt/ServerStatus/logs"
+tpl = """{% set obj = dict(event=event, host=host, ip_info=ip_info, sys_info=sys_info) %} {{ obj | tojson}}"""
+
+###################### log end ##########################
 
 ## 可选 微信通知
 [wechat]
@@ -114,15 +122,10 @@ custom_tpl = """
 
 ###################### email end ##########################
 
-## 可选 单纯记录 event 到日志文件
-[log]
-enabled = false
-log_dir = "/opt/ServerStatus/logs"
-tpl = """{% set obj = dict(event=event, host=host, ip_info=ip_info, sys_info=sys_info) %} {{ obj | tojson}}"""
-
-
-## script 使用脚本引擎 https://rhai.rs/book/
 ## 可选 webhook
+# 理论上支持所有支持 webhook 的软件，如 Discord、 Slack、 飞书、 企业版微信(WorkWechat)、 钉钉(DingTalk)等。
+# webhook 调用基本上都差不多，差异只在最后返回的 json 结构，根据各自的 api 文档自行构建相应的 json 结构即可。
+# script 使用脚本引擎 https://rhai.rs/book/
 [webhook]
 # 总开关
 enabled = false
