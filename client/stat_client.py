@@ -309,9 +309,9 @@ def sample(options, stat_base):
     stat_data['network_rx'] = G_NET_SPEED.get("netrx")
     stat_data['network_tx'] = G_NET_SPEED.get("nettx")
 
-    stat_data['ping_10010'] = G_LOST_RATE.get('10010') * 100
-    stat_data['ping_189'] = G_LOST_RATE.get('189') * 100
-    stat_data['ping_10086'] = G_LOST_RATE.get('10086') * 100
+    stat_data['ping_10010'] = int(G_LOST_RATE.get('10010') * 100)
+    stat_data['ping_189'] = int(G_LOST_RATE.get('189') * 100)
+    stat_data['ping_10086'] = int(G_LOST_RATE.get('10086') * 100)
     stat_data['time_10010'] = G_PING_TIME.get('10010')
     stat_data['time_189'] = G_PING_TIME.get('189')
     stat_data['time_10086'] = G_PING_TIME.get('10086')
