@@ -147,6 +147,7 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
         server_url = format!("{}://{}/report", scheme, domain);
     }
 
+    let debug = params.get("debug").map(|p| p.eq("1")).unwrap_or(false);
     let vnstat = params.get("vnstat").map(|p| p.eq("1")).unwrap_or(false);
     let disable_ping = params.get("ping").map(|p| p.eq("0")).unwrap_or(false);
     let disable_tupd = params.get("tupd").map(|p| p.eq("0")).unwrap_or(false);
@@ -165,8 +166,19 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
     let host_type = params.get("type").unwrap_or(&invalid);
     let location = params.get("loc").unwrap_or(&invalid);
 
+    // cm, ct, cu
+    let cm = params.get("cm").unwrap_or(&invalid);
+    let ct = params.get("ct").unwrap_or(&invalid);
+    let cu = params.get("cu").unwrap_or(&invalid);
+
+    let iface = params.get("iface").unwrap_or(&invalid);
+    let exclude_iface = params.get("exclude-iface").unwrap_or(&invalid);
+
     // build client opts
     let mut client_opts = format!(r#"-a "{}" -p "{}""#, server_url, pass);
+    if debug {
+        client_opts.push_str(" -d");
+    }
     if vnstat {
         client_opts.push_str(" -n");
     }
@@ -200,6 +212,22 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
     }
     if !location.is_empty() {
         let _ = write!(client_opts, r#" --location "{}""#, location);
+    }
+    if !cm.is_empty() && cm.contains(":") {
+        let _ = write!(client_opts, r#" --cm "{}""#, cm);
+    }
+    if !ct.is_empty() && ct.contains(":") {
+        let _ = write!(client_opts, r#" --ct "{}""#, ct);
+    }
+    if !cu.is_empty() && cu.contains(":") {
+        let _ = write!(client_opts, r#" --cu "{}""#, cu);
+    }
+
+    if !iface.is_empty() {
+        let _ = write!(client_opts, r#" --iface "{}""#, iface);
+    }
+    if !exclude_iface.is_empty() {
+        let _ = write!(client_opts, r#" --exclude-iface "{}""#, exclude_iface);
     }
 
     Ok(jinja::render_template(
