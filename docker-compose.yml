@@ -12,6 +12,4 @@ services:
     ports:
       - 8080:8080
       - 9394:9394
-    environment:
-      - RUST_BACKTRACE=1
-      - RUST_LOG=trace
+
