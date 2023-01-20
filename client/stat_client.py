@@ -283,7 +283,7 @@ def byte_str(object):
 
 
 def sample(options, stat_base):
-    cpu_percent = get_cpu()
+    cpu_percent = int(get_cpu())
     uptime = get_uptime()
     load_1, load_5, load_15 = os.getloadavg(
     ) if 'linux' in sys.platform else (0.0, 0.0, 0.0)
