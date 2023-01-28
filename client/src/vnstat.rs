@@ -161,7 +161,7 @@ pub fn get_traffic(args: &Args) -> Result<(u64, u64, u64, u64)> {
         let b = str::from_utf8(&a)?;
         let j: VnstatJson = serde_json::from_str(b).unwrap_or_else(|e| {
             error!("{:?}", e);
-            panic!("invalid vnstat json `{}", b)
+            panic!("invalid vnstat json `{b}")
         });
         calc_traffic(j, false, args)
     } else if args.vnstat_mr > 1 && args.vnstat_mr <= 28 {
@@ -174,7 +174,7 @@ pub fn get_traffic(args: &Args) -> Result<(u64, u64, u64, u64)> {
         let b = str::from_utf8(&a)?;
         let j: VnstatJson = serde_json::from_str(b).unwrap_or_else(|e| {
             error!("{:?}", e);
-            panic!("invalid vnstat json `{}", b)
+            panic!("invalid vnstat json `{b}")
         });
         calc_traffic(j, true, args)
     } else {

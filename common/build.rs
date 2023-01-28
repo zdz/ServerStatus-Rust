@@ -20,7 +20,7 @@ fn main() {
             Utc::now().format("%Y-%m-%d %H:%M:%S %Z")
         );
     }
-    println!("cargo:rustc-env=APP_VERSION={}", app_version);
+    println!("cargo:rustc-env=APP_VERSION={app_version}");
 
     std::env::set_var("PROTOC", protobuf_src::protoc());
     tonic_build::configure()

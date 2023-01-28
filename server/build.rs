@@ -38,5 +38,5 @@ fn main() {
             rustc_version().unwrap()
         );
     }
-    println!("cargo:rustc-env=APP_VERSION={}", app_version);
+    println!("cargo:rustc-env=APP_VERSION={app_version}");
 }

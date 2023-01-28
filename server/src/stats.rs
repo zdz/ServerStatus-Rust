@@ -177,7 +177,7 @@ impl StatsMgr {
                     // uptime str
                     let day = (stat_t.uptime as f64 / 3600.0 / 24.0) as i64;
                     if day > 0 {
-                        stat_t.uptime_str = format!("{} 天", day);
+                        stat_t.uptime_str = format!("{day} 天");
                     } else {
                         stat_t.uptime_str = format!(
                             "{:02}:{:02}:{:02}",
@@ -256,7 +256,7 @@ impl StatsMgr {
                             let os_r = sys_info.os_release.to_lowercase();
                             for s in OS_LIST.iter() {
                                 if os_r.contains(s) {
-                                    write!(o.labels, ";os={}", s);
+                                    write!(o.labels, ";os={s}");
                                     break;
                                 }
                             }

@@ -48,7 +48,7 @@ impl crate::notifier::Notifier for Log {
 
         let dt = Local::now().format("%Y-%m-%d").to_string();
         let log_file = Path::new(&self.config.log_dir)
-            .join(format!("ssr.log.{}", dt))
+            .join(format!("ssr.log.{dt}"))
             .to_string_lossy()
             .to_string();
 
@@ -61,23 +61,23 @@ impl crate::notifier::Notifier for Log {
                 .append(true)
                 .open(&log_file)
                 .await
-                .unwrap_or_else(|_| panic!("can't create log `{}", log_file));
+                .unwrap_or_else(|_| panic!("can't create log `{log_file}"));
 
             let _ = file
                 .write(content.as_bytes())
                 .await
-                .unwrap_or_else(|_| panic!("can't write log `{}", log_file));
+                .unwrap_or_else(|_| panic!("can't write log `{log_file}"));
 
             if !content.ends_with('\n') {
                 let _ = file
                     .write(b"\n")
                     .await
-                    .unwrap_or_else(|_| panic!("can't write log `{}", log_file));
+                    .unwrap_or_else(|_| panic!("can't write log `{log_file}"));
             }
 
             file.flush()
                 .await
-                .unwrap_or_else(|_| panic!("can't flush log `{}", log_file));
+                .unwrap_or_else(|_| panic!("can't flush log `{log_file}"));
         });
         Ok(())
     }

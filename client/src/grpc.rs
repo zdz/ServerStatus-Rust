@@ -11,9 +11,8 @@ use stat_common::server_status::StatRequest;
 
 use crate::sample_all;
 use crate::Args;
-use crate::INTERVAL_MS;
 
-// TODO TLS
+// TODO mTLS
 
 pub async fn report(args: &Args, stat_base: &mut StatRequest) -> anyhow::Result<()> {
     if !vec![stat_base.online4, stat_base.online6].iter().any(|&x| x) {
@@ -68,6 +67,6 @@ pub async fn report(args: &Args, stat_base: &mut StatRequest) -> anyhow::Result<
             }
         });
 
-        thread::sleep(Duration::from_millis(INTERVAL_MS));
+        thread::sleep(Duration::from_secs(args.report_interval));
     }
 }

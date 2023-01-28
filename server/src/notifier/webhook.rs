@@ -68,9 +68,8 @@ impl Webhook {
         o.engine.register_fn("now_str", now_str);
 
         for r in o.config.receiver.iter() {
-            let ast = o.engine.compile(&r.script).unwrap();
-
             if r.enabled {
+                let ast = o.engine.compile(&r.script).unwrap();
                 o.ast_list.push(Some(ast));
             } else {
                 o.ast_list.push(None);

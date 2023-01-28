@@ -11,7 +11,7 @@ where
     T: Into<String> + std::fmt::Display,
     S: Into<String>,
 {
-    let name = format!("{}.{}", kind, tag);
+    let name = format!("{kind}.{tag}");
     JINJA_ENV
         .lock()
         .as_mut()
@@ -24,7 +24,7 @@ where
 }
 
 pub fn render_template<'a>(kind: &'a str, tag: &'a str, ctx: Value, trim: bool) -> Result<String> {
-    let name = format!("{}.{}", kind, tag);
+    let name = format!("{kind}.{tag}");
     Ok(JINJA_ENV
         .lock()
         .map(|e| {

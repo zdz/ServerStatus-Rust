@@ -110,7 +110,7 @@ function download_client() {
     cd ${SSR_WORKSPACE}
     rm -rf client-*.zip stat_* | true
 
-    say "start downloading the stat_client"
+    say "start download the stat_client"
 
     if [ "${SSR_CN}" = true ]; then
         say "using cn mirror: coding.net"

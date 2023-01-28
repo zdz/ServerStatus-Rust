@@ -255,11 +255,11 @@ async fn main() -> Result<()> {
     let http_service = make_service_fn(|_| async { Ok::<_, GenericError>(service_fn(main_service_func)) });
 
     let http_addr = G_CONFIG.get().unwrap().http_addr.parse()?;
-    eprintln!("🚀 listening on http://{}", http_addr);
+    eprintln!("🚀 listening on http://{http_addr}");
     let server = Server::bind(&http_addr).serve(http_service);
     let graceful = server.with_graceful_shutdown(shutdown_signal());
     if let Err(e) = graceful.await {
-        eprintln!("server error: {}", e);
+        eprintln!("server error: {e}");
     }
 
     Ok(())

@@ -66,7 +66,7 @@ fn check_auth(req: Request<()>) -> Result<Request<()>, Status> {
 pub async fn serv_grpc(addr: &str) -> anyhow::Result<()> {
     let sock_addr = addr.parse().unwrap();
     let sss = ServerStatusSrv::default();
-    eprintln!("🚀 listening on grpc://{}", sock_addr);
+    eprintln!("🚀 listening on grpc://{sock_addr}");
     let svc = ServerStatusServer::with_interceptor(sss, check_auth);
     Server::builder()
         .add_service(svc)

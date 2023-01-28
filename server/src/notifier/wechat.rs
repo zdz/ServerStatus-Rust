@@ -75,10 +75,8 @@ impl crate::notifier::Notifier for WeChat {
                     if let Ok(json_data) = json_res {
                         if let Some(access_token) = json_data.get("access_token") {
                             if let Some(token) = access_token.as_str() {
-                                let req_url = format!(
-                                    "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={}",
-                                    token
-                                );
+                                let req_url =
+                                    format!("https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={token}");
                                 let req_data = serde_json::json!({
                                     "touser": "@all",
                                     "agentid": agent_id,

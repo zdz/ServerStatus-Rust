@@ -144,7 +144,7 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
                 domain = host.to_string();
             })
         });
-        server_url = format!("{}://{}/report", scheme, domain);
+        server_url = format!("{scheme}://{domain}/report");
     }
 
     let debug = params.get("debug").map(|p| p.eq("1")).unwrap_or(false);
@@ -175,7 +175,7 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
     let exclude_iface = params.get("exclude-iface").unwrap_or(&invalid);
 
     // build client opts
-    let mut client_opts = format!(r#"-a "{}" -p "{}""#, server_url, pass);
+    let mut client_opts = format!(r#"-a "{server_url}" -p "{pass}""#);
     if debug {
         client_opts.push_str(" -d");
     }
@@ -183,7 +183,7 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
         client_opts.push_str(" -n");
     }
     if 1 < vnstat_mr && vnstat_mr <= 28 {
-        let _ = write!(client_opts, r#" --vnstat-mr {}"#, vnstat_mr);
+        let _ = write!(client_opts, r#" --vnstat-mr {vnstat_mr}"#);
     }
     if disable_ping {
         client_opts.push_str(" --disable-ping");
@@ -195,39 +195,39 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
         client_opts.push_str(" --disable-extra");
     }
     if weight > 0 {
-        let _ = write!(client_opts, r#" -w {}"#, weight);
+        let _ = write!(client_opts, r#" -w {weight}"#);
     }
     if !gid.is_empty() {
-        let _ = write!(client_opts, r#" -g "{}""#, gid);
-        let _ = write!(client_opts, r#" --alias "{}""#, alias);
+        let _ = write!(client_opts, r#" -g "{gid}""#);
+        let _ = write!(client_opts, r#" --alias "{alias}""#);
     }
     if !uid.is_empty() {
-        let _ = write!(client_opts, r#" -u "{}""#, uid);
+        let _ = write!(client_opts, r#" -u "{uid}""#);
     }
     if !notify {
         client_opts.push_str(" --disable-notify");
     }
     if !host_type.is_empty() {
-        let _ = write!(client_opts, r#" -t "{}""#, host_type);
+        let _ = write!(client_opts, r#" -t "{host_type}""#);
     }
     if !location.is_empty() {
-        let _ = write!(client_opts, r#" --location "{}""#, location);
+        let _ = write!(client_opts, r#" --location "{location}""#);
     }
-    if !cm.is_empty() && cm.contains(":") {
-        let _ = write!(client_opts, r#" --cm "{}""#, cm);
+    if !cm.is_empty() && cm.contains(':') {
+        let _ = write!(client_opts, r#" --cm "{cm}""#);
     }
-    if !ct.is_empty() && ct.contains(":") {
-        let _ = write!(client_opts, r#" --ct "{}""#, ct);
+    if !ct.is_empty() && ct.contains(':') {
+        let _ = write!(client_opts, r#" --ct "{ct}""#);
     }
-    if !cu.is_empty() && cu.contains(":") {
-        let _ = write!(client_opts, r#" --cu "{}""#, cu);
+    if !cu.is_empty() && cu.contains(':') {
+        let _ = write!(client_opts, r#" --cu "{cu}""#);
     }
 
     if !iface.is_empty() {
-        let _ = write!(client_opts, r#" --iface "{}""#, iface);
+        let _ = write!(client_opts, r#" --iface "{iface}""#);
     }
     if !exclude_iface.is_empty() {
-        let _ = write!(client_opts, r#" --exclude-iface "{}""#, exclude_iface);
+        let _ = write!(client_opts, r#" --exclude-iface "{exclude_iface}""#);
     }
 
     Ok(jinja::render_template(
@@ -326,16 +326,16 @@ pub async fn get_detail(req: Request<Body>) -> Result<Response<Body>> {
             .as_ref()
             .map(|o| {
                 let mut s = String::new();
-                s.push_str(format!("version:        {}\n", o.version).as_str());
-                s.push_str(format!("host_name:      {}\n", o.host_name).as_str());
-                s.push_str(format!("os_name:        {}\n", o.os_name).as_str());
-                s.push_str(format!("os_arch:        {}\n", o.os_arch).as_str());
-                s.push_str(format!("os_family:      {}\n", o.os_family).as_str());
-                s.push_str(format!("os_release:     {}\n", o.os_release).as_str());
-                s.push_str(format!("kernel_version: {}\n", o.kernel_version).as_str());
-                s.push_str(format!("cpu_num:        {}\n", o.cpu_num).as_str());
-                s.push_str(format!("cpu_brand:      {}\n", o.cpu_brand).as_str());
-                s.push_str(format!("cpu_vender_id:  {}", o.cpu_vender_id).as_str());
+                s.push_str(&format!("version:        {}\n", o.version));
+                s.push_str(&format!("host_name:      {}\n", o.host_name));
+                s.push_str(&format!("os_name:        {}\n", o.os_name));
+                s.push_str(&format!("os_arch:        {}\n", o.os_arch));
+                s.push_str(&format!("os_family:      {}\n", o.os_family));
+                s.push_str(&format!("os_release:     {}\n", o.os_release));
+                s.push_str(&format!("kernel_version: {}\n", o.kernel_version));
+                s.push_str(&format!("cpu_num:        {}\n", o.cpu_num));
+                s.push_str(&format!("cpu_brand:      {}\n", o.cpu_brand));
+                s.push_str(&format!("cpu_vender_id:  {}", o.cpu_vender_id));
                 s
             })
             .unwrap_or_default();
@@ -372,7 +372,7 @@ pub async fn get_detail(req: Request<Body>) -> Result<Response<Body>> {
                 host.uptime_str,
                 ip_info.query,
                 sys_info,
-                format!("{}\n{}", addrs, isp)
+                format!("{addrs}\n{isp}")
             ]);
         } else {
             table.add_row(row![
