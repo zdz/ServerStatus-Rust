@@ -24,7 +24,6 @@ mod status;
 mod sys_info;
 mod vnstat;
 
-const INTERVAL_MS: u64 = 1000;
 static CU: &str = "cu.tz.cloudcpp.com:80";
 static CT: &str = "ct.tz.cloudcpp.com:80";
 static CM: &str = "cm.tz.cloudcpp.com:80";
@@ -56,6 +55,13 @@ pub struct Args {
         help = "vnstat month rotate 1-28"
     )]
     vnstat_mr: u32,
+    #[arg(
+        long = "interval",
+        env = "SSR_INTERVAL",
+        default_value_t = 1,
+        help = "data report interval (s)"
+    )]
+    report_interval: u64,
     #[arg(
         long = "disable-tupd",
         env = "SSR_DISABLE_TUPD",
@@ -113,7 +119,6 @@ pub struct Args {
     #[arg(
         short = 'i',
         long = "iface",
-
         env = "SSR_IFACE",
         default_values_t = Vec::<String>::new(),
         value_delimiter = ',',
@@ -175,9 +180,9 @@ fn http_report(args: &Args, stat_base: &mut StatRequest) -> Result<()> {
     let mut domain = args.addr.split('/').collect::<Vec<&str>>()[2].to_owned();
     if !domain.contains(':') {
         if args.addr.contains("https") {
-            domain = format!("{}:443", domain);
+            domain = format!("{domain}:443");
         } else {
-            domain = format!("{}:80", domain);
+            domain = format!("{domain}:80");
         }
     }
     let tcp_addr = domain.to_socket_addrs()?.next().unwrap();
@@ -246,7 +251,7 @@ fn http_report(args: &Args, stat_base: &mut StatRequest) -> Result<()> {
             }
         });
 
-        thread::sleep(Duration::from_millis(INTERVAL_MS));
+        thread::sleep(Duration::from_secs(args.report_interval));
     }
 }
 
@@ -295,8 +300,8 @@ async fn main() -> Result<()> {
     let sys_info = sys_info::collect_sys_info(&args);
     let sys_info_json = serde_json::to_string(&sys_info)?;
     let sys_id = sys_info::gen_sys_id(&sys_info);
-    eprintln!("sys id: {}", sys_id);
-    eprintln!("sys info: {}", sys_info_json);
+    eprintln!("sys id: {sys_id}");
+    eprintln!("sys info: {sys_info_json}");
 
     if let Ok(mut o) = G_CONFIG.lock() {
         o.sys_info = Some(sys_info);
@@ -320,7 +325,7 @@ async fn main() -> Result<()> {
 
     status::start_all_ping_collect_t(&args);
     let (ipv4, ipv6) = status::get_network();
-    eprintln!("get_network (ipv4, ipv6) => ({}, {})", ipv4, ipv6);
+    eprintln!("get_network (ipv4, ipv6) => ({ipv4}, {ipv6})");
 
     if !args.disable_extra {
         // refresh ip info
