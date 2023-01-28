@@ -85,7 +85,7 @@ jobs:
 
       - name: Zip Release For Server
         if: matrix.os == 'ubuntu-latest'
-        uses: TheDoctor0/zip-release@0.6.2
+        uses: TheDoctor0/zip-release@0.7.1
         with:
           type: zip
           filename: server-${{ matrix.target }}.zip
@@ -97,7 +97,7 @@ jobs:
 
       - name: Zip Release For Client
         if: matrix.os == 'ubuntu-latest'
-        uses: TheDoctor0/zip-release@0.6.2
+        uses: TheDoctor0/zip-release@0.7.1
         with:
           type: zip
           filename: client-${{ matrix.target }}.zip
