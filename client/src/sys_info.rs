@@ -1,6 +1,7 @@
 #![deny(warnings)]
 #![allow(unused)]
 use lazy_static::lazy_static;
+use std::fs;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
@@ -216,10 +217,25 @@ pub fn collect_sys_info(args: &Args) -> SysInfo {
 }
 
 pub fn gen_sys_id(sys_info: &SysInfo) -> String {
+    // read from .server_status_sys_id
+    const SYS_ID_FILE: &str = ".server_status_sys_id";
+
+    match fs::read_to_string(SYS_ID_FILE) {
+        Ok(content) => {
+            if (content.len() > 0) {
+                info!("{}", format!("read sys_id from {SYS_ID_FILE}"));
+                return content.trim().to_string();
+            }
+        }
+        Err(_) => {
+            warn!("{}", format!("can't read {SYS_ID_FILE}, regen sys_id"));
+        }
+    }
+
     let mut sys = System::new_all();
     let bt = sys.boot_time();
 
-    format!(
+    let sys_id = format!(
         "{:x}",
         md5::compute(format!(
             "{}/{}/{}/{}/{}/{}/{}/{}",
@@ -232,5 +248,20 @@ pub fn gen_sys_id(sys_info: &SysInfo) -> String {
             sys_info.cpu_brand,
             bt,
         ))
-    )
+    );
+
+    match fs::write(SYS_ID_FILE, &sys_id) {
+        Ok(()) => {
+            info!("{}", format!("save sys_id to {SYS_ID_FILE} succ"));
+        }
+        Err(_) => {
+            warn!("{}", format!("save sys_id to {SYS_ID_FILE} fail"));
+        }
+    }
+
+    sys_id
 }
+
+// pub fn get_sys_id(sys_info: &SysInfo) -> String {
+//     return ''.to_string();
+// }

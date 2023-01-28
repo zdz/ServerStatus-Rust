@@ -460,6 +460,14 @@ def get_sys_info(options):
 
 
 def gen_sys_id(sys_info):
+    """"""
+    SYS_ID_FILE = ".server_status_sys_id"
+    if os.path.exists(SYS_ID_FILE):
+        with open(SYS_ID_FILE, 'r') as f:
+            sys_id = f.read()
+            print(f"read sys_id from {SYS_ID_FILE}")
+            return sys_id.strip()
+
     s = "{}/{}/{}/{}/{}/{}/{}/{}".format(
         sys_info.get("host_name", "unknown"),
         sys_info.get("os_name", "unknown"),
@@ -470,7 +478,11 @@ def gen_sys_id(sys_info):
         sys_info.get("cpu_brand", "unknown"),
         psutil.boot_time(),
     )
-    return hashlib.md5(s.encode("utf-8")).hexdigest()
+    sys_id = hashlib.md5(s.encode("utf-8")).hexdigest()
+    with open(SYS_ID_FILE, "w") as wf:
+        wf.write(sys_id)
+        print(f"save sys_id to {SYS_ID_FILE} succ")
+    return sys_id
 
 
 def skip_iface(name, options):
