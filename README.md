@@ -1,14 +1,39 @@
-# ✨ Rust 版 ServerStatus 云探针
+<p align="center">
+  <a href="https://github.com/zdz/ServerStatus-Rust">
+    <h1 align="center">✨ Rust 版 ServerStatus 云探针</h1>
+  </a>
+</p>
 
-[![Docker](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml)
-[![Release](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml/badge.svg)](https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml)
-[![GitHub issues](https://img.shields.io/github/issues/zdz/ServerStatus-Rust)](https://github.com/zdz/ServerStatus-Rust/issues)
-[![GitHub Discussions](https://img.shields.io/github/discussions/zdz/ServerStatus-Rust)](https://github.com/zdz/ServerStatus-Rust/discussions)
-[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/zdz/ServerStatus-Rust)](https://github.com/zdz/ServerStatus-Rust/releases)
-[![GitHub all releases](https://img.shields.io/github/downloads/zdz/ServerStatus-Rust/total)](https://github.com/zdz/ServerStatus-Rust/releases)
+<div align="center">
+    <p>
+        <a href="https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml">
+            <img src="https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml/badge.svg"
+                  alt="Docker">
+        </a>
+        <a href="https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml">
+            <img src="https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml/badge.svg" alt="Release"></a>
+        <a href="https://github.com/zdz/ServerStatus-Rust/issues">
+            <img src="https://img.shields.io/github/issues/zdz/ServerStatus-Rust"
+                  alt="GitHub issues">
+        </a>
+        <a href="https://github.com/zdz/ServerStatus-Rust/discussions">
+            <img src="https://img.shields.io/github/discussions/zdz/ServerStatus-Rust"
+                  alt="GitHub Discussions">
+        </a>
+        <a href="https://github.com/zdz/ServerStatus-Rust/releases">
+            <img src="https://img.shields.io/github/v/release/zdz/ServerStatus-Rust"
+                  alt="GitHub release (latest SemVer)">
+        </a>
+        <a href="https://github.com/zdz/ServerStatus-Rust/releases">
+            <img src="https://img.shields.io/github/downloads/zdz/ServerStatus-Rust/total" alt="GitHub all releases">
+        </a>
+    </p>
+</div>
 
 <img width="1317" alt="image" src="https://user-images.githubusercontent.com/152173/206825541-6eaeb856-0c03-479a-b07e-006b60b41c02.png">
 <img width="1436" alt="image" src="https://user-images.githubusercontent.com/152173/165958225-25fc8fda-5798-42f8-bac5-72d778c0bab5.png">
+
+
 
 <h2>Table of Contents</h2>
 
