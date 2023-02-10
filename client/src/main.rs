@@ -86,6 +86,8 @@ pub struct Args {
     cm_addr: String,
     #[arg(long = "cu",  env = "SSR_CU_ADDR", default_value = CU, help = "China Unicom probe addr")]
     cu_addr: String,
+    #[arg(long = "sys-info", help = "show sys info, default:false")]
+    sys_info: bool,
     #[arg(long = "ip-info", help = "show ip info, default:false")]
     ip_info: bool,
     #[arg(long = "json", help = "use json protocol, default:false")]
@@ -155,7 +157,7 @@ fn sample_all(args: &Args, stat_base: &StatRequest) -> StatRequest {
     // dbg!(&stat_base);
     let mut stat_rt = stat_base.clone();
 
-    #[cfg(all(feature = "native", not(feature = "sysinfo")))]
+    #[cfg(all(feature = "native", not(feature = "sysinfo"), target_os = "linux"))]
     status::sample(args, &mut stat_rt);
     #[cfg(all(feature = "sysinfo", not(feature = "native")))]
     sys_info::sample(args, &mut stat_rt);
@@ -303,14 +305,19 @@ async fn main() -> Result<()> {
     eprintln!("sys id: {sys_id}");
     eprintln!("sys info: {sys_info_json}");
 
+    if args.sys_info {
+        sys_info::print_sysinfo();
+        process::exit(0);
+    }
+
     if let Ok(mut o) = G_CONFIG.lock() {
         o.sys_info = Some(sys_info);
     }
 
     // use native
-    #[cfg(all(feature = "native", not(feature = "sysinfo")))]
+    #[cfg(all(feature = "native", not(feature = "sysinfo"), target_os = "linux"))]
     {
-        eprintln!("enable feature native");
+        eprintln!("feature native enabled");
         status::start_cpu_percent_collect_t();
         status::start_net_speed_collect_t(&args);
     }
@@ -318,9 +325,9 @@ async fn main() -> Result<()> {
     // use sysinfo
     #[cfg(all(feature = "sysinfo", not(feature = "native")))]
     {
-        eprintln!("enable feature sysinfo");
+        eprintln!("feature sysinfo enabled");
         sys_info::start_cpu_percent_collect_t();
-        sys_info::start_net_speed_collect_t();
+        sys_info::start_net_speed_collect_t(&args);
     }
 
     status::start_all_ping_collect_t(&args);

@@ -60,7 +60,8 @@
   `ServerStatus` 威力加强版，保持轻量和简单部署，增加以下主要特性：
 
 - 使用 `rust` 完全重写 `server`、`client`，单个执行文件部署
-- 支持上下线和简单自定义规则告警 (`telegram`、 `wechat`、 `email`、 `webhook`)
+- 多系统支持 `Linux`、`MacOS`、`Windows`、`Android`、`Raspberry Pi`
+- 支持上下线和简单自定义规则告警 (`telegram`、`wechat`、`email`、`webhook`)
 - 支持 `http` 协议上报，方便部署到各免费容器服务和配合 `cf` 等优化上报链路
 - 支持 `vnstat` 统计月流量，重启不丢流量数据
 - 支持 `railway` 快速部署
@@ -76,6 +77,17 @@
 反馈：[Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
 
 📕 完整文档迁移至 [doc.ssr.rs](https://doc.ssr.rs)
+
+|  OS            | Release  |
+|  ----          | ----     |
+| Linux x86_64   | x86_64-unknown-linux-musl |
+| Linux arm64    | aarch64-unknown-linux-musl |
+| MacOS x86_64   | x86_64-apple-darwin |
+| MacOS arm64    | aarch64-apple-darwin |
+| Windows x86_64 | x86_64-pc-windows-msvc |
+| Raspberry Pi   | armv7-unknown-linux-musleabihf |
+| Android 64bit  | aarch64-linux-android |
+| Android 32bit  | armv7-linux-androideabi |
 
 ### 🍀 主题
 
@@ -95,15 +107,15 @@ Hotaru 主题由 [@HinataKato](https://github.com/HinataKato) 修改提供，[�
 
 ServerStatus-web 主题由 [@mjjrock](https://github.com/mjjrock) 修改提供，[主题地址](https://github.com/mjjrock/ServerStatus-web)
 
-演示：[Demo](https://ssr-web.vercel.app)
-
 <img width="1425" alt="image" src="https://user-images.githubusercontent.com/102237118/171837653-3a5b2cd6-bf02-4602-a132-2c80a6707f68.png">
 
 </details>
 
 
 <details>
-  <summary>v1.5.7版本主题</summary>
+  <summary>v1.5.7 版本主题</summary>
+
+[演示：Demo](https://tz-rust.vercel.app)
 
 <img width="1215" alt="image" src="https://user-images.githubusercontent.com/152173/165957689-d35714a9-f7f8-49f7-9573-97d4cf3c2f79.png">
 </details>
@@ -123,7 +135,7 @@ bash -ex one-touch.sh
 
 ### 2.2 快速部署
 
-参见 [快速部署](https://doc.ssr.rs/rapid_deploy)
+👉 [快速部署](https://doc.ssr.rs/rapid_deploy)
 
 ### 2.3 服务管理脚本部署，感谢 [@Colsro](https://github.com/Colsro) 提供
 <details>
@@ -309,6 +321,7 @@ OPTIONS:
     -g, --gid <GID>              group id [default: ]
     -h, --help                   Print help information
         --ip-info                show ip info, default:false
+        --sys-info               show sys info, default:false
         --json                   use json protocol, default:false
         --location <LOCATION>    location [default: ]
     -n, --vnstat                 enable vnstat, default:false
@@ -321,6 +334,7 @@ OPTIONS:
 
 # 一些参数说明
 --ip-info       # 显示本机ip信息后立即退出，目前使用 ip-api.com 数据
+--sys-info      # 显示本机系统信息后立即退出
 --disable-extra # 不上报系统信息和IP信息
 --disable-ping  # 停用三网延时和丢包率探测
 --disable-tupd  # 不上报 tcp/udp/进程数/线程数，减少CPU占用
@@ -406,7 +420,7 @@ python3 stat_client.py -a "http://127.0.0.1:8080/report" -u h1 -p p1 -n
 <details>
   <summary>如何使用自定义主题</summary>
 
-更灵活的方式见 [#37](https://github.com/zdz/ServerStatus-Rust/discussions/37)
+更简单的方式 👉 [#37](https://github.com/zdz/ServerStatus-Rust/discussions/37)
 
 ```nginx
 server {
@@ -478,7 +492,7 @@ OPTIONS:
 <details>
   <summary>关于这个轮子</summary>
 
-  之前一直在使用 `Prometheus` + `Grafana` + `Alertmanager` + `node_exporter` 做VPS监控，这也是业界比较成熟的监控方案，用过一段时间后，发现非生产环境，很多监控指标都用不上，反而显得有些重。
+  之前一直在使用 `Prometheus` + `Grafana` + `Alertmanager` + `node_exporter` 做VPS监控，这也是业界比较成熟的监控方案，用过一段时间后，发现非生产环境，很多监控指标都用不上，运维成本有点大。
   而 `ServerStatus` 很好，足够简单和轻量，一眼可以看尽所有小机机，只是 `c++` 版本很久没迭代过，自己的一些需求在原版上不是很好修改，如自带 `tcp` 上报对跨区机器不是很友好，也不方便对上报的链路做优化 等等。这是学习 `Rust` 练手的小项目，所以不会增加复杂功能，保持小而美，简单部署，配合 [Uptime Kuma](https://github.com/louislam/uptime-kuma) 基本上可以满足个人大部分监控需求。
 
 </details>

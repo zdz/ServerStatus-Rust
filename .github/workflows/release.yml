@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "*"
+      - "v*"
 
   workflow_dispatch:
 
@@ -14,64 +14,118 @@ jobs:
   release:
     name: Cross build for ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     strategy:
       matrix:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
             suffix: ""
+            use-cross: true
+            cargo-flags: "--no-default-features --features stat_client/native"
           - os: ubuntu-latest
             target: aarch64-unknown-linux-musl
             suffix: ""
+            use-cross: true
+            cargo-flags: "--no-default-features --features stat_client/native"
 
-          # - os: macos-latest
-          #   target: x86_64-apple-darwin
-          #   suffix: ""
-          # - os: macos-latest
-          #   target: aarch64-apple-darwin
-          #   suffix: ""
+          - os: ubuntu-latest
+            target: aarch64-linux-android
+            suffix: ""
+            use-cross: true
+            cargo-flags: ""
+          # 32bit
+          - os: ubuntu-latest
+            target: armv7-linux-androideabi
+            suffix: ""
+            use-cross: true
+            cargo-flags: ""
+
+          - os: ubuntu-latest
+            target: armv7-unknown-linux-musleabihf
+            suffix: ""
+            use-cross: true
+            cargo-flags: ""
+
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            suffix: ""
+            use-cross: false
+            cargo-flags: ""
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            suffix: ""
+            use-cross: true
+            cargo-flags: ""
+
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            suffix: .exe
+            use-cross: false
+            cargo-flags: ""
           # - os: windows-latest
-          #   target: x86_64-pc-windows-msvc
+          #   target: x86_64-pc-windows-gnu
           #   suffix: .exe
+          #   use-cross: false
+          #   cargo-flags: ""
+
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
+          override: true
           profile: minimal
           toolchain: stable
-      - name: Install cross
-        run: cargo install cross
-      - name: Run tests
-        run: cross test --release --target ${{ matrix.target }} --verbose
+          target: ${{ matrix.target }}
+
+      - name: Install Protoc
+        if: matrix.os == 'windows-latest'
+        uses: arduino/setup-protoc@v1
+        with:
+          version: '3.x'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build release
-        run: cross build --release --target ${{ matrix.target }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          use-cross: ${{ matrix.use-cross }}
+          args: --locked --release --target=${{ matrix.target }} ${{ matrix.cargo-flags }}
 
-      - name: Install LLVM Strip
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install -y llvm
+      - name: Strip (MacOS/Window)
+        if: matrix.os != 'ubuntu-latest'
+        continue-on-error: true
+        run: |
+          strip target/${{ matrix.target }}/release/stat_server${{matrix.suffix}}
+          strip target/${{ matrix.target }}/release/stat_client${{matrix.suffix}}
+          cp config.toml target/${{ matrix.target }}/release/
+          cp systemd/stat_server.service target/${{ matrix.target }}/release/
+          cp systemd/stat_client.service target/${{ matrix.target }}/release/
 
-      - name: LLVM Strip
+      - name: LLVM Strip (Linux)
         if: matrix.os == 'ubuntu-latest'
         continue-on-error: true
         run: |
+          sudo apt-get install -y llvm
           llvm-strip target/${{ matrix.target }}/release/stat_server${{matrix.suffix}}
           llvm-strip target/${{ matrix.target }}/release/stat_client${{matrix.suffix}}
           cp config.toml target/${{ matrix.target }}/release/
           cp systemd/stat_server.service target/${{ matrix.target }}/release/
           cp systemd/stat_client.service target/${{ matrix.target }}/release/
 
-      - name: Run UPX
+      - name: Compress binaries
         # Upx may not support some platforms. Ignore the errors
         continue-on-error: true
         # Disable upx for mips. See https://github.com/upx/upx/issues/387
-        if: matrix.os == 'ubuntu-latest' && !contains(matrix.target, 'mips')
-        uses: crazy-max/ghaction-upx@v2
+        if: true && !contains(matrix.target, 'mips')
+        uses: svenstaro/upx-action@v2
         with:
-          version: latest
+          strip: false
+          args: -q --best --lzma
           files: |
             target/${{ matrix.target }}/release/stat_server${{matrix.suffix}}
             target/${{ matrix.target }}/release/stat_client${{matrix.suffix}}
-          args: -q --best --lzma
 
       - uses: actions/upload-artifact@v3
         with:
@@ -83,8 +137,8 @@ jobs:
             target/${{ matrix.target }}/release/stat_server.service
             target/${{ matrix.target }}/release/stat_client.service
 
-      - name: Zip Release For Server
-        if: matrix.os == 'ubuntu-latest'
+      - name: Zip Release For Server (Linux)
+        if: matrix.os == 'ubuntu-latest' && contains(matrix.target, 'linux')
         uses: TheDoctor0/zip-release@0.7.1
         with:
           type: zip
@@ -95,8 +149,8 @@ jobs:
             stat_server.service
             config.toml
 
-      - name: Zip Release For Client
-        if: matrix.os == 'ubuntu-latest'
+      - name: Zip Release For Client (Linux)
+        if: matrix.os == 'ubuntu-latest' && contains(matrix.target, 'linux')
         uses: TheDoctor0/zip-release@0.7.1
         with:
           type: zip
@@ -106,20 +160,32 @@ jobs:
             stat_client${{matrix.suffix}}
             stat_client.service
 
-      # - name: Zip Release For MacOS/Win
-      #   if: matrix.os != 'ubuntu-latest'
-      #   uses: TheDoctor0/zip-release@0.6.2
-      #   with:
-      #     type: zip
-      #     filename: ServerStatus-${{ matrix.target }}.zip
-      #     directory: target/${{ matrix.target }}/release/
-      #     path: |
-      #       stat_server${{matrix.suffix}}
-      #       stat_client${{matrix.suffix}}
+      - name: Zip Release For Server (MacOS/Window)
+        if: true && !contains(matrix.target, 'linux')
+        uses: TheDoctor0/zip-release@0.7.1
+        with:
+          type: zip
+          filename: server-${{ matrix.target }}.zip
+          directory: target/${{ matrix.target }}/release/
+          path: |
+            stat_server${{matrix.suffix}}
+            config.toml
+
+      - name: Zip Release For Client (MacOS/Window)
+        if: true && !contains(matrix.target, 'linux')
+        uses: TheDoctor0/zip-release@0.7.1
+        with:
+          type: zip
+          filename: client-${{ matrix.target }}.zip
+          directory: target/${{ matrix.target }}/release/
+          path: |
+            stat_client${{matrix.suffix}}
 
       - name: Publish
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: |
             target/${{ matrix.target }}/release/server-${{ matrix.target }}.zip

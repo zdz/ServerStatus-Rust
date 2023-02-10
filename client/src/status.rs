@@ -1,4 +1,4 @@
-// #![allow(unused)]
+#![allow(unused)]
 use lazy_static::lazy_static;
 use once_cell::sync::OnceCell;
 use regex::Regex;

@@ -20,13 +20,13 @@ chrono = "0.4"
 
 [dependencies]
 anyhow = "1"
+axum = {version = "0.6.4", features = ["headers"]}
 bytes = {version = "1", features = ["serde"]}
 chrono = "0.4"
 clap = {version = "4.1", features = ["derive", "unicode"]}
-futures = "0.3"
 futures-util = {version = "0.3", default-features = false}
-http-auth-basic = "0.3"
 hyper = {version = "0.14", features = ["full"]}
+jsonwebtoken = "8.0"
 lazy_static = "1.4"
 lettre = {version = "0.10", default-features = false, features = ["smtp-transport", "pool", "hostname", "builder", "rustls-tls", "tokio1-rustls-tls"]}
 log = "0.4"

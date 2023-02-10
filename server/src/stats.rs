@@ -250,7 +250,9 @@ impl StatsMgr {
                     }
 
                     // labels
-                    const OS_LIST: [&str; 7] = ["centos", "debian", "ubuntu", "pi", "arch", "windows", "linux"];
+                    const OS_LIST: [&str; 9] = [
+                        "centos", "debian", "ubuntu", "arch", "windows", "macos", "pi", "android", "linux",
+                    ];
                     if !o.labels.contains("os=") {
                         if let Some(sys_info) = &o.sys_info {
                             let os_r = sys_info.os_release.to_lowercase();

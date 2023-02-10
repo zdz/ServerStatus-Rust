@@ -5,6 +5,7 @@ http_addr = "0.0.0.0:8080"
 offline_threshold = 30
 
 # 管理员账号,不设置默认随机生成，用于查看 /detail, /map
+jwt_secret = "" # 修改这个, 使用 openssl rand -base64 16 生成 secret
 admin_user = ""
 admin_pass = ""
 
@@ -17,12 +18,18 @@ admin_pass = ""
 # 或国家缩写，如 cn us 等等，所有国家见目录 web/static/flags
 # 自定义标签 labels = "os=centos;ndd=2022/11/25;spec=2C/4G/60G;"
 # os 标签可选，不填则使用上报数据，ndd(next due date) 下次续费时间, spec 为主机规格
-# os 可用值 centos debian ubuntu alpine pi arch windows linux
+# os 可用值 centos debian ubuntu alpine pi arch windows linux macos android
 hosts = [
   {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm", labels = "os=arch;ndd=2022/11/25;spec=2C/4G/60G;"},
   {name = "h2", password = "p2", alias = "n2", location = "🏢", type = "kvm", disabled = false},
   {name = "h3", password = "p3", alias = "n3", location = "🏡", type = "kvm", monthstart = 1},
   {name = "h4", password = "p4", alias = "n4", location = "cn", type = "kvm", notify = true, labels = "ndd=2022/11/25;spec=2C/4G/60G;"},
+
+  # 最小化配置
+  {name = "mac", password = "pp", alias = "macos"},
+  {name = "pi", password = "pp", alias = "pi", labels = "os=pi"},
+  {name = "win", password = "pp", alias = "windows"},
+  {name = "android", password = "pp", alias = "android", labels = "os=android"},
 ]
 
 # 动态注册模式，不再需要针对每一个主机做单独配置

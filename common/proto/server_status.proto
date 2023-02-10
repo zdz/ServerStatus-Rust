@@ -98,6 +98,8 @@ message StatRequest {
   string type = 42;
   string location = 43;
   bool notify = 44;
+  // false: KiB (1024), true: KB (1000)
+  bool si = 45;
 }
 
 message Response {
