@@ -66,9 +66,10 @@ def get_hdd():
     return int(size / 1024.0 / 1024.0), int(used / 1024.0 / 1024.0)
 
 
-def get_cpu():
+def get_cpu(options):
     # blocking
-    return psutil.cpu_percent(interval=INTERVAL)
+    # return psutil.cpu_percent(interval=INTERVAL)
+    return psutil.cpu_percent(interval=int(options.interval))
 
 
 def get_sys_traffic(options):
@@ -283,7 +284,7 @@ def byte_str(object):
 
 
 def sample(options, stat_base):
-    cpu_percent = int(get_cpu())
+    cpu_percent = int(get_cpu(options))
     uptime = get_uptime()
     load_1, load_5, load_15 = os.getloadavg(
     ) if 'linux' in sys.platform else (0.0, 0.0, 0.0)
@@ -540,6 +541,8 @@ def main():
     parser.add_option("-e", "--exclude-iface", dest="exclude_iface",
                       default="lo,docker,vnet,veth,vmbr,kube,br-",
                       help="exclude iface [default: %default]")
+    parser.add_option("--interval", dest="interval",
+                      default=1, help="report interval [default: %default]")
 
     (options, args) = parser.parse_args()
 
