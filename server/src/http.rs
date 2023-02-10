@@ -1,83 +1,77 @@
-// #![allow(unused)]
-use http_auth_basic::Credentials;
-use hyper::{header, Body, Request, Response, StatusCode};
+use crate::assets::Asset;
+use axum::extract::{Path, Query};
+use axum::{
+    body::Bytes,
+    http::{header, header::HeaderMap, StatusCode, Uri},
+    response::{IntoResponse, Response},
+    Json,
+};
+
 use minijinja::context;
 use prettytable::Table;
+use prost::Message;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::fmt::Write as _;
 
+use stat_common::server_status::StatRequest;
+
+use crate::auth;
 use crate::jinja;
-use crate::Asset;
+use crate::jwt;
 use crate::G_CONFIG;
 use crate::G_STATS_MGR;
 
-type GenericError = Box<dyn std::error::Error + Send + Sync>;
-type Result<T> = std::result::Result<T, GenericError>;
-
-static UNAUTHORIZED: &[u8] = b"Unauthorized";
-static INTERNAL_SERVER_ERROR: &[u8] = b"Internal Server Error";
 const KIND: &str = "http";
 
-// client auth
-pub fn client_auth(req: &Request<Body>) -> bool {
-    let req_header = req.headers();
-    // auth
-    let mut auth_ok = false;
-    let mut group_auth = false;
-    if let Some(ssr_auth) = req_header.get("ssr-auth") {
-        group_auth = "group".eq(ssr_auth);
-    }
+pub async fn get_stats_json() -> impl IntoResponse {
+    (
+        [(header::CONTENT_TYPE, "application/json")],
+        G_STATS_MGR.get().unwrap().get_stats_json(),
+    )
+}
 
-    if let Some(auth) = req_header.get(hyper::header::AUTHORIZATION) {
-        let auth_header_value = auth.to_str().unwrap().to_string();
-        if let Ok(credentials) = Credentials::from_header(auth_header_value) {
-            if let Some(cfg) = G_CONFIG.get() {
-                if group_auth {
-                    auth_ok = cfg.group_auth(&credentials.user_id, &credentials.password);
-                } else {
-                    auth_ok = cfg.auth(&credentials.user_id, &credentials.password);
-                }
-            }
+#[allow(unused)]
+pub async fn get_site_config_json() -> impl IntoResponse {
+    // TODO
+    ([(header::CONTENT_TYPE, "application/json")], "{}")
+}
+
+pub async fn admin_api(_claims: jwt::Claims, Path(path): Path<String>) -> Json<Value> {
+    match path.as_str() {
+        "stats.json" => {
+            let resp = G_STATS_MGR.get().unwrap().get_all_info().unwrap();
+            return Json(resp);
+        }
+        "config.json" => {
+            let resp = G_CONFIG.get().unwrap().to_json_value().unwrap();
+            return Json(resp);
+        }
+        _ => {
+            //
         }
     }
-    auth_ok
+
+    Json(json!({ "code": 0, "message": "ok" }))
 }
 
-// admin auth
-pub fn admin_auth(req: &Request<Body>) -> bool {
-    if let Some(auth) = req.headers().get(hyper::header::AUTHORIZATION) {
-        let auth_header_value = auth.to_str().unwrap().to_string();
-        if let Ok(credentials) = Credentials::from_header(auth_header_value) {
-            if let Some(cfg) = G_CONFIG.get() {
-                return cfg.admin_auth(&credentials.user_id, &credentials.password);
-            }
-        }
-    }
-    false
+pub fn init_jinja_tpl() -> Result<(), anyhow::Error> {
+    let detail_data = Asset::get("/jinja/detail.jinja.html").expect("detail.jinja.html not found");
+    let detail_html: String = String::from_utf8(detail_data.data.try_into()?).unwrap();
+    jinja::add_template(KIND, "detail", detail_html);
+
+    let map_data = Asset::get("/jinja/map.jinja.html").expect("map.jinja.html not found");
+    let map_html: String = String::from_utf8(map_data.data.try_into()?).unwrap();
+    jinja::add_template(KIND, "map", map_html);
+
+    let client_init_sh = Asset::get("/jinja/client-init.jinja.sh").expect("client-init.jinja.sh not found");
+    let client_init_sh_s: String = String::from_utf8(client_init_sh.data.try_into()?).unwrap();
+    jinja::add_template(KIND, "client-init", client_init_sh_s);
+    Ok(())
 }
 
-pub async fn get_admin_stats_json(req: Request<Body>) -> Result<Response<Body>> {
-    if !admin_auth(&req) {
-        return Ok(Response::builder()
-            .header(header::WWW_AUTHENTICATE, "Basic realm=\"Restricted\"")
-            .status(StatusCode::UNAUTHORIZED)
-            .body(UNAUTHORIZED.into())?);
-    }
-
-    let resp = G_STATS_MGR.get().unwrap().get_all_info()?;
-
-    Ok(Response::builder()
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from(serde_json::to_string(&resp)?))?)
-}
-
-pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
-    // dbg!(&req);
-    let params: HashMap<String, String> = req
-        .uri()
-        .query()
-        .map(|v| url::form_urlencoded::parse(v.as_bytes()).into_owned().collect())
-        .unwrap_or_else(HashMap::new);
+pub async fn init_client(uri: Uri, req_header: HeaderMap, Query(params): Query<HashMap<String, String>>) -> Response {
+    // dbg!(&params);
 
     // query args
     let invalid = "".to_string();
@@ -87,9 +81,7 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
     let alias = params.get("alias").unwrap_or(&invalid);
 
     if pass.is_empty() || (uid.is_empty() && gid.is_empty()) || (uid.is_empty() && alias.is_empty()) {
-        return Ok(Response::builder()
-            .status(StatusCode::BAD_REQUEST)
-            .body(StatusCode::BAD_REQUEST.canonical_reason().unwrap().into())?);
+        return (StatusCode::UNAUTHORIZED, StatusCode::UNAUTHORIZED.to_string()).into_response();
     }
 
     // auth
@@ -102,9 +94,7 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
         }
     }
     if !auth_ok {
-        return Ok(Response::builder()
-            .status(StatusCode::UNAUTHORIZED)
-            .body(UNAUTHORIZED.into())?);
+        return (StatusCode::UNAUTHORIZED, StatusCode::UNAUTHORIZED.to_string()).into_response();
     }
 
     let mut domain = "localhost".to_string();
@@ -119,9 +109,7 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
     }
     // build server url
     if server_url.is_empty() {
-        let req_header = req.headers();
-
-        if let Some(v) = req.uri().scheme() {
+        if let Some(v) = uri.scheme() {
             scheme = v.to_string();
             debug!("Http Scheme => {}", scheme);
         }
@@ -230,7 +218,7 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
         let _ = write!(client_opts, r#" --exclude-iface "{exclude_iface}""#);
     }
 
-    Ok(jinja::render_template(
+    jinja::render_template(
         KIND,
         "client-init",
         context!(
@@ -244,68 +232,56 @@ pub async fn init_client(req: Request<Body>) -> Result<Response<Body>> {
         false,
     )
     .map(|contents| {
-        Response::builder()
-            .header(header::CONTENT_TYPE, "text/x-sh")
-            .header(
-                header::CONTENT_DISPOSITION,
-                r#"attachment; filename="ssr-client-init.sh""#,
-            )
-            .body(Body::from(contents))
-    })?
+        (
+            [
+                (header::CONTENT_TYPE, "text/x-sh"),
+                (
+                    header::CONTENT_DISPOSITION,
+                    r#"attachment; filename="ssr-client-init.sh""#,
+                ),
+            ],
+            contents,
+        )
+            .into_response()
+    })
     .unwrap_or(
-        Response::builder()
-            .status(StatusCode::INTERNAL_SERVER_ERROR)
-            .body(INTERNAL_SERVER_ERROR.into())?,
-    ))
+        //
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            StatusCode::INTERNAL_SERVER_ERROR.to_string(),
+        )
+            .into_response(),
+    )
 }
 
-pub fn init_jinja_tpl() -> Result<()> {
-    let detail_data = Asset::get("/jinja/detail.jinja.html").expect("detail.jinja.html not found");
-    let detail_html: String = String::from_utf8(detail_data.data.try_into()?).unwrap();
-    jinja::add_template(KIND, "detail", detail_html);
+async fn render_jinja_ht_tpl(tag: &'static str) -> Response {
+    let o = G_STATS_MGR.get().unwrap().get_all_info().unwrap();
 
-    let map_data = Asset::get("/jinja/map.jinja.html").expect("map.jinja.html not found");
-    let map_html: String = String::from_utf8(map_data.data.try_into()?).unwrap();
-    jinja::add_template(KIND, "map", map_html);
-
-    let client_init_sh = Asset::get("/jinja/client-init.jinja.sh").expect("client-init.jinja.sh not found");
-    let client_init_sh_s: String = String::from_utf8(client_init_sh.data.try_into()?).unwrap();
-    jinja::add_template(KIND, "client-init", client_init_sh_s);
-    Ok(())
-}
-
-//
-pub async fn render_jinja_ht_tpl(tag: &'static str, req: Request<Body>) -> Result<Response<Body>> {
-    if !admin_auth(&req) {
-        return Ok(Response::builder()
-            .header(header::WWW_AUTHENTICATE, "Basic realm=\"Restricted\"")
-            .status(StatusCode::UNAUTHORIZED)
-            .body(UNAUTHORIZED.into())?);
-    }
-
-    let o = G_STATS_MGR.get().unwrap().get_all_info()?;
-
-    Ok(jinja::render_template(KIND, tag, context!(resp => &o), false)
+    jinja::render_template(KIND, tag, context!(resp => &o), false)
         .map(|contents| {
-            Response::builder()
-                .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
-                .body(Body::from(contents))
-        })?
+            //
+            ([(header::CONTENT_TYPE, "text/html; charset=utf-8")], contents).into_response()
+        })
         .unwrap_or(
-            Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(INTERNAL_SERVER_ERROR.into())?,
-        ))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                StatusCode::INTERNAL_SERVER_ERROR.to_string(),
+            )
+                .into_response(),
+        )
 }
 
-pub async fn get_detail(req: Request<Body>) -> Result<Response<Body>> {
-    if !admin_auth(&req) {
-        return Ok(Response::builder()
-            .header(header::WWW_AUTHENTICATE, "Basic realm=\"Restricted\"")
-            .status(StatusCode::UNAUTHORIZED)
-            .body(UNAUTHORIZED.into())?);
-    }
+pub async fn get_map(
+    // _claims: jwt::Claims
+    _auth: auth::AdminAuth,
+) -> Response {
+    render_jinja_ht_tpl("map").await
+}
 
+pub async fn get_detail(
+    // _claims: jwt::Claims
+    _auth: auth::AdminAuth,
+) -> Response {
     let resp = G_STATS_MGR.get().unwrap().get_stats();
     let o = resp.lock().unwrap();
 
@@ -389,17 +365,62 @@ pub async fn get_detail(req: Request<Body>) -> Result<Response<Body>> {
     }
     // table.printstd();
 
-    Ok(
-        jinja::render_template(KIND, "detail", context!(pretty_content => table.to_string()), true)
-            .map(|contents| {
-                Response::builder()
-                    .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
-                    .body(Body::from(contents))
-            })?
-            .unwrap_or(
-                Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(INTERNAL_SERVER_ERROR.into())?,
-            ),
-    )
+    jinja::render_template(KIND, "detail", context!(pretty_content => table.to_string()), true)
+        .map(|contents| {
+            //
+            ([(header::CONTENT_TYPE, "text/html; charset=utf-8")], contents).into_response()
+        })
+        .unwrap_or(
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                StatusCode::INTERNAL_SERVER_ERROR.to_string(),
+            )
+                .into_response(),
+        )
+}
+
+// report
+pub async fn report(_auth: auth::HostAuth, req_header: HeaderMap, body: Bytes) -> impl IntoResponse {
+    let mut json_data: Option<serde_json::Value> = None;
+
+    let content_type_header = req_header.get(header::CONTENT_TYPE);
+    let content_type = content_type_header.and_then(|value| value.to_str().ok());
+    if let Some(content_type) = content_type {
+        if content_type.starts_with("application/octet-stream") {
+            if let Ok(stat) = StatRequest::decode(body) {
+                match serde_json::to_value(stat) {
+                    Ok(v) => {
+                        json_data = Some(v);
+                    }
+                    Err(err) => {
+                        error!("Invalid pb data! {:?}", err);
+                    }
+                }
+            }
+        } else if content_type.starts_with("application/json") {
+            match serde_json::from_slice(&body) {
+                Ok(v) => {
+                    json_data = Some(v);
+                }
+                Err(err) => {
+                    error!("Invalid json data! {:?}", err);
+                }
+            }
+        } else {
+            return StatusCode::UNSUPPORTED_MEDIA_TYPE;
+        }
+    }
+
+    if json_data.is_none() {
+        error!("{}", "Invalid json data!");
+        return StatusCode::BAD_REQUEST;
+    }
+
+    if let Some(mgr) = G_STATS_MGR.get() {
+        if mgr.report(json_data.unwrap()).is_err() {
+            return StatusCode::BAD_REQUEST;
+        }
+    }
+
+    StatusCode::OK
 }

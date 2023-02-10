@@ -5,43 +5,37 @@ extern crate log;
 extern crate pretty_env_logger;
 #[macro_use]
 extern crate prettytable;
-use bytes::Buf;
+
 use clap::Parser;
 use once_cell::sync::OnceCell;
-use prost::Message;
-use rust_embed::RustEmbed;
-use stat_common::server_status::StatRequest;
-use std::collections::HashMap;
 use std::process;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 use tokio::runtime::Handle;
+use tokio::signal;
 
+use axum::{
+    http::Uri,
+    response::IntoResponse,
+    routing::{get, post},
+    Router,
+};
+
+mod assets;
+mod auth;
 mod config;
 mod grpc;
 mod http;
 mod jinja;
+mod jwt;
 mod notifier;
 mod payload;
 mod stats;
 
-use hyper::service::{make_service_fn, service_fn};
-use hyper::{header, Body, Method, Request, Response, Server, StatusCode};
-type GenericError = Box<dyn std::error::Error + Send + Sync>;
-type Result<T> = std::result::Result<T, GenericError>;
-
-static NOTFOUND: &[u8] = b"Not Found";
-static UNAUTHORIZED: &[u8] = b"Unauthorized";
-
 static G_CONFIG: OnceCell<crate::config::Config> = OnceCell::new();
 static G_STATS_MGR: OnceCell<crate::stats::StatsMgr> = OnceCell::new();
-
-#[derive(RustEmbed)]
-#[folder = "../web"]
-#[prefix = "/"]
-struct Asset;
 
 #[derive(Parser, Debug)]
 #[command(author, version = env!("APP_VERSION"), about, long_about = None)]
@@ -56,117 +50,51 @@ struct Args {
     cloud: bool,
 }
 
-// stat report
-async fn stats_report(req: Request<Body>) -> Result<Response<Body>> {
-    // auth
-    if !http::client_auth(&req) {
-        return Ok(Response::builder()
-            .status(StatusCode::UNAUTHORIZED)
-            .body(UNAUTHORIZED.into())?);
-    }
-    // auth end
-
-    let req_header = req.headers();
-    let mut json_data: Option<serde_json::Value> = None;
-    if let Ok(content_type) = req_header.get(hyper::header::CONTENT_TYPE).unwrap().clone().to_str() {
-        let whole_body = hyper::body::aggregate(req).await?;
-        // dbg!(content_type);
-        if content_type.eq(&mime::APPLICATION_JSON.to_string()) {
-            // json
-            json_data = Some(serde_json::from_reader(whole_body.reader())?);
-        } else if content_type.eq(&mime::APPLICATION_OCTET_STREAM.to_string()) {
-            // protobuf
-            let stat = StatRequest::decode(whole_body)?;
-            json_data = Some(serde_json::to_value(stat)?);
-        }
-    }
-
-    // report
-    if let Some(mgr) = G_STATS_MGR.get() {
-        mgr.report(json_data.unwrap())?;
-    }
-
-    let mut resp = HashMap::new();
-    resp.insert(&"code", serde_json::Value::from(0_i32));
-    let resp_str = serde_json::to_string(&resp)?;
-
-    Ok(Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from(resp_str))?)
+fn create_app_router() -> Router {
+    Router::new()
+        .route("/report", post(http::report))
+        .route("/json/stats.json", get(http::get_stats_json)) // 兼容就旧主题
+        // .route("/config.pub.json", get(http::get_site_config_json)) // TODO
+        .route("/api/admin/authorize", post(jwt::authorize))
+        .route("/api/admin/:path", get(http::admin_api)) // stats.json || config.json
+        // .route("/admin", get(assets::admin_index_handler))
+        .route("/detail", get(http::get_detail))
+        .route("/map", get(http::get_map))
+        .route("/i", get(http::init_client))
+        .route("/", get(assets::index_handler))
+        .fallback(fallback)
 }
 
-// get json data
-async fn get_stats_json() -> Result<Response<Body>> {
-    Ok(Response::builder()
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from(G_STATS_MGR.get().unwrap().get_stats_json()))?)
+async fn fallback(uri: Uri) -> impl IntoResponse {
+    assets::static_handler(uri).await
 }
 
-async fn get_config(req: Request<Body>) -> Result<Response<Body>> {
-    if !http::admin_auth(&req) {
-        return Ok(Response::builder()
-            .header(header::WWW_AUTHENTICATE, "Basic realm=\"Restricted\"")
-            .status(StatusCode::UNAUTHORIZED)
-            .body(UNAUTHORIZED.into())?);
+pub async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c().await.expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
     }
 
-    Ok(Response::builder()
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from(G_CONFIG.get().unwrap().to_string()?))?)
-}
-
-async fn main_service_func(req: Request<Body>) -> Result<Response<Body>> {
-    let req_path = req.uri().path();
-    match (req.method(), req_path) {
-        (&Method::POST, "/report") => stats_report(req).await,
-        (&Method::GET, "/json/stats.json") => get_stats_json().await, // 兼容
-        (&Method::GET, "/admin/stats.json") => http::get_admin_stats_json(req).await, // for admin
-        (&Method::GET, "/admin/config.json") => get_config(req).await,
-        (&Method::GET, "/detail") => http::get_detail(req).await,
-        (&Method::GET, "/map") => http::render_jinja_ht_tpl("map", req).await,
-        (&Method::GET, "/i") => http::init_client(req).await,
-        (&Method::GET, "/") | (&Method::GET, "/index.html") => {
-            let body = Body::from(Asset::get("/index.html").unwrap().data);
-            Ok(Response::builder()
-                .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
-                .body(body)?)
-        }
-        _ => {
-            if req.method() == Method::GET
-                && (req_path.starts_with("/static/")
-                    || req_path.starts_with("/favicon")
-                    || req_path.starts_with("/logo")
-                    || req_path.eq("/manifest.json")
-                    || req_path.eq("/asset-manifest.json"))
-            {
-                if let Some(data) = Asset::get(req_path) {
-                    let ct = mime_guess::from_path(req_path);
-                    return Ok(Response::builder()
-                        .header(header::CONTENT_TYPE, ct.first_raw().unwrap())
-                        .body(Body::from(data.data))?);
-                } else {
-                    error!("can't get => {:?}", req_path);
-                }
-            }
-
-            // Return 404 not found response.
-            Ok(Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .body(NOTFOUND.into())?)
-        }
-    }
-}
-
-async fn shutdown_signal() {
-    // Wait for the CTRL+C signal
-    tokio::signal::ctrl_c()
-        .await
-        .expect("failed to install CTRL+C signal handler");
+    println!("signal received, starting graceful shutdown");
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<(), anyhow::Error> {
     pretty_env_logger::init();
     let args = Args::parse();
 
@@ -251,16 +179,14 @@ async fn main() -> Result<()> {
         grpc::serv_grpc(addr).await
     });
 
-    // serv http
-    let http_service = make_service_fn(|_| async { Ok::<_, GenericError>(service_fn(main_service_func)) });
-
-    let http_addr = G_CONFIG.get().unwrap().http_addr.parse()?;
+    let http_addr = G_CONFIG.get().unwrap().http_addr.to_string();
     eprintln!("🚀 listening on http://{http_addr}");
-    let server = Server::bind(&http_addr).serve(http_service);
-    let graceful = server.with_graceful_shutdown(shutdown_signal());
-    if let Err(e) = graceful.await {
-        eprintln!("server error: {e}");
-    }
+
+    axum::Server::bind(&http_addr.parse().unwrap())
+        .serve(create_app_router().into_make_service())
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .unwrap();
 
     Ok(())
 }

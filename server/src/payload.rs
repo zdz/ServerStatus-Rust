@@ -93,6 +93,10 @@ pub struct HostStat {
     pub pos: usize,
     #[serde(skip_serializing, skip_deserializing)]
     pub disabled: bool,
+
+    // false: KiB (1024), true: KB (1000)
+    #[serde(default = "Default::default")]
+    pub si: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
