@@ -31,11 +31,12 @@ fn main() {
     let mut app_version = String::from(env!("CARGO_PKG_VERSION"));
     if let Some(commit_hash) = commit_hash() {
         app_version = format!(
-            "v{} ({}, {}, {})",
+            "v{} ({}, {}, {}, {})",
             app_version,
             commit_hash,
             Utc::now().format("%Y-%m-%d %H:%M:%S %Z"),
-            rustc_version().unwrap()
+            rustc_version().unwrap(),
+            std::env::var("TARGET").unwrap(),
         );
     }
     println!("cargo:rustc-env=APP_VERSION={app_version}");
