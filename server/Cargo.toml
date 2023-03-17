@@ -38,7 +38,7 @@ pretty_env_logger = "0.4"
 prettytable-rs = "^0.10"
 prost = "0.11"
 reqwest = {version = "0.11", features = ["json", "rustls-tls"], default-features = false}
-rhai = {version = "1.12.0", features = ["sync", "metadata", "decimal", "no_function", "no_module", "no_closure", "unchecked"]}
+rhai = {version = "1.13.0", features = ["sync", "metadata", "decimal", "no_function", "no_module", "no_closure", "unchecked"]}
 rust-embed = "6.4"
 serde = {version = "1.0", default-features = false, features = ["derive", "alloc"]}
 serde_json = {version = "1.0", default-features = false, features = ["alloc"]}
