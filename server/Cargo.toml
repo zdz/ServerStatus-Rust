@@ -1,7 +1,7 @@
 [package]
 edition = "2021"
 name = "stat_server"
-version = "1.7.0"
+version = "1.7.1"
 
 rust-version = "1.68"
 
@@ -37,7 +37,7 @@ prettytable-rs = "^0.10"
 prost = "0.11"
 reqwest = {version = "0.11", features = ["json", "rustls-tls"], default-features = false}
 rhai = {version = "1.13", features = ["sync", "metadata", "decimal", "no_function", "no_module", "no_closure", "unchecked"]}
-rust-embed = "6.6"
+rust-embed = {version = "6.6", features = ["mime-guess"]}
 serde = {version = "1.0", default-features = false, features = ["derive", "alloc"]}
 serde_json = {version = "1.0", default-features = false, features = ["alloc"]}
 stat_common = {path = "../common"}

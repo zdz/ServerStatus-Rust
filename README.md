@@ -37,24 +37,23 @@
 
 <h2>Table of Contents</h2>
 
-- [✨ Rust 版 ServerStatus 云探针](#-rust-版-serverstatus-云探针)
-  - [1. 介绍](#1-介绍)
-    - [🍀 主题](#-主题)
-  - [2. 安装部署](#2-安装部署)
-    - [2.1 快速体验](#21-快速体验)
-    - [2.2 快速部署](#22-快速部署)
-    - [2.3 服务管理脚本部署，感谢 @Colsro 提供](#23-服务管理脚本部署感谢-colsro-提供)
-    - [2.4 Railway 部署](#24-railway-部署)
-  - [3. 服务端说明](#3-服务端说明)
-    - [3.1 配置文件 `config.toml`](#31-配置文件-configtoml)
-    - [3.2 服务端运行](#32-服务端运行)
-  - [4. 客户端说明](#4-客户端说明)
-    - [4.1 Linux (`CentOS`, `Ubuntu`, `Debian`)](#41-linux-centos-ubuntu-debian)
-    - [4.2 跨平台版本 (`Window`, `Linux`, `...`)](#42-跨平台版本-window-linux-)
-  - [5. 开启 `vnstat` 支持](#5-开启-vnstat-支持)
-  - [6. FAQ](#6-faq)
-  - [7. 相关项目](#7-相关项目)
-  - [8. 最后](#8-最后)
+- [1. 介绍](#1-介绍)
+  - [🍀 主题](#-主题)
+- [2. 安装部署](#2-安装部署)
+  - [2.1 快速体验](#21-快速体验)
+  - [2.2 快速部署](#22-快速部署)
+  - [2.3 服务管理脚本部署，感谢 @Colsro 提供](#23-服务管理脚本部署感谢-colsro-提供)
+  - [2.4 Railway 部署](#24-railway-部署)
+- [3. 服务端说明](#3-服务端说明)
+  - [3.1 配置文件 `config.toml`](#31-配置文件-configtoml)
+  - [3.2 服务端运行](#32-服务端运行)
+- [4. 客户端说明](#4-客户端说明)
+  - [4.1 Rust 版 Client](#41-rust-版-client)
+  - [4.2 Python 版 Client](#42-python-版-client)
+- [5. 开启 `vnstat` 支持](#5-开启-vnstat-支持)
+- [6. FAQ](#6-faq)
+- [7. 相关项目](#7-相关项目)
+- [8. 最后](#8-最后)
 
 ## 1. 介绍
   `ServerStatus` 威力加强版，保持轻量和简单部署，增加以下主要特性：
@@ -76,18 +75,7 @@
 |
 反馈：[Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
 
-📕 完整文档迁移至 [doc.ssr.rs](https://doc.ssr.rs)
-
-|  OS            | Release  |
-|  ----          | ----     |
-| Linux x86_64   | x86_64-unknown-linux-musl |
-| Linux arm64    | aarch64-unknown-linux-musl |
-| MacOS x86_64   | x86_64-apple-darwin |
-| MacOS arm64    | aarch64-apple-darwin |
-| Windows x86_64 | x86_64-pc-windows-msvc |
-| Raspberry Pi   | armv7-unknown-linux-musleabihf |
-| Android 64bit  | aarch64-linux-android |
-| Android 32bit  | armv7-linux-androideabi |
+📚 完整文档迁移至 [doc.ssr.rs](https://doc.ssr.rs)
 
 ### 🍀 主题
 
@@ -289,12 +277,27 @@ docker-compose up -d
 
 ## 4. 客户端说明
 
-### 4.1 Linux (`CentOS`, `Ubuntu`, `Debian`)
+<details>
+  <summary>系统版本&架构</summary>
+
+|  OS            | Release  |
+|  ----          | ----     |
+| Linux x86_64   | x86_64-unknown-linux-musl |
+| Linux arm64    | aarch64-unknown-linux-musl |
+| MacOS x86_64   | x86_64-apple-darwin |
+| MacOS arm64    | aarch64-apple-darwin |
+| Windows x86_64 | x86_64-pc-windows-msvc |
+| Raspberry Pi   | armv7-unknown-linux-musleabihf |
+| Android 64bit  | aarch64-linux-android |
+| Android 32bit  | armv7-linux-androideabi |
+
+</details>
+
+### 4.1 Rust 版 Client
 ```bash
 # 公网环境建议 headscale/nebula 组网或走 https, 使用 nginx 对 server 套 ssl 和自定义 location /report
-# Rust 版只在 CentOS, Ubuntu, Debian 测试过
 # alpine linux 需要安装相关命令 apk add procps iproute2 coreutils
-# 如果 Rust 版客户端在你的系统无法使用，请切换到下面 4.2 跨平台版本
+# 如果 Rust 版客户端在你的系统无法使用，请切换到下面 4.2 Python 跨平台版本
 
 # systemd 方式， 参照 one-touch.sh 脚本 (推荐)
 
@@ -321,6 +324,7 @@ OPTIONS:
     -g, --gid <GID>              group id [default: ]
     -h, --help                   Print help information
         --ip-info                show ip info, default:false
+        --ip-source <IP_SOURCE>  ip info source [env: SSR_IP_SOURCE=] [default: ip-api.com]
         --sys-info               show sys info, default:false
         --json                   use json protocol, default:false
         --location <LOCATION>    location [default: ]
@@ -334,6 +338,7 @@ OPTIONS:
 
 # 一些参数说明
 --ip-info       # 显示本机ip信息后立即退出，目前使用 ip-api.com 数据
+--ip-source     # 指定 ip 信息源，ip-api.com / ip.sb / ipapi.co / myip.la
 --sys-info      # 显示本机系统信息后立即退出
 --disable-extra # 不上报系统信息和IP信息
 --disable-ping  # 停用三网延时和丢包率探测
@@ -346,10 +351,10 @@ OPTIONS:
 -e, --exclude-iface # 排除指定网口，默认排除 "lo,docker,vnet,veth,vmbr,kube,br-"
 ```
 
-### 4.2 跨平台版本 (`Window`, `Linux`, `...`)
+### 4.2 Python 版 Client
 
 <details>
-  <summary>跨平台版本说明</summary>
+  <summary> Python 版 Client 说明</summary>
 
 ```bash
 # Python 版本 Client 依赖安装
