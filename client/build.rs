@@ -18,7 +18,6 @@ fn rustc_version() -> Option<String> {
         .and_then(|output| String::from_utf8(output.stdout).ok())
         .map(|s| {
             s.split_whitespace()
-                .into_iter()
                 .enumerate()
                 .filter(|&(idx, _)| idx < 2)
                 .map(|(_, s)| s)

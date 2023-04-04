@@ -3,7 +3,7 @@ edition = "2021"
 name = "stat_client"
 version = "1.7.0"
 
-rust-version = "1.67"
+rust-version = "1.68"
 
 authors = ["doge <doge.py@gmail.com>"]
 categories = ["monitoring-tools"]
@@ -23,6 +23,7 @@ anyhow = "1"
 bytes = {version = "1", features = ["serde"]}
 chrono = "0.4"
 clap = {version = "4.2", features = ["derive", "unicode", "env"]}
+fastrand = "1.9.0"
 hyper = {version = "0.14", features = ["full"]}
 lazy_static = "1.4"
 log = "0.4"
