@@ -23,7 +23,7 @@ anyhow = "1"
 axum = {version = "0.6.12", features = ["headers"]}
 bytes = {version = "1", features = ["serde"]}
 chrono = "0.4"
-clap = {version = "4.1", features = ["derive", "unicode"]}
+clap = {version = "4.2", features = ["derive", "unicode"]}
 futures-util = {version = "0.3", default-features = false}
 hyper = {version = "0.14", features = ["full"]}
 jsonwebtoken = "8.2"
