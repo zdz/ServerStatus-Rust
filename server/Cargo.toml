@@ -20,26 +20,26 @@ chrono = "0.4"
 
 [dependencies]
 anyhow = "1"
-axum = {version = "0.6.4", features = ["headers"]}
+axum = {version = "0.6.12", features = ["headers"]}
 bytes = {version = "1", features = ["serde"]}
 chrono = "0.4"
 clap = {version = "4.1", features = ["derive", "unicode"]}
 futures-util = {version = "0.3", default-features = false}
 hyper = {version = "0.14", features = ["full"]}
-jsonwebtoken = "8.0"
+jsonwebtoken = "8.2"
 lazy_static = "1.4"
 lettre = {version = "0.10", default-features = false, features = ["smtp-transport", "pool", "hostname", "builder", "rustls-tls", "tokio1-rustls-tls"]}
 log = "0.4"
-mime = "0.3.16"
+mime = "0.3.17"
 mime_guess = "2.0"
-minijinja = {version = "0.30", features = ["source", "json"]}
+minijinja = {version = "0.31", features = ["source", "json"]}
 once_cell = "1"
 pretty_env_logger = "0.4"
 prettytable-rs = "^0.10"
 prost = "0.11"
 reqwest = {version = "0.11", features = ["json", "rustls-tls"], default-features = false}
 rhai = {version = "1.13.0", features = ["sync", "metadata", "decimal", "no_function", "no_module", "no_closure", "unchecked"]}
-rust-embed = "6.4"
+rust-embed = "6.6"
 serde = {version = "1.0", default-features = false, features = ["derive", "alloc"]}
 serde_json = {version = "1.0", default-features = false, features = ["alloc"]}
 stat_common = {path = "../common"}
