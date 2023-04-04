@@ -149,6 +149,10 @@ pub async fn init_client(uri: Uri, req_header: HeaderMap, Query(params): Query<H
         .get("vnstat-mr")
         .map(|p| p.parse::<u32>().unwrap_or(1_u32))
         .unwrap_or(1_u32);
+    let interval = params
+        .get("interval")
+        .map(|p| p.parse::<u32>().unwrap_or(1_u32))
+        .unwrap_or(1_u32);
 
     let notify = params.get("notify").map(|p| !p.eq("0")).unwrap_or(true);
     let host_type = params.get("type").unwrap_or(&invalid);
@@ -216,6 +220,15 @@ pub async fn init_client(uri: Uri, req_header: HeaderMap, Query(params): Query<H
     }
     if !exclude_iface.is_empty() {
         let _ = write!(client_opts, r#" --exclude-iface "{exclude_iface}""#);
+    }
+
+    if interval > 0 {
+        let _ = write!(client_opts, r#" --interval {interval}"#);
+    }
+
+    let ip_source = params.get("ip-source").unwrap_or(&invalid);
+    if !ip_source.is_empty() {
+        let _ = write!(client_opts, r#" --ip-source "{ip_source}""#);
     }
 
     jinja::render_template(

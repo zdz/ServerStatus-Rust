@@ -17,6 +17,8 @@ message IpInfo {
   //
   double lat = 11;
   double lon = 12;
+
+  string timezone = 13;
 }
 
 message SysInfo {

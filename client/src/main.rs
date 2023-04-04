@@ -18,8 +18,8 @@ use tokio::time;
 use stat_common::server_status::{IpInfo, StatRequest, SysInfo};
 type GenericError = Box<dyn std::error::Error + Send + Sync>;
 type Result<T> = std::result::Result<T, GenericError>;
+mod geoip;
 mod grpc;
-mod ip_api;
 mod status;
 mod sys_info;
 mod vnstat;
@@ -90,6 +90,13 @@ pub struct Args {
     sys_info: bool,
     #[arg(long = "ip-info", help = "show ip info, default:false")]
     ip_info: bool,
+    #[arg(
+        long = "ip-source",
+        env = "SSR_IP_SOURCE",
+        default_value = "ip-api.com",
+        help = "ip info source"
+    )]
+    ip_source: String,
     #[arg(long = "json", help = "use json protocol, default:false")]
     json: bool,
     #[arg(short = '6', long = "ipv6", help = "ipv6 only, default:false")]
@@ -262,7 +269,7 @@ async fn refresh_ip_info(args: &Args) {
     let mut interval = time::interval(time::Duration::from_secs(3600));
     loop {
         info!("get ip info from ip-api.com");
-        match ip_api::get_ip_info(args.ipv6).await {
+        match geoip::get_ip_info(args).await {
             Ok(ip_info) => {
                 info!("refresh_ip_info succ => {:?}", ip_info);
                 if let Ok(mut o) = G_CONFIG.lock() {
@@ -289,7 +296,7 @@ async fn main() -> Result<()> {
     }
 
     if args.ip_info {
-        let info = ip_api::get_ip_info(args.ipv6).await?;
+        let info = geoip::get_ip_info(&args).await?;
         dbg!(info);
         process::exit(0);
     }
