@@ -17,11 +17,12 @@ use tokio::runtime::Handle;
 use tokio::signal;
 
 use axum::{
-    http::Uri,
+    http::{Method, Uri},
     response::IntoResponse,
     routing::{get, post},
     Router,
 };
+use tower_http::cors::{Any, CorsLayer};
 
 mod assets;
 mod auth;
@@ -51,6 +52,10 @@ struct Args {
 }
 
 fn create_app_router() -> Router {
+    let cors_layer = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods([Method::GET, Method::POST]);
+
     Router::new()
         .route("/report", post(http::report))
         .route("/json/stats.json", get(http::get_stats_json)) // 兼容就旧主题
@@ -63,6 +68,7 @@ fn create_app_router() -> Router {
         .route("/i", get(http::init_client))
         .route("/", get(assets::index_handler))
         .fallback(fallback)
+        .layer(cors_layer)
 }
 
 async fn fallback(uri: Uri) -> impl IntoResponse {

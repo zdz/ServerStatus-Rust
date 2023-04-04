@@ -36,9 +36,8 @@ where
         match Asset::get(path.as_str()) {
             Some(content) => {
                 let body = boxed(Full::from(content.data));
-                let mime = mime_guess::from_path(path).first_or_octet_stream();
                 Response::builder()
-                    .header(header::CONTENT_TYPE, mime.as_ref())
+                    .header(header::CONTENT_TYPE, content.metadata.mimetype())
                     .body(body)
                     .unwrap()
             }
