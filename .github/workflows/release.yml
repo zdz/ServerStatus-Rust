@@ -86,6 +86,15 @@ jobs:
           version: '3.x'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # https://blog.rust-lang.org/2023/01/09/android-ndk-update-r25.html
+      # https://github.com/cross-rs/cross/issues/1222
+      - name: Update Cross
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          use-cross: false
+          args: cross --git https://github.com/cross-rs/cross
+
       - name: Build release
         uses: actions-rs/cargo@v1
         with:
