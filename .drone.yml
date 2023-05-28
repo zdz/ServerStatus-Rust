@@ -75,9 +75,6 @@ steps:
     password:
       from_secret: hub_docker_password
     spec: .drone.manifest.tmpl
-    platforms:
-      - linux/amd64
-      - linux/arm64
 
 depends_on:
   - linux-amd64
