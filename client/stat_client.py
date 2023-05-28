@@ -426,6 +426,7 @@ def refresh_ip_info():
                 "asname": resp.get("asname", "unknown"),
                 "lat": resp.get("lat", 0),
                 "lon": resp.get("lon", 0),
+                "timezone": resp.get("timezone", "Asia/Shanghai"),
             }
             # print(json.dumps(ip_info, indent=2))
             global G_IP_INFO
