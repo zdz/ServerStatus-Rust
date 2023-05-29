@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #=================================================
 #  Description: Serverstat-Rust
-#  Version: v1.0.0
+#  Version: v1.0.1
+#  Updater:Yooona-Lim
 #=================================================
 
 Info="\033[32m[信息]\033[0m"
@@ -25,6 +26,7 @@ help:\n\
         -i -s           安装 Server\n\
         -i -c           安装 Client\n\
         -i -c conf      自动安装 Client\n\
+    -up,--upgrade   升级 Status
     -u,--uninstall  卸载 Status\n\
         -u -s           卸载 Server\n\
         -u -c           卸载 Client\n\
@@ -32,9 +34,9 @@ help:\n\
         -r          更改 Client 配置\n\
         -r conf         自动更改 Client配置\n\
     -s,--server     管理 Status 运行状态\n\
-        -s {start|stop|restart}\n\
+        -s {status|start|stop|restart}\n\
     -c,--client     管理 Client 运行状态\n\
-        -c {start|stop|restart}\n\n\
+        -c {status|start|stop|restart}\n\n\
 若无法访问 Github: \n\
     CN=true bash status.sh args
 \n"
@@ -169,6 +171,9 @@ function ssserver() {
         restart)
             systemctl restart stat_server
         ;;
+        status) # 新增状态检查命令
+            systemctl status stat_server
+        ;;
         *)
             sshelp
         ;;
@@ -185,6 +190,9 @@ function ssclient() {
         ;;
         restart)
             systemctl restart stat_client
+        ;;
+        status) # 新增状态检查命令
+            systemctl status stat_client
         ;;
         *)
            sshelp
@@ -333,6 +341,26 @@ function ssuninstall() {
   esac
 }
 
+# 升级版本
+function upgrade_status() {
+    echo -e "${Info} 开始升级版本"
+    systemctl stop stat_server
+    systemctl stop stat_client
+
+    echo -e "${Info} 获取二进制文件"
+    get_status #以防有旧版本的tem，直接重新下载
+    mv /tmp/stat_server /usr/local/ServerStatus/server/stat_server
+    chmod +x /usr/local/ServerStatus/server/stat_server
+
+    mv /tmp/stat_client /usr/local/ServerStatus/client/stat_client
+    chmod +x /usr/local/ServerStatus/client/stat_client
+
+    systemctl start stat_server
+    systemctl start stat_client
+
+    echo -e "${Info} 版本升级完成"
+}
+
 if [ ! "$#" = 0 ]; then
     INCMD="$1"; shift
 fi
@@ -340,6 +368,9 @@ fi
 case ${INCMD} in
     --install|-i)
         ssinstall "$@"
+    ;;
+    --upgrade|-up)
+        upgrade_status "$@"
     ;;
     --uninstall|-uni|-u)
         ssuninstall "$@"
