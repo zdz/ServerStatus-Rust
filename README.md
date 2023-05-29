@@ -150,23 +150,23 @@ bash status.sh -i -c http://h1:p1@127.0.0.1:8080
 # 更多用法：
 ❯ bash status.sh
 
-help:\n\
-    -i,--install    安装 Status\n\
-        -i -s           安装 Server\n\
-        -i -c           安装 Client\n\
-        -i -c conf      自动安装 Client\n\
+help:
+    -i,--install    安装 Status
+        -i -s           安装 Server
+        -i -c           安装 Client
+        -i -c conf      自动安装 Client
     -up,--upgrade   升级 Status
-    -u,--uninstall  卸载 Status\n\
-        -u -s           卸载 Server\n\
-        -u -c           卸载 Client\n\
-    -r,--reset      更改 Status 配置\n\
-        -r          更改 Client 配置\n\
-        -r conf         自动更改 Client配置\n\
-    -s,--server     管理 Status 运行状态\n\
-        -s {status|start|stop|restart}\n\
-    -c,--client     管理 Client 运行状态\n\
-        -c {status|start|stop|restart}\n\n\
-若无法访问 Github: \n\
+    -u,--uninstall  卸载 Status
+        -u -s           卸载 Server
+        -u -c           卸载 Client
+    -r,--reset      更改 Status 配置
+        -r          更改 Client 配置
+        -r conf         自动更改 Client配置
+    -s,--server     管理 Status 运行状态
+        -s {status|start|stop|restart}
+    -c,--client     管理 Client 运行状态
+        -c {status|start|stop|restart}
+若无法访问 Github: 
     CN=true bash status.sh args
 \n"
 # 可能有点用
