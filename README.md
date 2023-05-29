@@ -131,8 +131,6 @@ bash -ex one-touch.sh
 
 [@Yooona-Lim](https://github.com/Yooona-Lim)  
 提供
-<details>
-  <summary>管理脚本使用说明</summary>
 
 ```bash
 # 下载脚本
@@ -173,7 +171,6 @@ help:\n\
 \n"
 # 可能有点用
 ```
-</details>
 
 
 ### 2.4 Railway 部署
