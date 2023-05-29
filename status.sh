@@ -2,7 +2,7 @@
 #=================================================
 #  Description: Serverstat-Rust
 #  Version: v1.0.1
-#  Updater:Yooona-Lim
+#  Updater: Yooona-Lim
 #=================================================
 
 Info="\033[32m[信息]\033[0m"
