@@ -125,7 +125,7 @@ bash -ex one-touch.sh
 
 👉 [快速部署](https://doc.ssr.rs/rapid_deploy)
 
-### 2.3 服务管理脚本部署，感谢 [@Colsro](https://github.com/Colsro)(https://github.com/Yooona-Lim) 提供
+### 2.3 服务管理脚本部署，感谢 [@Colsro](https://github.com/Colsro)[@Yooona-Lim](https://github.com/Yooona-Lim) 提供
 <details>
   <summary>管理脚本使用说明</summary>
 
