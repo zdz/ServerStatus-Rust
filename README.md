@@ -166,9 +166,10 @@ help:
         -s {status|start|stop|restart}
     -c,--client     管理 Client 运行状态
         -c {status|start|stop|restart}
+        
 若无法访问 Github: 
     CN=true bash status.sh args
-\n"
+
 # 可能有点用
 ```
 
