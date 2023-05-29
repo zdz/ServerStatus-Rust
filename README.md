@@ -42,7 +42,7 @@
 - [2. 安装部署](#2-安装部署)
   - [2.1 快速体验](#21-快速体验)
   - [2.2 快速部署](#22-快速部署)
-  - [2.3 服务管理脚本部署，感谢 @Colsro 提供](#23-服务管理脚本部署感谢-colsro-提供)
+  - [2.3 服务管理脚本部署](#23-服务管理脚本部署)
   - [2.4 Railway 部署](#24-railway-部署)
 - [3. 服务端说明](#3-服务端说明)
   - [3.1 配置文件 `config.toml`](#31-配置文件-configtoml)
@@ -125,9 +125,11 @@ bash -ex one-touch.sh
 
 👉 [快速部署](https://doc.ssr.rs/rapid_deploy)
 
-### 2.3 服务管理脚本部署，感谢 [@Colsro](https://github.com/Colsro) 提供
-<details>
-  <summary>管理脚本使用说明</summary>
+### 2.3 服务管理脚本部署
+
+[@Colsro](https://github.com/Colsro)  提供
+
+[@Yooona-Lim](https://github.com/Yooona-Lim)  更新
 
 ```bash
 # 下载脚本
@@ -152,22 +154,25 @@ help:
         -i -s           安装 Server
         -i -c           安装 Client
         -i -c conf      自动安装 Client
-    -u,--uninstall  卸载 Status
-        -u -s           卸载 Server
-        -u -c           卸载 Client
+    -up,--upgrade   升级 Status
+        -up -s          升级 Server
+        -up -c          升级 Client
+        -up -a          升级 Server和Client
+    -un,--uninstall  卸载 Status
+        -un -s           卸载 Server
+        -un -c           卸载 Client
     -r,--reset      更改 Status 配置
         -r          更改 Client 配置
         -r conf         自动更改 Client配置
     -s,--server     管理 Status 运行状态
-        -s {start|stop|restart}
+        -s {status|start|stop|restart}
     -c,--client     管理 Client 运行状态
-        -c {start|stop|restart}
-
-若无法访问 Github:
+        -c {status|start|stop|restart}
+若无法访问 Github: 
     CN=true bash status.sh args
+
 # 可能有点用
 ```
-</details>
 
 
 ### 2.4 Railway 部署

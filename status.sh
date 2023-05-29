@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #=================================================
 #  Description: Serverstat-Rust
-#  Version: v1.0.0
+#  Version: v1.0.1
+#  Updater: Yooona-Lim
 #=================================================
 
 Info="\033[32m[信息]\033[0m"
@@ -25,16 +26,20 @@ help:\n\
         -i -s           安装 Server\n\
         -i -c           安装 Client\n\
         -i -c conf      自动安装 Client\n\
-    -u,--uninstall  卸载 Status\n\
-        -u -s           卸载 Server\n\
-        -u -c           卸载 Client\n\
+    -up,--upgrade   升级 Status\n\
+        -up -s          升级 Server\n\
+        -up -c          升级 Client\n\
+        -up -a          升级 Server和Client
+    -un,--uninstall  卸载 Status\n\
+        -un -s           卸载 Server\n\
+        -un -c           卸载 Client\n\
     -r,--reset      更改 Status 配置\n\
         -r          更改 Client 配置\n\
         -r conf         自动更改 Client配置\n\
     -s,--server     管理 Status 运行状态\n\
-        -s {start|stop|restart}\n\
+        -s {status|start|stop|restart}\n\
     -c,--client     管理 Client 运行状态\n\
-        -c {start|stop|restart}\n\n\
+        -c {status|start|stop|restart}\n\n\
 若无法访问 Github: \n\
     CN=true bash status.sh args
 \n"
@@ -78,6 +83,7 @@ function check_release() {
 
 check_release
 
+#安装unzip和wget工具
 function install_tool() {
   if [[ ${release} == "rpm" ]]; then
     yum -y install unzip wget
@@ -160,11 +166,14 @@ EOF
 function ssserver() {
     INCMD="$1"; shift
     case ${INCMD} in
-        stop)
-            systemctl stop stat_server
+        status) # 新增状态检查命令
+            systemctl status stat_server
         ;;
         start)
             systemctl start stat_server
+        ;;
+        stop)
+            systemctl stop stat_server
         ;;
         restart)
             systemctl restart stat_server
@@ -177,11 +186,14 @@ function ssserver() {
 function ssclient() {
     INCMD="$1"; shift
     case ${INCMD} in
-        stop)
-            systemctl stop stat_client
+        status) # 新增状态检查命令
+            systemctl status stat_server
         ;;
         start)
             systemctl start stat_client
+        ;;
+        stop)
+            systemctl stop stat_client
         ;;
         restart)
             systemctl restart stat_client
@@ -228,19 +240,41 @@ function restart_client() {
 }
 
 
-# 获取二进制文件
+# 获取二进制文件，现在可以选择下载server或者client，并添加文件下载校验
 function get_status() {
     if [ "${CN}" = true ]; then
-    MIRROR="https://gh-proxy.com/"
+        MIRROR="https://gh-proxy.com/"
     fi
     install_tool
     rm -f ServerStatus-${arch}-unknown-linux-musl.zip stat_*
     cd /tmp || exit
-    wget "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/server-${arch}-unknown-linux-musl.zip"
-    wget "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/client-${arch}-unknown-linux-musl.zip"
-    unzip -o server-${arch}-unknown-linux-musl.zip
-    unzip -o client-${arch}-unknown-linux-musl.zip
+
+    # 判断为空或者 "-a" "--all"，为空可以兼容前面的函数功能
+    if [ -z "$1" ] || [ "$1" = "-a" ] || [ "$1" = "--all" ]; then
+        wget "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/server-${arch}-unknown-linux-musl.zip"
+        wget "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/client-${arch}-unknown-linux-musl.zip"
+        unzip -o server-${arch}-unknown-linux-musl.zip
+        unzip -o client-${arch}-unknown-linux-musl.zip
+    elif [ "$1" = "-s" ] || [ "$1" = "--server" ]; then
+        wget "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/server-${arch}-unknown-linux-musl.zip"
+        unzip -o server-${arch}-unknown-linux-musl.zip
+    elif [ "$1" = "-c" ] || [ "$1" = "--client" ]; then
+        wget "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/client-${arch}-unknown-linux-musl.zip"
+        unzip -o client-${arch}-unknown-linux-musl.zip
+    else
+        echo "无效的参数"
+        exit 1
+    fi
+
+    # 验证文件是否成功解压
+    if [ $? -eq 0 ]; then
+        echo "文件下载和解压成功！"
+    else
+        echo "文件下载或解压失败！"
+        exit 1
+    fi
 }
+
 
 # 安装服务
 function install_server() {
@@ -333,6 +367,52 @@ function ssuninstall() {
   esac
 }
 
+# 升级版本
+function ssupgrade() {
+    INCMD="$1"; shift
+    case ${INCMD} in
+        --server|-s)
+            echo -e "${Info} 开始升级 Server"
+            systemctl stop stat_server
+            echo -e "${Info} 获取二进制文件"
+            get_status
+            mv /tmp/stat_server /usr/local/ServerStatus/server/stat_server
+            chmod +x /usr/local/ServerStatus/server/stat_server
+            systemctl start stat_server
+        ;;
+        --client|-c)
+            echo -e "${Info} 开始升级 Client"
+            systemctl stop stat_client
+            echo -e "${Info} 获取二进制文件"
+            get_status
+            mv /tmp/stat_client /usr/local/ServerStatus/client/stat_client
+            chmod +x /usr/local/ServerStatus/client/stat_client
+            systemctl start stat_client
+        ;;
+        --all|-a)
+            echo -e "${Info} 开始升级版本"
+            systemctl stop stat_server
+            systemctl stop stat_client
+
+            echo -e "${Info} 获取二进制文件"
+            get_status #以防有/tem目录的旧版本，直接重新下载
+            mv /tmp/stat_server /usr/local/ServerStatus/server/stat_server
+            chmod +x /usr/local/ServerStatus/server/stat_server
+
+            mv /tmp/stat_client /usr/local/ServerStatus/client/stat_client
+            chmod +x /usr/local/ServerStatus/client/stat_client
+
+            systemctl start stat_server
+            systemctl start stat_client
+
+            echo -e "${Info} 版本升级完成"
+        ;;
+        *)
+            sshelp
+        ;;
+  esac
+}
+
 if [ ! "$#" = 0 ]; then
     INCMD="$1"; shift
 fi
@@ -341,7 +421,10 @@ case ${INCMD} in
     --install|-i)
         ssinstall "$@"
     ;;
-    --uninstall|-uni|-u)
+    --upgrade|-up)
+        ssupgrade "$@"
+    ;;
+    --uninstall|-un)
         ssuninstall "$@"
     ;;
     --reset|-r)
