@@ -406,6 +406,7 @@ function ssupgrade() {
             systemctl start stat_client
 
             echo -e "${Info} 版本升级完成"
+        ;;
         *)
             sshelp
         ;;
