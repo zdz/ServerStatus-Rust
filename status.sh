@@ -24,6 +24,9 @@ client_file=/usr/local/ServerStatus/client/stat_client
 server_file=/usr/local/ServerStatus/server/stat_server
 client_conf=/lib/systemd/system/stat_client.service
 server_conf=/lib/systemd/system/stat_server.service
+server_toml=/usr/local/ServerStatus/server/config.toml
+
+bak_dir=/usr/local/ServerStatus/bak/
 
 if [ "${MIRROR}" = CN ]; then
     echo cn
@@ -136,23 +139,30 @@ function check_client() {
     CPID=$(pgrep -f "stat_client")
 }
 
-# 获取仓库最新版本号
+# 获取仓库最新版本号,运行可获得 'v1.7.2' 这样的版本号
 function get_latest_version() {
   api_url="https://api.github.com/repos/zdz/ServerStatus-Rust/releases/latest"
+  local latest_version # 声明和赋值分开写，是编译器给的警告
   latest_version=$(wget -qO- "$api_url" | grep -Po '(?<="tag_name": ")[^"]*')
   echo "$latest_version"
 }
 
-# 获取本地.service配置中的版本号，以 #Version:X.X.X 的注释形式存在
-# 接受的参数为 .service 配置文件的路径
+# 获取本地.service配置中的版本号，以 #Version=X.X.X 的注释形式存在
+# 接受的参数为 -s 服务端 或 -c 客户端
 function get_current_version(){
     conf_location=$1
-    current_version=$(grep -Po '(?<=Version:\s)v[\d.]+' "$conf_location")
+    # 如果是 -s 参数，就设置为服务端配置文件的路径，否则 -c 为客户端配置文件的路径
+    if [ "$1" = "-s" ]; then
+        conf_location=${server_conf}
+    elif [ "$1" = "-c" ]; then
+        conf_location=${client_conf}
+    fi
+    current_version=$(grep -Po '(?<=Version=\s)v[\d.]+' "$conf_location")
     echo "$current_version"
 }
 
-# 往配置文件中写入版本号
-# 接受的参数为 .service 配置文件的路径
+# 往配置文件抬头写入版本号
+# 接受的参数为 .service 配置文件的路径，和版本号
 function write_version(){
     conf_location=$1
     version=$2
@@ -165,8 +175,11 @@ function write_version(){
 
 # 写入 systemd 配置
 function write_server() {
+    local "$latest_version"
+    latest_version=$(get_latest_version)
     echo -e "${Info} 写入systemd配置中"
     cat >${server_conf} <<-EOF
+Vesion=${latest_version}
 [Unit]
 Description=ServerStatus-Rust Server
 After=network.target
@@ -186,8 +199,11 @@ EOF
 }
 
 function write_client() {
+    local "$latest_version"
+    latest_version=$(get_latest_version)
     echo -e "${Info} 写入systemd配置中"
     cat >${client_conf} <<-EOF
+Vesion=${latest_version}
 [Unit]
 Description=Serverstat-Rust Client
 After=network.target
@@ -323,16 +339,16 @@ function get_status() {
 # 安装服务
 function install_server() {
     echo -e "${Info} 下载 ${arch} 二进制文件"
-    [ -f "/tmp/stat_server" ] || get_status
+    [ -f "/tmp/stat_server" ] || get_status -s
     mkdir -p ${server_dir}
     mv $tmp_server_file $server_file
-    mv /tmp/config.toml /usr/local/ServerStatus/server/config.toml
+    mv /tmp/config.toml $server_toml
     chmod +x $server_file
     enable_server
 }
 function install_client() {
     echo -e "${Info} 下载 ${arch} 二进制文件"
-    [ -f "/tmp/stat_client" ] || get_status
+    [ -f "/tmp/stat_client" ] || get_status -c
     mkdir -p ${client_dir}
     mv $tmp_client_file $client_file
     chmod +x $client_file
@@ -355,20 +371,49 @@ function reset_conf() {
     fi
 }
 
+# 升级服务，解耦合
+# 调用示例 
+# upgrade_operation 'Server' "$server_file" "$server_conf" '-s' 'stat_server'
+# upgrade_operation 'Client' "$client_file" "$client_conf" '-c' 'stat_client'
+function upgrade_operation(){
+    local component=$1
+    local component_file=$2
+    local component_conf=$3
+    local get_status_arg=$4
+    local systemctl_service=$5
+    local latest_version=$6 # 获取最新版本
+
+    echo -e "${Info} 开始升级 $component"
+    systemctl stop "$systemctl_service"
+
+    current_version=$(get_current_version "$get_status_arg") # 获取当前版本
+    if [ "$current_version" != "$latest_version" ]; then
+        echo -e "${Info} 与仓库版本号不一致，或配置文件没有版本号，现获取 $component 二进制文件，并更新配置文件的版本号"
+        get_status "$get_status_arg"
+        mv "$tmp_server_file" "$component_file"
+        chmod +x "$component_file"
+        write_version "$component_conf" "$latest_version"
+    else
+        echo -e "${Info} 当前 $component 版本已是最新版本 $latest_version"
+    fi
+
+    systemctl start "$systemctl_service"
+}
+
 # 卸载服务
 function uninstall_server() {
     echo -e "${Tip} 开始卸载 Server"
     systemctl stop stat_server
     systemctl disable stat_server
-    rm -rf /usr/local/ServerStatus/server/
-    rm -rf /usr/lib/systemd/system/stat_server.service
+    rm -rf $server_dir
+    rm -rf $server_conf
 }
 function uninstall_client() {
     echo -e "${Tip} 开始卸载 Client"
     systemctl stop stat_client
     systemctl disable stat_client
-    rm -rf /usr/local/ServerStatus/client/
-    rm -rf /usr/lib/systemd/system/stat_client.service
+    rm -rf $client_dir
+    rm -rf $client_conf
 }
 
 function ssinstall() {
@@ -380,7 +425,7 @@ function ssinstall() {
         --client|-c)
             if [ ! "$#" = 0 ]; then
                 echo -e "${Info} 下载 ${arch} 二进制文件"
-                [ -f "/tmp/stat_client" ] || get_status
+                [ -f "/tmp/stat_client" ] || get_status '-c'
                 mv $tmp_client_file $client_file
                 chmod +x $client_file
                 UPM="$1"; shift
@@ -417,68 +462,78 @@ function ssuninstall() {
 
 # 升级版本
 function ssupgrade() {
+    local latest_version
     latest_version=$(get_latest_version)
+
     echo "Latest version of ServerStatus-Rust: $latest_version"
 
     INCMD="$1"; shift
     case ${INCMD} in
         --server|-s)
-            echo -e "${Info} 开始升级 Server"
-            systemctl stop stat_server
-
-            current_version=$(get_current_version) # 获取当前版本
-            if [ "$current_version" = "$latest_version" ]; then
-                echo -e "${Info} 当前版本已是最新版本"
-                return  # 退出函数
-            fi
-
-            echo -e "${Info} 与仓库版本号不一致，或配置文件没有版本号，现获取二进制文件，并更新配置文件的版本号"
-            get_status -s
-            
-            mv $tmp_server_file $server_file
-            chmod +x $server_file
-
-            echo -e "${Info} 更新配置文件的版本号"
-            write_version $server_conf $latest_version
-
-            systemctl start stat_server
+            upgrade_operation 'Server' "$server_file" "$server_conf" '-s' 'stat_server' "$latest_version"
         ;;
         --client|-c)
-            echo -e "${Info} 开始升级 Client"
-            systemctl stop stat_client
-
-            current_version=$(get_current_version)
-
-            echo -e "${Info} 获取二进制文件"
-            get_status -c
-            
-            mv $tmp_client_file $client_file
-            chmod +x $client_file
-            systemctl start stat_client
+            upgrade_operation 'Client' "$client_file" "$client_conf" '-c' 'stat_client' "$latest_version"
         ;;
         --all|-a)
-            echo -e "${Info} 开始升级版本"
-            systemctl stop stat_server
-            systemctl stop stat_client
-
-            echo -e "${Info} 获取二进制文件"
-            get_status #以防有/tem目录的旧版本，直接重新下载
-
-            mv $tmp_server_file $server_file
-            chmod +x $server_file
-
-            mv $tmp_client_file $client_file
-            chmod +x $client_file
-
-            systemctl start stat_server
-            systemctl start stat_client
-
-            echo -e "${Info} 版本升级完成"
+            upgrade_operation 'Server' "$server_file" "$server_conf" '-s' 'stat_server' "$latest_version"
+            upgrade_operation 'Client' "$client_file" "$client_conf" '-c' 'stat_client' "$latest_version"
         ;;
         *)
             sshelp
         ;;
   esac
+}
+
+# 备份服务
+function ssbakup() {
+    INCMD="$1"; shift
+    case ${INCMD} in
+        --server|-s)
+            echo -e "${Info} 开始备份 Server"
+            systemctl stop stat_server
+            
+            cp $server_file $bak_dir
+            cp $server_toml $bak_dir
+            cp $server_conf $bak_dir
+
+            systemctl start stat_server
+            echo -e "${Info} 备份 Server 完成，文件路径：$bak_dir"
+        ;;
+        --client|-c)
+            echo -e "${Info} 开始备份 Client"
+            systemctl stop stat_client
+
+            cp $client_file $bak_dir
+            cp $client_conf $bak_dir
+
+            systemctl start stat_client
+            echo -e "${Info} 备份 Client 完成，文件路径：$bak_dir"
+        ;;
+        --all|-a)
+            echo -e "${Info} 开始备份 Server"
+            systemctl stop stat_server
+            
+            cp $server_file $bak_dir
+            cp $server_toml $bak_dir
+            cp $server_conf $bak_dir
+
+            systemctl start stat_server
+            echo -e "${Info} 备份 Server 完成，文件路径：$bak_dir"
+
+            echo -e "${Info} 开始备份 Client"
+            systemctl stop stat_client
+
+            cp $client_file $bak_dir
+            cp $client_conf $bak_dir
+
+            systemctl start stat_client
+            echo -e "${Info} 备份 Client 完成，文件路径：$bak_dir"
+        ;;
+        *)
+            sshelp
+        ;;
+    esac
 }
 
 if [ ! "$#" = 0 ]; then
@@ -503,6 +558,9 @@ case ${INCMD} in
     ;;
     --client|-c)
         ssclient "$@"
+    ;;
+    --bakup|-b)
+        ssbakup "$@"
     ;;
     --help|-h|*)
         sshelp
