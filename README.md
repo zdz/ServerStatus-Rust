@@ -161,6 +161,7 @@ help:
     -un,--uninstall  卸载 Status
         -un -s           卸载 Server
         -un -c           卸载 Client
+        -un -a           卸载 Server and Client
     -r,--reset      更改 Status 配置
         -r          更改 Client 配置
         -r conf         自动更改 Client配置
@@ -168,6 +169,10 @@ help:
         -s {status|start|stop|restart}
     -c,--client     管理 Client 运行状态
         -c {status|start|stop|restart}
+    -b,--bakup      备份 Status
+        -b -s          备份 Server
+        -b -c          备份 Client
+        -b -a          备份 Server and Client
 若无法访问 Github: 
     CN=true bash status.sh args
 

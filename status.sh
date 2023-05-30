@@ -4,27 +4,30 @@
 #  Version: v1.0.2
 #  Updater: Yooona-Lim
 #  Update Description:
-#         1.新增备份和恢复功能
-#         2.新增版本号功能，供更新检查使用
-#         3.可以同时卸载（适用于server和client在同一台机子的情况），实现很简单，两个实现的函数一起调用
+#         1.新增备份功能
+#         2.新增写入版本号功能，检查版本号功能，供更新检查使用
+#         3.可以同时卸载和更新（适用于server和client在同一台机子的情况），实现很简单，两个实现的函数一起调用
 #         4.地址字符串尽量用变量替代，方便修改
+#         5.路径和官方一致，方便升级（有待验证）
 #=================================================
 
 Info="\033[32m[信息]\033[0m"
 Error="\033[31m[错误]\033[0m"
 Tip="\033[32m[注意]\033[0m"
 
-client_dir=/usr/local/ServerStatus/client/
-server_dir=/usr/local/ServerStatus/server/
+working_dir=/opt/ServerStatus
+
+client_dir="$working_dir/client"
+server_dir="$working_dir/server"
 
 tmp_server_file=/tmp/stat_server
 tmp_client_file=/tmp/stat_client
 
-client_file=/usr/local/ServerStatus/client/stat_client
-server_file=/usr/local/ServerStatus/server/stat_server
+client_file="$client_dir/stat_client"
+server_file="$server_dir/stat_server"
 client_conf=/lib/systemd/system/stat_client.service
 server_conf=/lib/systemd/system/stat_server.service
-server_toml=/usr/local/ServerStatus/server/config.toml
+server_toml="$server_dir/config.toml"
 
 bak_dir=/usr/local/ServerStatus/bak/
 
@@ -102,19 +105,33 @@ function check_release() {
 
 check_release
 
-#安装unzip和wget工具
+#先检查unzip和wget包是否存在，如果没有则安装unzip和wget工具
 function install_tool() {
-  if [[ ${release} == "rpm" ]]; then
-    yum -y install unzip wget
-  elif [[ ${release} == "deb" ]]; then
-    apt -y update
-    apt -y install unzip wget
+  if ! command -v unzip &> /dev/null; then
+    echo "unzip not found. Installing unzip..."
+    if [[ ${release} == "rpm" ]]; then
+      yum -y install unzip
+    elif [[ ${release} == "deb" ]]; then
+      apt -y update
+      apt -y install unzip
+    fi
+  fi
+
+  if ! command -v wget &> /dev/null; then
+    echo "wget not found. Installing wget..."
+    if [[ ${release} == "rpm" ]]; then
+      yum -y install wget
+    elif [[ ${release} == "deb" ]]; then
+      apt -y update
+      apt -y install wget
+    fi
   fi
 }
 
+
 # 获取服务端信息
 function input_upm() {
-    echo -e "${Tip} 请输入服务端的信息, 格式为 \"protocol://username:password@master:port\""
+    echo -e "${Tip} 请输入服务端的信息, 格式为 \"protocol://username:password@master:port\" 示例：\"http://h1:p1@127.0.0.1:8080\""
     read -re UPM
 }
 
@@ -147,7 +164,7 @@ function get_latest_version() {
   echo "$latest_version"
 }
 
-# 获取本地.service配置中的版本号，以 #Version=X.X.X 的注释形式存在
+# 获取本地.service配置中的版本号，以 #Version=vX.X.X 的注释形式存在
 # 接受的参数为 -s 服务端 或 -c 客户端
 function get_current_version(){
     conf_location=$1
@@ -157,7 +174,7 @@ function get_current_version(){
     elif [ "$1" = "-c" ]; then
         conf_location=${client_conf}
     fi
-    current_version=$(grep -Po '(?<=Version=\s)v[\d.]+' "$conf_location")
+    current_version=$(grep -Po '(?<=Version=)v[\d.]+' "$conf_location")
     echo "$current_version"
 }
 
@@ -175,11 +192,11 @@ function write_version(){
 
 # 写入 systemd 配置
 function write_server() {
-    local "$latest_version"
+    local $latest_version
     latest_version=$(get_latest_version)
     echo -e "${Info} 写入systemd配置中"
     cat >${server_conf} <<-EOF
-Vesion=${latest_version}
+#Version=${latest_version}
 [Unit]
 Description=ServerStatus-Rust Server
 After=network.target
@@ -189,7 +206,7 @@ After=network.target
 #Group=nobody
 Environment="RUST_BACKTRACE=1"
 WorkingDirectory=/usr/local/ServerStatus
-ExecStart=/usr/local/ServerStatus/server/stat_server -c /usr/local/ServerStatus/server/config.toml
+ExecStart=$server_file -c $server_toml
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 
@@ -199,11 +216,11 @@ EOF
 }
 
 function write_client() {
-    local "$latest_version"
+    local $latest_version
     latest_version=$(get_latest_version)
     echo -e "${Info} 写入systemd配置中"
     cat >${client_conf} <<-EOF
-Vesion=${latest_version}
+#Version=${latest_version}
 [Unit]
 Description=Serverstat-Rust Client
 After=network.target
@@ -213,7 +230,7 @@ User=root
 Group=root
 Environment="RUST_BACKTRACE=1"
 WorkingDirectory=/usr/local/ServerStatus
-ExecStart=/usr/local/ServerStatus/client/stat_client -a "${PROTOCOL}://${MASTER}" -u ${USER} -p ${PASSWD}
+ExecStart=$client_file -a "${PROTOCOL}://${MASTER}" -u ${USER} -p ${PASSWD}
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 
@@ -311,15 +328,15 @@ function get_status() {
 
     # 判断为空或者 "-a" "--all"，为空可以兼容前面的函数功能
     if [ -z "$1" ] || [ "$1" = "-a" ] || [ "$1" = "--all" ]; then
-        wget "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/server-${arch}-unknown-linux-musl.zip"
-        wget "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/client-${arch}-unknown-linux-musl.zip"
+        wget --no-check-certificate -q "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/server-${arch}-unknown-linux-musl.zip"
+        wget --no-check-certificate -q "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/client-${arch}-unknown-linux-musl.zip"
         unzip -o server-${arch}-unknown-linux-musl.zip
         unzip -o client-${arch}-unknown-linux-musl.zip
     elif [ "$1" = "-s" ] || [ "$1" = "--server" ]; then
-        wget "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/server-${arch}-unknown-linux-musl.zip"
+        wget --no-check-certificate -q "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/server-${arch}-unknown-linux-musl.zip"
         unzip -o server-${arch}-unknown-linux-musl.zip
     elif [ "$1" = "-c" ] || [ "$1" = "--client" ]; then
-        wget "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/client-${arch}-unknown-linux-musl.zip"
+        wget --no-check-certificate -q "${MIRROR}https://github.com/zdz/Serverstatus-Rust/releases/latest/download/client-${arch}-unknown-linux-musl.zip"
         unzip -o client-${arch}-unknown-linux-musl.zip
     else
         echo "无效的参数"
@@ -373,31 +390,35 @@ function reset_conf() {
 
 # 升级服务，解耦合
 # 调用示例 
-# upgrade_operation 'Server' "$server_file" "$server_conf" '-s' 'stat_server'
-# upgrade_operation 'Client' "$client_file" "$client_conf" '-c' 'stat_client'
+# upgrade_operation 'Server' "$server_file" "$tmp_server_file" "$server_conf" '-s' 'stat_server' "$latest_version"
+# upgrade_operation 'Client' "$client_file" "$tmp_client_file" "$client_conf" '-c' 'stat_client' "$latest_version"
 function upgrade_operation(){
-    local component=$1
+    local component=$1 # 组件名
     local component_file=$2
-    local component_conf=$3
-    local get_status_arg=$4
-    local systemctl_service=$5
-    local latest_version=$6 # 获取最新版本
-
-    echo -e "${Info} 开始升级 $component"
-    systemctl stop "$systemctl_service"
+    local temp_com_file=$3
+    local component_conf=$4
+    local get_status_arg=$5 
+    local systemctl_service=$6 # systemctl 服务名
+    local latest_version=$7 # 获取最新版本
 
     current_version=$(get_current_version "$get_status_arg") # 获取当前版本
+    echo -e "${Info} 当前 $component 版本为 $current_version"
     if [ "$current_version" != "$latest_version" ]; then
-        echo -e "${Info} 与仓库版本号不一致，或配置文件没有版本号，现获取 $component 二进制文件，并更新配置文件的版本号"
+        echo -e "${Info} $component 1.与仓库版本号不一致 2.或者配置文件没有版本号\n现获取 $component 二进制文件，并更新配置文件的版本号"
+        echo -e "${Info} 开始升级 $component"
         get_status "$get_status_arg"
-        mv "$tmp_server_file" "$component_file"
+
+        systemctl stop "$systemctl_service"
+
+        mv "$temp_com_file" "$component_file"
         chmod +x "$component_file"
         write_version "$component_conf" "$latest_version"
+        systemctl daemon-reload
+
+        systemctl restart "$systemctl_service"
     else
         echo -e "${Info} 当前 $component 版本已是最新版本 $latest_version"
     fi
-
-    systemctl start "$systemctl_service"
 }
 
 # 卸载服务
@@ -405,6 +426,7 @@ function uninstall_server() {
     echo -e "${Tip} 开始卸载 Server"
     systemctl stop stat_server
     systemctl disable stat_server
+    systemctl daemon-reload
     rm -rf $server_dir
     rm -rf $server_conf
 }
@@ -412,6 +434,7 @@ function uninstall_client() {
     echo -e "${Tip} 开始卸载 Client"
     systemctl stop stat_client
     systemctl disable stat_client
+    systemctl daemon-reload
     rm -rf $client_dir
     rm -rf $client_conf
 }
@@ -470,14 +493,14 @@ function ssupgrade() {
     INCMD="$1"; shift
     case ${INCMD} in
         --server|-s)
-            upgrade_operation 'Server' "$server_file" "$server_conf" '-s' 'stat_server' "$latest_version"
+            upgrade_operation 'Server' "$server_file" "$tmp_server_file" "$server_conf" '-s' 'stat_server' "$latest_version"
         ;;
         --client|-c)
-            upgrade_operation 'Client' "$client_file" "$client_conf" '-c' 'stat_client' "$latest_version"
+            upgrade_operation 'Client' "$client_file" "$tmp_client_file" "$client_conf" '-c' 'stat_client' "$latest_version"
         ;;
         --all|-a)
-            upgrade_operation 'Server' "$server_file" "$server_conf" '-s' 'stat_server' "$latest_version"
-            upgrade_operation 'Client' "$client_file" "$client_conf" '-c' 'stat_client' "$latest_version"
+            upgrade_operation 'Server' "$server_file" "$tmp_server_file" "$server_conf" '-s' 'stat_server' "$latest_version"
+            upgrade_operation 'Client' "$client_file" "$tmp_client_file" "$client_conf" '-c' 'stat_client' "$latest_version"
         ;;
         *)
             sshelp
@@ -493,6 +516,8 @@ function ssbakup() {
             echo -e "${Info} 开始备份 Server"
             systemctl stop stat_server
             
+            mkdir -p $bak_dir
+
             cp $server_file $bak_dir
             cp $server_toml $bak_dir
             cp $server_conf $bak_dir
@@ -504,6 +529,8 @@ function ssbakup() {
             echo -e "${Info} 开始备份 Client"
             systemctl stop stat_client
 
+            mkdir -p $bak_dir
+
             cp $client_file $bak_dir
             cp $client_conf $bak_dir
 
@@ -514,6 +541,8 @@ function ssbakup() {
             echo -e "${Info} 开始备份 Server"
             systemctl stop stat_server
             
+            mkdir -p $bak_dir
+
             cp $server_file $bak_dir
             cp $server_toml $bak_dir
             cp $server_conf $bak_dir
