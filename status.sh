@@ -25,8 +25,8 @@ tmp_client_file=/tmp/stat_client
 
 client_file="$client_dir/stat_client"
 server_file="$server_dir/stat_server"
-client_conf=/lib/systemd/system/stat_client.service
-server_conf=/lib/systemd/system/stat_server.service
+client_conf=/etc/systemd/system/stat_client.service
+server_conf=/etc/systemd/system/stat_server.service
 server_toml="$server_dir/config.toml"
 
 bak_dir=/usr/local/ServerStatus/bak/
