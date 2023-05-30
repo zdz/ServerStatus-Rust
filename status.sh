@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 #=================================================
 #  Description: Serverstat-Rust
-#  Version: v1.0.1
+#  Version: v1.0.2
 #  Updater: Yooona-Lim
+#  Update Description:
+#         1.新增备份和恢复功能
+#         2.新增版本号功能，供更新检查使用
+#         3.可以同时卸载（适用于server和client在同一台机子的情况），实现很简单，两个实现的函数一起调用
+#         4.地址字符串尽量用变量替代，方便修改
 #=================================================
 
 Info="\033[32m[信息]\033[0m"
@@ -11,6 +16,12 @@ Tip="\033[32m[注意]\033[0m"
 
 client_dir=/usr/local/ServerStatus/client/
 server_dir=/usr/local/ServerStatus/server/
+
+tmp_server_file=/tmp/stat_server
+tmp_client_file=/tmp/stat_client
+
+client_file=/usr/local/ServerStatus/client/stat_client
+server_file=/usr/local/ServerStatus/server/stat_server
 client_conf=/lib/systemd/system/stat_client.service
 server_conf=/lib/systemd/system/stat_server.service
 
@@ -29,10 +40,11 @@ help:\n\
     -up,--upgrade   升级 Status\n\
         -up -s          升级 Server\n\
         -up -c          升级 Client\n\
-        -up -a          升级 Server和Client
+        -up -a          升级 Server and Client\n\
     -un,--uninstall  卸载 Status\n\
         -un -s           卸载 Server\n\
         -un -c           卸载 Client\n\
+        -un -a           卸载 Server and Client\n\
     -r,--reset      更改 Status 配置\n\
         -r          更改 Client 配置\n\
         -r conf         自动更改 Client配置\n\
@@ -40,6 +52,10 @@ help:\n\
         -s {status|start|stop|restart}\n\
     -c,--client     管理 Client 运行状态\n\
         -c {status|start|stop|restart}\n\n\
+    -b,--bakup      备份 Status\n\
+        -b -s          备份 Server\n\
+        -b -c          备份 Client\n\
+        -b -a          备份 Server and Client\n\
 若无法访问 Github: \n\
     CN=true bash status.sh args
 \n"
@@ -113,11 +129,38 @@ function get_conf() {
 }
 
 # 检查服务
-check_server() {
+function check_server() {
     SPID=$(pgrep -f "stat_server")
 }
-check_client() {
+function check_client() {
     CPID=$(pgrep -f "stat_client")
+}
+
+# 获取仓库最新版本号
+function get_latest_version() {
+  api_url="https://api.github.com/repos/zdz/ServerStatus-Rust/releases/latest"
+  latest_version=$(wget -qO- "$api_url" | grep -Po '(?<="tag_name": ")[^"]*')
+  echo "$latest_version"
+}
+
+# 获取本地.service配置中的版本号，以 #Version:X.X.X 的注释形式存在
+# 接受的参数为 .service 配置文件的路径
+function get_current_version(){
+    conf_location=$1
+    current_version=$(grep -Po '(?<=Version:\s)v[\d.]+' "$conf_location")
+    echo "$current_version"
+}
+
+# 往配置文件中写入版本号
+# 接受的参数为 .service 配置文件的路径
+function write_version(){
+    conf_location=$1
+    version=$2
+    if grep -q "Version=" "$conf_location"; then # 如果已经存在 Version 字段，就替换
+        sed -i "s/Version=.*/Version=${version}/" "$conf_location"
+    else
+        sed -i "1iVersion=${version}" "$conf_location" # 在第一行插入
+    fi
 }
 
 # 写入 systemd 配置
@@ -141,6 +184,7 @@ Restart=on-failure
 WantedBy=multi-user.target
 EOF
 }
+
 function write_client() {
     echo -e "${Info} 写入systemd配置中"
     cat >${client_conf} <<-EOF
@@ -281,17 +325,17 @@ function install_server() {
     echo -e "${Info} 下载 ${arch} 二进制文件"
     [ -f "/tmp/stat_server" ] || get_status
     mkdir -p ${server_dir}
-    mv /tmp/stat_server /usr/local/ServerStatus/server/stat_server
+    mv $tmp_server_file $server_file
     mv /tmp/config.toml /usr/local/ServerStatus/server/config.toml
-    chmod +x /usr/local/ServerStatus/server/stat_server
+    chmod +x $server_file
     enable_server
 }
 function install_client() {
     echo -e "${Info} 下载 ${arch} 二进制文件"
     [ -f "/tmp/stat_client" ] || get_status
     mkdir -p ${client_dir}
-    mv /tmp/stat_client /usr/local/ServerStatus/client/stat_client
-    chmod +x /usr/local/ServerStatus/client/stat_client
+    mv $tmp_client_file $client_file
+    chmod +x $client_file
     input_upm
     get_conf
     enable_client
@@ -337,8 +381,8 @@ function ssinstall() {
             if [ ! "$#" = 0 ]; then
                 echo -e "${Info} 下载 ${arch} 二进制文件"
                 [ -f "/tmp/stat_client" ] || get_status
-                mv /tmp/stat_client /usr/local/ServerStatus/client/stat_client
-                chmod +x /usr/local/ServerStatus/client/stat_client
+                mv $tmp_client_file $client_file
+                chmod +x $client_file
                 UPM="$1"; shift
                 get_conf
                 enable_client
@@ -361,6 +405,10 @@ function ssuninstall() {
         --client|-c)
             uninstall_client
         ;;
+        --all|-a)
+            uninstall_server
+            uninstall_client
+        ;;
         *)
             sshelp
         ;;
@@ -369,24 +417,43 @@ function ssuninstall() {
 
 # 升级版本
 function ssupgrade() {
+    latest_version=$(get_latest_version)
+    echo "Latest version of ServerStatus-Rust: $latest_version"
+
     INCMD="$1"; shift
     case ${INCMD} in
         --server|-s)
             echo -e "${Info} 开始升级 Server"
             systemctl stop stat_server
-            echo -e "${Info} 获取二进制文件"
-            get_status
-            mv /tmp/stat_server /usr/local/ServerStatus/server/stat_server
-            chmod +x /usr/local/ServerStatus/server/stat_server
+
+            current_version=$(get_current_version) # 获取当前版本
+            if [ "$current_version" = "$latest_version" ]; then
+                echo -e "${Info} 当前版本已是最新版本"
+                return  # 退出函数
+            fi
+
+            echo -e "${Info} 与仓库版本号不一致，或配置文件没有版本号，现获取二进制文件，并更新配置文件的版本号"
+            get_status -s
+            
+            mv $tmp_server_file $server_file
+            chmod +x $server_file
+
+            echo -e "${Info} 更新配置文件的版本号"
+            write_version $server_conf $latest_version
+
             systemctl start stat_server
         ;;
         --client|-c)
             echo -e "${Info} 开始升级 Client"
             systemctl stop stat_client
+
+            current_version=$(get_current_version)
+
             echo -e "${Info} 获取二进制文件"
-            get_status
-            mv /tmp/stat_client /usr/local/ServerStatus/client/stat_client
-            chmod +x /usr/local/ServerStatus/client/stat_client
+            get_status -c
+            
+            mv $tmp_client_file $client_file
+            chmod +x $client_file
             systemctl start stat_client
         ;;
         --all|-a)
@@ -396,11 +463,12 @@ function ssupgrade() {
 
             echo -e "${Info} 获取二进制文件"
             get_status #以防有/tem目录的旧版本，直接重新下载
-            mv /tmp/stat_server /usr/local/ServerStatus/server/stat_server
-            chmod +x /usr/local/ServerStatus/server/stat_server
 
-            mv /tmp/stat_client /usr/local/ServerStatus/client/stat_client
-            chmod +x /usr/local/ServerStatus/client/stat_client
+            mv $tmp_server_file $server_file
+            chmod +x $server_file
+
+            mv $tmp_client_file $client_file
+            chmod +x $client_file
 
             systemctl start stat_server
             systemctl start stat_client
