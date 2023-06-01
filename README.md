@@ -162,9 +162,9 @@ help:
         -un -s           卸载 Server
         -un -c           卸载 Client
         -un -a           卸载 Server and Client
-    -r,--reset      更改 Status 配置
-        -r          更改 Client 配置
-        -r conf         自动更改 Client配置
+    -rc,--reconfig      更改 Status 配置
+        -rc          更改 Client 配置
+        -rc conf         自动更改 Client配置
     -s,--server     管理 Status 运行状态
         -s {status|start|stop|restart}
     -c,--client     管理 Client 运行状态
@@ -173,10 +173,13 @@ help:
         -b -s          备份 Server
         -b -c          备份 Client
         -b -a          备份 Server and Client
+    -rs,--restore    恢复 Status
+        -rs -s          恢复 Server
+        -rs -c          恢复 Client
+        -rs -a          恢复 Server and Client
+    -h,--help       查看帮助
 若无法访问 Github: 
     CN=true bash status.sh args
-
-# 可能有点用
 ```
 
 

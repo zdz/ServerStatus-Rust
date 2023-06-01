@@ -1,18 +1,16 @@
 #!/usr/bin/env bash
 #=================================================
 #  Description: Serverstat-Rust
-#  Version: v1.0.2
+#  Version: v1.0.3
 #  Updater: Yooona-Lim
 #  Update Description:
-#         1.新增备份功能
-#         2.新增写入版本号功能，检查版本号功能，供更新检查使用
-#         3.可以同时卸载和更新（适用于server和client在同一台机子的情况），实现很简单，两个实现的函数一起调用
-#         4.地址字符串尽量用变量替代，方便修改
-#         5.路径和官方一致，方便升级（有待验证）
+#         1.新增恢复功能
+#         2.改写短语
 #=================================================
 
 Info="\033[32m[信息]\033[0m"
 Error="\033[31m[错误]\033[0m"
+Warning="\033[33m[警告]\033[0m"
 Tip="\033[32m[注意]\033[0m"
 
 working_dir=/opt/ServerStatus
@@ -51,9 +49,9 @@ help:\n\
         -un -s           卸载 Server\n\
         -un -c           卸载 Client\n\
         -un -a           卸载 Server and Client\n\
-    -r,--reset      更改 Status 配置\n\
-        -r          更改 Client 配置\n\
-        -r conf         自动更改 Client配置\n\
+    -rc,--reconfig      更改 Status 配置\n\
+        -rc          更改 Client 配置\n\
+        -rc conf         自动更改 Client配置\n\
     -s,--server     管理 Status 运行状态\n\
         -s {status|start|stop|restart}\n\
     -c,--client     管理 Client 运行状态\n\
@@ -62,6 +60,10 @@ help:\n\
         -b -s          备份 Server\n\
         -b -c          备份 Client\n\
         -b -a          备份 Server and Client\n\
+    -rs,--restore    恢复 Status\n\
+        -rs -s          恢复 Server\n\
+        -rs -c          恢复 Client\n\
+        -rs -a          恢复 Server and Client\n\n\
 若无法访问 Github: \n\
     CN=true bash status.sh args
 \n"
@@ -131,7 +133,7 @@ function install_tool() {
 
 # 获取服务端信息
 function input_upm() {
-    echo -e "${Tip} 请输入服务端的信息, 格式为 \"protocol://username:password@master:port\" 示例：\"http://h1:p1@127.0.0.1:8080\""
+    echo -e "${Tip} 请输入服务端的信息, 格式为 \"protocol://username:password@master:port\" (如输入错误 可以重新运行写入配置)  示例：\"http://h1:p1@127.0.0.1:8080\""
     read -re UPM
 }
 
@@ -565,6 +567,85 @@ function ssbakup() {
     esac
 }
 
+function restore_server(){
+    echo -e "${Info} 开始恢复 Server"
+
+    if [ -f "$server_file" ] || [ -f "$server_toml" ] || [ -f "$server_conf" ]; then
+        echo -e "${Warning} 目标文件已存在，为避免可能存在的冲突，请删除以下文件后再恢复 Server: "
+        [ -f "$server_file" ] && echo "$server_file"
+        [ -f "$server_toml" ] && echo "$server_toml"
+        [ -f "$server_conf" ] && echo "$server_conf"
+        return
+    fi
+
+    mkdir -p $server_dir
+
+    cp $bak_dir/stat_server $server_file # 实际上是 cp /usr/local/ServerStatus/bak/stat_server /opt/ServerStatus/server/stat_server
+    cp $bak_dir/config.toml $server_toml
+    cp $bak_dir/stat_server.service $server_conf # 实际上是 cp /usr/local/ServerStatus/bak/stat_server.service /etc/systemd/system/stat_server.service
+
+    chmod +x $server_file
+    systemctl enable stat_server
+    systemctl start stat_server
+    check_server
+    if [[ -n ${SPID} ]]; then
+        echo -e "${Info} Status Server 启动成功！"
+    else
+        echo -e "${Error} Status Server 启动失败！"
+    fi
+
+    echo -e "${Info} 恢复 Server 完成"
+}
+
+function restore_client(){
+    echo -e "${Info} 开始恢复 Client"
+
+    if [ -f "$client_file" ] || [ -f "$client_conf" ]; then
+        echo -e "${Warning} 目标文件已存在，为避免可能存在的冲突，请删除以下文件后再恢复 Client: "
+        [ -f "$client_file" ] && echo "$client_file"
+        [ -f "$client_conf" ] && echo "$client_conf"
+        return
+    fi
+
+    mkdir -p $client_dir
+
+    cp $bak_dir/stat_client $client_file
+    cp $bak_dir/stat_client.service $client_conf
+
+    chmod +x $client_file
+    systemctl enable stat_client
+    systemctl start stat_client
+    check_client
+    if [[ -n ${CPID} ]]; then
+        echo -e "${Info} Status Client 启动成功！"
+    else
+        echo -e "${Error} Status Client 启动失败！"
+    fi
+
+    echo -e "${Info} 恢复 Client 完成"
+}
+
+# 恢复服务
+function ssrestore() {
+    INCMD="$1"; shift
+    case ${INCMD} in
+        --server|-s)
+            restore_server
+        ;;
+        --client|-c)
+            restore_client
+        ;;
+        --all|-a)
+            restore_server
+            restore_client
+        ;;
+        *)
+            sshelp
+        ;;
+    esac
+}
+
+
 if [ ! "$#" = 0 ]; then
     INCMD="$1"; shift
 fi
@@ -579,7 +660,7 @@ case ${INCMD} in
     --uninstall|-un)
         ssuninstall "$@"
     ;;
-    --reset|-r)
+    --reconfig|-rc)
         reset_conf "$@"
     ;;
     --server|-s)
@@ -590,6 +671,9 @@ case ${INCMD} in
     ;;
     --bakup|-b)
         ssbakup "$@"
+    ;;
+    --restore|-rs)
+        ssrestore "$@"
     ;;
     --help|-h|*)
         sshelp
