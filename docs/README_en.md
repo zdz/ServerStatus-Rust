@@ -60,6 +60,7 @@
 - [6. FAQ](#6-faq)
 - [7. Related Projects](#7-related-projects)
 - [8. Final thoughts](#8-final-thoughts)
+- [Stargazers over time](#stargazers-over-time)
 
 ## 1. Introduction
   `ServerStatus` Power-Up Edition maintains lightweight and simple deployment while adding the following key features:
@@ -535,4 +536,7 @@ OPTIONS:
 ## 8. Final thoughts
 
     I'm glad my code can run on your server. If it has been helpful to you, feel free to leave a star ⭐️ to show your support.
+<br>
 
+## Stargazers over time
+[![Stargazers over time](https://starchart.cc/zdz/ServerStatus-Rust.svg)](https://starchart.cc/zdz/ServerStatus-Rust)

@@ -60,6 +60,7 @@
 - [6. FAQ](#6-faq)
 - [7. 相关项目](#7-相关项目)
 - [8. 最后](#8-最后)
+- [项目星标趋势](#项目星标趋势)
 
 ## 1. 介绍
   `ServerStatus` 威力加强版，保持轻量和简单部署，增加以下主要特性：
@@ -535,4 +536,7 @@ OPTIONS:
 ## 8. 最后
 
     很高兴我的代码能跑在你的服务器上，如果对你有帮助的话，欢迎留下你的 star ⭐ 支持一下
+<br>
 
+## 项目星标趋势
+[![Stargazers over time](https://starchart.cc/zdz/ServerStatus-Rust.svg)](https://starchart.cc/zdz/ServerStatus-Rust)
