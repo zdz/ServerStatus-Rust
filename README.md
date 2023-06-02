@@ -141,6 +141,8 @@ bash -ex one-touch.sh
 # 下载脚本
 wget --no-check-certificate -qO status.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh'
 
+# ！！！请务必在root权限下执行！！！
+
 # 安装 服务端
 bash status.sh -i -s
 

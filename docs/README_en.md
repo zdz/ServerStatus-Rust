@@ -61,7 +61,6 @@
 - [7. Related Projects](#7-related-projects)
 - [8. Final thoughts](#8-final-thoughts)
 
-  
 ## 1. Introduction
   `ServerStatus` Power-Up Edition maintains lightweight and simple deployment while adding the following key features:
 
@@ -118,7 +117,6 @@ ServerStatus-web 主题由 [@mjjrock](https://github.com/mjjrock) 修改提供�
 ## 2. Installation and Deployment
 
 ### 2.1 Quick Experience
-
 ```bash
 # for CentOS/Debian/Ubuntu x86_64
 mkdir -p /opt/ServerStatus && cd /opt/ServerStatus
@@ -131,22 +129,24 @@ bash -ex one-touch.sh
 
 ### 2.2 Quick Deployment
 
-👉 [快速部署](https://doc.ssr.rs/rapid_deploy)
+👉 [Quick Deployment](https://doc.ssr.rs/rapid_deploy)
 
 ### 2.3 Service Management Script Deployment
 
-[@Colsro](https://github.com/Colsro)  提供
+[@Colsro](https://github.com/Colsro) Provide 
 
-[@Yooona-Lim](https://github.com/Yooona-Lim)  更新
+[@Yooona-Lim](https://github.com/Yooona-Lim) Update
 
 ```bash
-# 下载脚本
+# download script
 wget --no-check-certificate -qO status.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh'
 
-# 安装 服务端
+# ！！！Please make sure to execute it with root privileges.！！！
+
+# install server
 bash status.sh -i -s
 
-# 安装 客户端
+# install client
 bash status.sh -i -c
 # or
 bash status.sh -i -c protocol://username:password@master:port
@@ -154,39 +154,39 @@ bash status.sh -i -c protocol://username:password@master:port
 bash status.sh -i -c grpc://h1:p1@127.0.0.1:9394
 bash status.sh -i -c http://h1:p1@127.0.0.1:8080
 
-# 更多用法：
+# More use cases
 ❯ bash status.sh
 
 help:
-    -i,--install    安装 Status
-        -i -s           安装 Server
-        -i -c           安装 Client
-        -i -c conf      自动安装 Client
-    -up,--upgrade   升级 Status
-        -up -s          升级 Server
-        -up -c          升级 Client
-        -up -a          升级 Server和Client
-    -un,--uninstall  卸载 Status
-        -un -s           卸载 Server
-        -un -c           卸载 Client
-        -un -a           卸载 Server and Client
-    -rc,--reconfig      更改 Status 配置
-        -rc          更改 Client 配置
-        -rc conf         自动更改 Client配置
-    -s,--server     管理 Status 运行状态
+    -i,--install    install Status
+        -i -s           install Server
+        -i -c           install Client
+        -i -c conf      自动install Client
+    -up,--upgrade   upgrade Status
+        -up -s          upgrade Server
+        -up -c          upgrade Client
+        -up -a          upgrade Server和Client
+    -un,--uninstall  uninstall Status
+        -un -s           uninstall Server
+        -un -c           uninstall Client
+        -un -a           uninstall Server and Client
+    -rc,--reconfig      reconfig Status
+        -rc          reconfig Client
+        -rc conf         Auto reconfig Client
+    -s,--server     Manage the running status of Server
         -s {status|start|stop|restart}
-    -c,--client     管理 Client 运行状态
+    -c,--client     Manage the running status of Client
         -c {status|start|stop|restart}
-    -b,--bakup      备份 Status
-        -b -s          备份 Server
-        -b -c          备份 Client
-        -b -a          备份 Server and Client
-    -rs,--restore    恢复 Status
-        -rs -s          恢复 Server
-        -rs -c          恢复 Client
-        -rs -a          恢复 Server and Client
-    -h,--help       查看帮助
-若无法访问 Github: 
+    -b,--bakup      Backup Status
+        -b -s          Backup Server
+        -b -c          Backup Client
+        -b -a          Backup Server and Client
+    -rs,--restore    restore Status
+        -rs -s          restore Server
+        -rs -c          restore Client
+        -rs -a          restore Server and Client
+    -h,--help       for help
+if you are in China Mainland, you can use the following command to speed up the download:
     CN=true bash status.sh args
 ```
 

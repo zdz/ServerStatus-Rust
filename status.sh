@@ -266,7 +266,7 @@ function ssclient() {
     INCMD="$1"; shift
     case ${INCMD} in
         status) # 新增状态检查命令
-            systemctl status stat_server
+            systemctl status stat_client
         ;;
         start)
             systemctl start stat_client
