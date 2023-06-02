@@ -35,60 +35,61 @@
 
 <br><br><br>
 <h3 align="center">
-<a href="#">简体中文</a>
+<a href="../README.md">简体中文</a>
 .
-<a href="docs/README_en.md">English</a>
+<a href="#">English</a>
 </h3>
 <br><br>
 
-<h2>目录</h2>
+<h2>Table of Contents</h2>
 
-- [1. 介绍](#1-介绍)
-  - [🍀 主题](#-主题)
-- [2. 安装部署](#2-安装部署)
-  - [2.1 快速体验](#21-快速体验)
-  - [2.2 快速部署](#22-快速部署)
-  - [2.3 服务管理脚本部署](#23-服务管理脚本部署)
-  - [2.4 Railway 部署](#24-railway-部署)
-- [3. 服务端说明](#3-服务端说明)
-  - [3.1 配置文件 `config.toml`](#31-配置文件-configtoml)
-  - [3.2 服务端运行](#32-服务端运行)
-- [4. 客户端说明](#4-客户端说明)
-  - [4.1 Rust 版 Client](#41-rust-版-client)
-  - [4.2 Python 版 Client](#42-python-版-client)
-- [5. 开启 `vnstat` 支持](#5-开启-vnstat-支持)
+- [1. Introduction](#1-introduction)
+  - [🍀 Theme](#-theme)
+- [2. Installation and Deployment](#2-installation-and-deployment)
+  - [2.1 Quick Experience](#21-quick-experience)
+  - [2.2 Quick Deployment](#22-quick-deployment)
+  - [2.3 Service Management Script Deployment](#23-service-management-script-deployment)
+  - [2.4 Railway Deployment](#24-railway-deployment)
+- [3. Server Configuration](#3-server-configuration)
+  - [3.1 Configuration File config.toml](#31-configuration-file-configtoml)
+  - [3.2 Running the server](#32-running-the-server)
+- [4. Client Doucumentation](#4-client-doucumentation)
+  - [4.1 Rust version Client](#41-rust-version-client)
+  - [4.2 Python version Client](#42-python-version-client)
+- [5. Enabling vnstat Support](#5-enabling-vnstat-support)
 - [6. FAQ](#6-faq)
-- [7. 相关项目](#7-相关项目)
-- [8. 最后](#8-最后)
+- [7. Related Projects](#7-related-projects)
+- [8. Final thoughts](#8-final-thoughts)
 
-## 1. 介绍
-  `ServerStatus` 威力加强版，保持轻量和简单部署，增加以下主要特性：
+  
+## 1. Introduction
+  `ServerStatus` Power-Up Edition maintains lightweight and simple deployment while adding the following key features:
 
-- 使用 `rust` 完全重写 `server`、`client`，单个执行文件部署
-- 多系统支持 `Linux`、`MacOS`、`Windows`、`Android`、`Raspberry Pi`
-- 支持上下线和简单自定义规则告警 (`telegram`、`wechat`、`email`、`webhook`)
-- 支持 `http` 协议上报，方便部署到各免费容器服务和配合 `cf` 等优化上报链路
-- 支持 `vnstat` 统计月流量，重启不丢流量数据
-- 支持 `railway` 快速部署
-- 支持 `systemd` 开机自启
-- 其它功能，如 🗺️  见 [wiki](https://github.com/zdz/ServerStatus-Rust/wiki)
+- Completely rewritten in `Rust`, both the server and client, allowing for deployment as a single executable file.
+- Multiple system support including `Linux`, `MacOS`, `Windows`, `Android`, and `Raspberry Pi`.
+- Support for online/offline monitoring and simple custom rule alerts via `Telegram`, `WeChat`, `email`, and `webhook`.
+- Support for reporting via the `HTTP` protocol, making it easy to deploy on various free container services and optimize reporting routes with `Cloudflare` and other services.
+- Support for monthly traffic statistics with `vnstat`, ensuring data is not lost during restarts.
+- Support for quick deployment with `Railway`.
+- Support for automatic startup with `systemd`.
+- Other features,such as 🗺️,can be found in the [wiki](https://github.com/zdz/ServerStatus-Rust/wiki)
 
-演示：[ssr.rs](https://ssr.rs) | [cn dns](https://ck.ssr.rs)
+Demo: [ssr.rs](https://ssr.rs) | [cn dns](https://ck.ssr.rs)
 |
-下载：[Releases](https://github.com/zdz/ServerStatus-Rust/releases)
+Download: [Releases](https://github.com/zdz/ServerStatus-Rust/releases)
 |
 [Changelog](https://github.com/zdz/ServerStatus-Rust/releases)
 |
-反馈：[Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
+Feedback: [Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
 
-📚 完整文档迁移至 [doc.ssr.rs](https://doc.ssr.rs)
+📚 Complete documentation has been migrated to [doc.ssr.rs](https://doc.ssr.rs)
 
-### 🍀 主题
+### 🍀 Theme
 
-如果你觉得你创造/修改的主题还不错，欢迎分享/PR，前端单独部署方法参考 [#37](https://github.com/zdz/ServerStatus-Rust/discussions/37)
+If you think the theme you have created/modified is good, feel free to share/submit a pull request (PR). For frontend deployment instructions, please refer to the following steps. [#37](https://github.com/zdz/ServerStatus-Rust/discussions/37)
 
 <details>
-  <summary>Hotaru 主题</summary>
+  <summary>Hotaru Theme</summary>
 
 Hotaru 主题由 [@HinataKato](https://github.com/HinataKato) 修改提供，[主题地址](https://github.com/HinataKato/hotaru_theme_for_RustVersion)
 
@@ -97,7 +98,7 @@ Hotaru 主题由 [@HinataKato](https://github.com/HinataKato) 修改提供，[�
 </details>
 
 <details>
-  <summary>ServerStatus-web 主题</summary>
+  <summary>ServerStatus-web Theme</summary>
 
 ServerStatus-web 主题由 [@mjjrock](https://github.com/mjjrock) 修改提供，[主题地址](https://github.com/mjjrock/ServerStatus-web)
 
@@ -107,16 +108,17 @@ ServerStatus-web 主题由 [@mjjrock](https://github.com/mjjrock) 修改提供�
 
 
 <details>
-  <summary>v1.5.7 版本主题</summary>
+  <summary>Theme of v1.5.7 </summary>
 
 [演示：Demo](https://tz-rust.vercel.app)
 
 <img width="1215" alt="image" src="https://user-images.githubusercontent.com/152173/165957689-d35714a9-f7f8-49f7-9573-97d4cf3c2f79.png">
 </details>
 
-## 2. 安装部署
+## 2. Installation and Deployment
 
-### 2.1 快速体验
+### 2.1 Quick Experience
+
 ```bash
 # for CentOS/Debian/Ubuntu x86_64
 mkdir -p /opt/ServerStatus && cd /opt/ServerStatus
@@ -127,11 +129,11 @@ bash -ex one-touch.sh
 # 自定义部署可参照 one-touch.sh 脚本
 ```
 
-### 2.2 快速部署
+### 2.2 Quick Deployment
 
 👉 [快速部署](https://doc.ssr.rs/rapid_deploy)
 
-### 2.3 服务管理脚本部署
+### 2.3 Service Management Script Deployment
 
 [@Colsro](https://github.com/Colsro)  提供
 
@@ -189,7 +191,7 @@ help:
 ```
 
 
-### 2.4 Railway 部署
+### 2.4 Railway Deployment
 
 懒得配置 `Nginx`，`SSL` 证书？试试
 [在 Railway 部署 Server](https://github.com/zdz/ServerStatus-Rust/wiki/Railway)
@@ -197,9 +199,9 @@ help:
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/kzT46l?referralCode=pJYbdU)
 
 
-## 3. 服务端说明
+## 3. Server Configuration
 
-### 3.1 配置文件 `config.toml`
+### 3.1 Configuration File config.toml
 ```toml
 # 侦听地址, ipv6 使用 [::]:9394
 grpc_addr = "0.0.0.0:9394"
@@ -270,7 +272,7 @@ custom_tpl = """
 # wechat, email, webhook 等其它通知方式 配置详细见 config.toml
 ```
 
-### 3.2 服务端运行
+### 3.2 Running the server
 ```bash
 # systemd 方式， 参照 one-touch.sh 脚本 (推荐)
 
@@ -294,7 +296,7 @@ touch stats.json
 docker-compose up -d
 ```
 
-## 4. 客户端说明
+## 4. Client Doucumentation
 
 <details>
   <summary>系统版本&架构</summary>
@@ -312,7 +314,7 @@ docker-compose up -d
 
 </details>
 
-### 4.1 Rust 版 Client
+### 4.1 Rust version Client
 ```bash
 # 公网环境建议 headscale/nebula 组网或走 https, 使用 nginx 对 server 套 ssl 和自定义 location /report
 # alpine linux 需要安装相关命令 apk add procps iproute2 coreutils
@@ -370,7 +372,7 @@ OPTIONS:
 -e, --exclude-iface # 排除指定网口，默认排除 "lo,docker,vnet,veth,vmbr,kube,br-"
 ```
 
-### 4.2 Python 版 Client
+### 4.2 Python version Client
 
 <details>
   <summary> Python 版 Client 说明</summary>
@@ -404,7 +406,7 @@ python3 stat_client.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
 ```
 </details>
 
-## 5. 开启 `vnstat` 支持
+## 5. Enabling vnstat Support
 [vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux下一个流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量和总流量，优点是重启不丢流量数据。
 
 <details>
@@ -521,14 +523,14 @@ OPTIONS:
 
 </details>
 
-## 7. 相关项目
+## 7. Related Projects
 - https://github.com/BotoX/ServerStatus
 - https://github.com/cppla/ServerStatus
 - https://github.com/mojeda/ServerStatus
 - https://github.com/cokemine/ServerStatus-Hotaru
 - https://github.com/ToyoDAdoubiBackup/ServerStatus-Toyo
 
-## 8. 最后
+## 8. Final thoughts
 
-    很高兴我的代码能跑在你的服务器上，如果对你有帮助的话，欢迎留下你的 star ⭐ 支持一下
+    I'm glad my code can run on your server. If it has been helpful to you, feel free to leave a star ⭐️ to show your support.
 
