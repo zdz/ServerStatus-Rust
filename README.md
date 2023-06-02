@@ -135,12 +135,14 @@ bash -ex one-touch.sh
 
 [@Colsro](https://github.com/Colsro)  提供
 
-[@Yooona-Lim](https://github.com/Yooona-Lim)  更新
+[@Yooona-Lim](https://github.com/Yooona-Lim)  维护
+
+> 如果无法访问域名 `raw.githubusercontent.com`，可以使用第二个地址`fastly.jsdelivr.net`，但是内容更新会有 24 小时的延迟。
+- **status.sh**：
+  - [https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh](https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh)
+  - [https://fastly.jsdelivr.net/gh/zdz/ServerStatus-Rust@master/status.sh](https://fastly.jsdelivr.net/gh/zdz/ServerStatus-Rust@master/status.sh)
 
 ```bash
-# 下载脚本
-wget --no-check-certificate -qO status.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh'
-
 # ！！！请务必在root权限下执行！！！
 
 # 安装 服务端

@@ -135,12 +135,14 @@ bash -ex one-touch.sh
 
 [@Colsro](https://github.com/Colsro) Provide 
 
-[@Yooona-Lim](https://github.com/Yooona-Lim) Update
+[@Yooona-Lim](https://github.com/Yooona-Lim) Maintain
+
+> If the domain `raw.githubusercontent.com` is inaccessible, you can use the alternative address `fastly.jsdelivr.net`, but there will be a 24-hour delay in content updates.
+- **status.sh**：
+  - [https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh](https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh)
+  - [https://fastly.jsdelivr.net/gh/zdz/ServerStatus-Rust@master/status.sh](https://fastly.jsdelivr.net/gh/zdz/ServerStatus-Rust@master/status.sh)
 
 ```bash
-# download script
-wget --no-check-certificate -qO status.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh'
-
 # ！！！Please make sure to execute it with root privileges.！！！
 
 # install server
