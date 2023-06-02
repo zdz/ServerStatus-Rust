@@ -207,7 +207,7 @@ After=network.target
 #User=nobody
 #Group=nobody
 Environment="RUST_BACKTRACE=1"
-WorkingDirectory=/usr/local/ServerStatus
+WorkingDirectory=${working_dir}
 ExecStart=$server_file -c $server_toml
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
@@ -231,7 +231,7 @@ After=network.target
 User=root
 Group=root
 Environment="RUST_BACKTRACE=1"
-WorkingDirectory=/usr/local/ServerStatus
+WorkingDirectory=${working_dir}
 ExecStart=$client_file -a "${PROTOCOL}://${MASTER}" -u ${USER} -p ${PASSWD}
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
