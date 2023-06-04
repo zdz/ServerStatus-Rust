@@ -36,8 +36,12 @@
 <br><br><br>
 <h3 align="center">
 <a href="#">简体中文</a>
-.
+|
 <a href="docs/README_en.md">English</a>
+<details>
+  <summary>Translate detials</summary>
+  <a href="https://github.com/Yooona-Lim">Yooona-Lim</a> Translated with the help of ChatGPT and DeepL
+</details>
 </h3>
 <br><br>
 
@@ -139,7 +143,7 @@ bash -ex one-touch.sh
 [@Yooona-Lim](https://github.com/Yooona-Lim)  维护
 
 > 如果无法访问域名 `raw.githubusercontent.com`，可以使用第二个地址`fastly.jsdelivr.net`，但是内容更新会有 24 小时的延迟。
-- **status.sh**：
+- **status.sh 下载**：
   - [https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh](https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh)
   - [https://fastly.jsdelivr.net/gh/zdz/ServerStatus-Rust@master/status.sh](https://fastly.jsdelivr.net/gh/zdz/ServerStatus-Rust@master/status.sh)
 
@@ -410,7 +414,7 @@ python3 stat_client.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
 </details>
 
 ## 5. 开启 `vnstat` 支持
-[vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux下一个流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量和总流量，优点是重启不丢流量数据。
+[vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux的流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量和总流量，优点是重启不丢流量数据。
 
 <details>
   <summary>开启 vnstat 设置</summary>
