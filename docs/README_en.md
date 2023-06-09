@@ -35,76 +35,76 @@
 
 <br><br><br>
 <h3 align="center">
-<a href="#">简体中文</a>
+<a href="../README.md">简体中文</a>
 |
-<a href="docs/README_en.md">English</a>
+<a href="#">English</a>
 <details>
   <summary>Translate detials</summary>
-  <a href="https://github.com/mobeicanyue">mobeicanyue</a> Translated with the help of ChatGPT and DeepL
+  <a href="https://github.com/Yooona-Lim">Yooona-Lim</a> Translated with the help of ChatGPT and DeepL
 </details>
 </h3>
 <br><br>
 
-<h2>目录</h2>
+<h2>Table of Contents</h2>
 
-- [1. 介绍](#1-介绍)
-  - [🍀 主题](#-主题)
-- [2. 安装部署](#2-安装部署)
-  - [2.1 快速体验](#21-快速体验)
-  - [2.2 快速部署](#22-快速部署)
-  - [2.3 服务管理脚本部署](#23-服务管理脚本部署)
-  - [2.4 Railway 部署](#24-railway-部署)
-- [3. 服务端说明](#3-服务端说明)
-  - [3.1 配置文件 `config.toml`](#31-配置文件-configtoml)
-  - [3.2 服务端运行](#32-服务端运行)
-- [4. 客户端说明](#4-客户端说明)
-  - [4.1 Rust 版 Client](#41-rust-版-client)
-  - [4.2 Python 版 Client](#42-python-版-client)
-- [5. 开启 `vnstat` 支持](#5-开启-vnstat-支持)
+- [1. Introduction](#1-introduction)
+  - [🍀 Theme](#-theme)
+- [2. Installation and Deployment](#2-installation-and-deployment)
+  - [2.1 Quick Experience](#21-quick-experience)
+  - [2.2 Quick Deployment](#22-quick-deployment)
+  - [2.3 Service Management Script Deployment](#23-service-management-script-deployment)
+  - [2.4 Railway Deployment](#24-railway-deployment)
+- [3. Server Configuration](#3-server-configuration)
+  - [3.1 Configuration File config.toml](#31-configuration-file-configtoml)
+  - [3.2 Running the server](#32-running-the-server)
+- [4. Client Doucumentation](#4-client-doucumentation)
+  - [4.1 Rust version Client](#41-rust-version-client)
+  - [4.2 Python version Client](#42-python-version-client)
+- [5. Enabling vnstat Support](#5-enabling-vnstat-support)
 - [6. FAQ](#6-faq)
-- [7. 相关项目](#7-相关项目)
-- [8. 最后](#8-最后)
-- [9. 项目星标趋势](#9-项目星标趋势)
+- [7. Related Projects](#7-related-projects)
+- [8. Final thoughts](#8-final-thoughts)
+- [9. Stargazers over time](#9-stargazers-over-time)
 
-## 1. 介绍
-  `ServerStatus` 威力加强版，保持轻量和简单部署，增加以下主要特性：
+## 1. Introduction
+  `ServerStatus` Power-Up Edition maintains lightweight and simple deployment while adding the following key features:
 
-- 使用 `rust` 完全重写 `server`、`client`，单个执行文件部署
-- 多系统支持 `Linux`、`MacOS`、`Windows`、`Android`、`Raspberry Pi`
-- 支持上下线和简单自定义规则告警 (`telegram`、`wechat`、`email`、`webhook`)
-- 支持 `http` 协议上报，方便部署到各免费容器服务和配合 `cf` 等优化上报链路
-- 支持 `vnstat` 统计月流量，重启不丢流量数据
-- 支持 `railway` 快速部署
-- 支持 `systemd` 开机自启
-- 其它功能，如 🗺️  见 [wiki](https://github.com/zdz/ServerStatus-Rust/wiki)
+- Completely rewritten in `Rust`, both the server and client, allowing for deployment as a single executable file.
+- Multiple system support including `Linux`, `MacOS`, `Windows`, `Android`, and `Raspberry Pi`.
+- Support for online/offline monitoring and simple custom rule alerts via `Telegram`, `WeChat`, `email`, and `webhook`.
+- Support for reporting via the `HTTP` protocol, making it easy to deploy on various free container services and optimize reporting routes with `Cloudflare` and other services.
+- Support for monthly traffic statistics with `vnstat`, ensuring data is not lost during restarts.
+- Support for quick deployment with `Railway`.
+- Support for automatic startup with `systemd`.
+- Other features,such as 🗺️,can be found in the [wiki](https://github.com/zdz/ServerStatus-Rust/wiki)
 
-演示：[ssr.rs](https://ssr.rs) | [cn dns](https://ck.ssr.rs)
+Demo: [ssr.rs](https://ssr.rs) | [cn dns](https://ck.ssr.rs)
 |
-下载：[Releases](https://github.com/zdz/ServerStatus-Rust/releases)
+Download: [Releases](https://github.com/zdz/ServerStatus-Rust/releases)
 |
 [Changelog](https://github.com/zdz/ServerStatus-Rust/releases)
 |
-反馈：[Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
+Feedback: [Discussions](https://github.com/zdz/ServerStatus-Rust/discussions)
 
-📚 完整文档迁移至 [doc.ssr.rs](https://doc.ssr.rs)
+📚 Complete documentation has been migrated to [doc.ssr.rs](https://doc.ssr.rs)
 
-### 🍀 主题
+### 🍀 Theme
 
-如果你觉得你创造/修改的主题还不错，欢迎分享/PR，前端单独部署方法参考 [#37](https://github.com/zdz/ServerStatus-Rust/discussions/37)
+If you think the theme you have created/modified is good, feel free to share/submit a pull request (PR). For frontend deployment instructions, please refer to the following steps. [#37](https://github.com/zdz/ServerStatus-Rust/discussions/37)
 
 <details>
-  <summary>Hotaru 主题</summary>
+  <summary>Hotaru Theme</summary>
 
-Hotaru 主题由 [@HinataKato](https://github.com/HinataKato) 修改提供，[主题地址](https://github.com/HinataKato/hotaru_theme_for_RustVersion)
+Hotaru theme modified and provided by [@HinataKato](https://github.com/HinataKato), [theme address](https://github.com/HinataKato/hotaru_theme_for_RustVersion)
 
 <img width="1202" alt="image" src="https://user-images.githubusercontent.com/152173/167900971-5ef0c23a-af43-4f52-aab5-d58e4a66c8ea.png">
 
 </details>
 
 <details>
-  <summary>ServerStatus-web 主题</summary>
+  <summary>ServerStatus-web Theme</summary>
 
-ServerStatus-web 主题由 [@mjjrock](https://github.com/mjjrock) 修改提供，[主题地址](https://github.com/mjjrock/ServerStatus-web)
+ServerStatus-web theme modified and provided by [@mjjrock](https://github.com/mjjrock), [theme address](https://github.com/mjjrock/ServerStatus-web)
 
 <img width="1425" alt="image" src="https://user-images.githubusercontent.com/102237118/171837653-3a5b2cd6-bf02-4602-a132-2c80a6707f68.png">
 
@@ -112,48 +112,48 @@ ServerStatus-web 主题由 [@mjjrock](https://github.com/mjjrock) 修改提供�
 
 
 <details>
-  <summary>v1.5.7 版本主题</summary>
+  <summary>Theme of v1.5.7 </summary>
 
-[演示：Demo](https://tz-rust.vercel.app)
+[Demo](https://tz-rust.vercel.app)
 
 <img width="1215" alt="image" src="https://user-images.githubusercontent.com/152173/165957689-d35714a9-f7f8-49f7-9573-97d4cf3c2f79.png">
 </details>
 
-## 2. 安装部署
+## 2. Installation and Deployment
 
-### 2.1 快速体验
+### 2.1 Quick Experience
 ```bash
 # for CentOS/Debian/Ubuntu x86_64
 mkdir -p /opt/ServerStatus && cd /opt/ServerStatus
 # apt install -y unzip / yum install -y unzip
 wget --no-check-certificate -qO one-touch.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/one-touch.sh'
 bash -ex one-touch.sh
-# 部署完毕，打开 http://127.0.0.1:8080/ 或 http://<你的IP>:8080/
-# 自定义部署可参照 one-touch.sh 脚本
+# Once deployed, open http://127.0.0.1:8080/ or http://<your IP>:8080/
+# Custom deployments can be found in the one-touch.sh script
 ```
 
-### 2.2 快速部署
+### 2.2 Quick Deployment
 
-👉 [快速部署](https://doc.ssr.rs/rapid_deploy)
+👉 [Quick Deployment](https://doc.ssr.rs/rapid_deploy)
 
-### 2.3 服务管理脚本部署
+### 2.3 Service Management Script Deployment
 
-[@Colsro](https://github.com/Colsro)  提供
+[@Colsro](https://github.com/Colsro) Provide 
 
-[@mobeicanyue](https://github.com/mobeicanyue)  维护
+[@Yooona-Lim](https://github.com/Yooona-Lim) Maintain
 
-> 如果无法访问域名 `raw.githubusercontent.com`，可以使用第二个地址`fastly.jsdelivr.net`.
-- **status.sh 下载**：
+> If the domain `raw.githubusercontent.com` is inaccessible, you can use the alternative address `fastly.jsdelivr.net`.
+- **status.sh download here**：
   - [https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh](https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh)
   - [https://fastly.jsdelivr.net/gh/zdz/ServerStatus-Rust@master/status.sh](https://fastly.jsdelivr.net/gh/zdz/ServerStatus-Rust@master/status.sh)
 
 ```bash
-# ！！！请务必在root权限下执行！！！
+# ！！！Please make sure to execute it with root privileges.！！！
 
-# 安装 服务端
+# install server
 bash status.sh -i -s
 
-# 安装 客户端
+# install client
 bash status.sh -i -c
 # or
 bash status.sh -i -c protocol://username:password@master:port
@@ -161,54 +161,54 @@ bash status.sh -i -c protocol://username:password@master:port
 bash status.sh -i -c grpc://h1:p1@127.0.0.1:9394
 bash status.sh -i -c http://h1:p1@127.0.0.1:8080
 
-# 更多用法：
+# More use cases
 ❯ bash status.sh
 
 help:
-    -i,--install    安装 Status
-        -i -s           安装 Server
-        -i -c           安装 Client
-        -i -c conf      自动安装 Client
-    -up,--upgrade   升级 Status
-        -up -s          升级 Server
-        -up -c          升级 Client
-        -up -a          升级 Server和Client
-    -un,--uninstall  卸载 Status
-        -un -s           卸载 Server
-        -un -c           卸载 Client
-        -un -a           卸载 Server and Client
-    -rc,--reconfig      更改 Status 配置
-        -rc          更改 Client 配置
-        -rc conf         自动更改 Client配置
-    -s,--server     管理 Status 运行状态
+    -i,--install    install Status
+        -i -s           install Server
+        -i -c           install Client
+        -i -c conf      自动install Client
+    -up,--upgrade   upgrade Status
+        -up -s          upgrade Server
+        -up -c          upgrade Client
+        -up -a          upgrade Server和Client
+    -un,--uninstall  uninstall Status
+        -un -s           uninstall Server
+        -un -c           uninstall Client
+        -un -a           uninstall Server and Client
+    -rc,--reconfig      reconfig Status
+        -rc          reconfig Client
+        -rc conf         Auto reconfig Client
+    -s,--server     Manage the running status of Server
         -s {status|start|stop|restart}
-    -c,--client     管理 Client 运行状态
+    -c,--client     Manage the running status of Client
         -c {status|start|stop|restart}
-    -b,--bakup      备份 Status
-        -b -s          备份 Server
-        -b -c          备份 Client
-        -b -a          备份 Server and Client
-    -rs,--restore    恢复 Status
-        -rs -s          恢复 Server
-        -rs -c          恢复 Client
-        -rs -a          恢复 Server and Client
-    -h,--help       查看帮助
-若无法访问 Github: 
+    -b,--bakup      Backup Status
+        -b -s          Backup Server
+        -b -c          Backup Client
+        -b -a          Backup Server and Client
+    -rs,--restore    restore Status
+        -rs -s          restore Server
+        -rs -c          restore Client
+        -rs -a          restore Server and Client
+    -h,--help       for help
+if you are in China Mainland, you can use the following command to speed up the download:
     CN=true bash status.sh args
 ```
 
 
-### 2.4 Railway 部署
+### 2.4 Railway Deployment
 
-懒得配置 `Nginx`，`SSL` 证书？试试
-[在 Railway 部署 Server](https://github.com/zdz/ServerStatus-Rust/wiki/Railway)
+Too lazy to configure `Nginx`, `SSL` certificates? Try
+[Deploying Server in Railway](https://github.com/zdz/ServerStatus-Rust/wiki/Railway)
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/kzT46l?referralCode=pJYbdU)
 
 
-## 3. 服务端说明
+## 3. Server Configuration
 
-### 3.1 配置文件 `config.toml`
+### 3.1 Configuration File config.toml
 ```toml
 # 侦听地址, ipv6 使用 [::]:9394
 grpc_addr = "0.0.0.0:9394"
@@ -279,7 +279,7 @@ custom_tpl = """
 # wechat, email, webhook 等其它通知方式 配置详细见 config.toml
 ```
 
-### 3.2 服务端运行
+### 3.2 Running the server
 ```bash
 # systemd 方式， 参照 one-touch.sh 脚本 (推荐)
 
@@ -303,7 +303,7 @@ touch stats.json
 docker-compose up -d
 ```
 
-## 4. 客户端说明
+## 4. Client Doucumentation
 
 <details>
   <summary>系统版本&架构</summary>
@@ -321,7 +321,7 @@ docker-compose up -d
 
 </details>
 
-### 4.1 Rust 版 Client
+### 4.1 Rust version Client
 ```bash
 # 公网环境建议 headscale/nebula 组网或走 https, 使用 nginx 对 server 套 ssl 和自定义 location /report
 # alpine linux 需要安装相关命令 apk add procps iproute2 coreutils
@@ -379,10 +379,10 @@ OPTIONS:
 -e, --exclude-iface # 排除指定网口，默认排除 "lo,docker,vnet,veth,vmbr,kube,br-"
 ```
 
-### 4.2 Python 版 Client
+### 4.2 Python version Client
 
 <details>
-  <summary> Python 版 Client 说明</summary>
+  <summary> Client for Python Description</summary>
 
 ```bash
 # Python 版本 Client 依赖安装
@@ -413,11 +413,11 @@ python3 stat_client.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
 ```
 </details>
 
-## 5. 开启 `vnstat` 支持
-[vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux的流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量和总流量，优点是重启不丢流量数据。
+## 5. Enabling vnstat Support
+[vnstat](https://zh.wikipedia.org/wiki/VnStat) is a traffic statistics tool for Linux. When `vnstat` is enabled, the `server` relies entirely on the client's `vnstat` data to display monthly and total traffic, with the advantage that no traffic data is lost on reboot.
 
 <details>
-  <summary>开启 vnstat 设置</summary>
+  <summary>Turn on the vnstat setting</summary>
 
 ```bash
 # 在client端安装 vnstat
@@ -451,13 +451,13 @@ python3 stat_client.py -a "http://127.0.0.1:8080/report" -u h1 -p p1 -n
 ## 6. FAQ
 
 <details>
-  <summary>如何使用自定义主题</summary>
+  <summary>How to use custom themes</summary>
 
-更简单的方式 👉 [#37](https://github.com/zdz/ServerStatus-Rust/discussions/37)
+A simpler way 👉 [#37](https://github.com/zdz/ServerStatus-Rust/discussions/37)
 
 ```nginx
 server {
-  # ssl, domain 等其它 nginx 配置
+  # ssl, domain, and other nginx configurations
 
   # 反代 /report 请求
   location = /report {
@@ -493,27 +493,27 @@ server {
 </details>
 
 <details>
-  <summary>如何源码编译</summary>
+  <summary>How to compile source code</summary>
 
 ```bash
-# 按提示安装 rust 编译器
+# Follow the prompts to install the rust compiler
 curl https://sh.rustup.rs -sSf | sh
 yum install -y openssl-devel
 git clone https://github.com/zdz/ServerStatus-Rust.git
 cd ServerStatus-Rust
 cargo build --release
-# 编译好的文件目录 target/release
+# Compiled file directory target/release
 ```
 </details>
 
 <details>
-  <summary>如何自定义 ping 地址</summary>
+  <summary>How to customize the ping address</summary>
 
 ```bash
-# 例如自定义移动探测地址，用 --cm 指定地址
+# For example, customize the motion detection address by specifying the address with --cm
 ./stat_client -a "grpc://127.0.0.1:9394" -u h1 -p p1 --cm=cm.tz.cloudcpp.com:80
 
-# 电信联通参数可以使用 -h 命令查看
+# Telecom Unicom parameters can be viewed with the -h command
 ./stat_client -h
 OPTIONS:
     --cm <CM_ADDR>    China Mobile probe addr [default: cm.tz.cloudcpp.com:80]
@@ -523,24 +523,24 @@ OPTIONS:
 </details>
 
 <details>
-  <summary>关于这个轮子</summary>
+  <summary>About this wheel</summary>
 
-  之前一直在使用 `Prometheus` + `Grafana` + `Alertmanager` + `node_exporter` 做VPS监控，这也是业界比较成熟的监控方案，用过一段时间后，发现非生产环境，很多监控指标都用不上，运维成本有点大。
-  而 `ServerStatus` 很好，足够简单和轻量，一眼可以看尽所有小机机，只是 `c++` 版本很久没迭代过，自己的一些需求在原版上不是很好修改，如自带 `tcp` 上报对跨区机器不是很友好，也不方便对上报的链路做优化 等等。这是学习 `Rust` 练手的小项目，所以不会增加复杂功能，保持小而美，简单部署，配合 [Uptime Kuma](https://github.com/louislam/uptime-kuma) 基本上可以满足个人大部分监控需求。
+  I've been using `Prometheus` + `Grafana` + `Alertmanager` + `node_exporter` to do VPS monitoring, which is also a relatively mature monitoring solution in the industry, and after using it for a while, I found that in non-production environments, many monitoring indicators are not available, and the cost of operation and maintenance is a bit large.
+   The `ServerStatus` is very good, simple and lightweight enough, you can see all the small machines at a glance, but the `c++` version has not been iterated for a long time, some of their own needs in the original version is not very good to modify, such as self-contained `tcp` reporting is not very friendly to cross-zone machines, but also not convenient to do optimization of the reported link and so on. This is a small project for learning `Rust`, so I won't add complicated features, keep it small and beautiful, simple to deploy, with [Uptime Kuma](https://github.com/louislam/uptime-kuma) basically can meet most of my monitoring needs.
 
 </details>
 
-## 7. 相关项目
+## 7. Related Projects
 - https://github.com/BotoX/ServerStatus
 - https://github.com/cppla/ServerStatus
 - https://github.com/mojeda/ServerStatus
 - https://github.com/cokemine/ServerStatus-Hotaru
 - https://github.com/ToyoDAdoubiBackup/ServerStatus-Toyo
 
-## 8. 最后
+## 8. Final thoughts
 
-    很高兴我的代码能跑在你的服务器上，如果对你有帮助的话，欢迎留下你的 star ⭐ 支持一下
+    I'm glad my code can run on your server. If it has been helpful to you, feel free to leave a star ⭐️ to show your support.
 <br>
 
-## 9. 项目星标趋势
+## 9. Stargazers over time
 [![Stargazers over time](https://starchart.cc/zdz/ServerStatus-Rust.svg)](https://starchart.cc/zdz/ServerStatus-Rust)
