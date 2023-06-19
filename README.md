@@ -142,12 +142,14 @@ bash -ex one-touch.sh
 
 [@mobeicanyue](https://github.com/mobeicanyue)  维护
 
-> 如果无法访问域名 `raw.githubusercontent.com`，可以使用第二个地址`fastly.jsdelivr.net`.
-- **status.sh 下载**：
+> 如果无法访问域名 `raw.githubusercontent.com`，可以使用第二个地址`cdn.jsdelivr.net`.
+
   - [https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh](https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh)
-  - [https://fastly.jsdelivr.net/gh/zdz/ServerStatus-Rust@master/status.sh](https://fastly.jsdelivr.net/gh/zdz/ServerStatus-Rust@master/status.sh)
+  - [https://cdn.jsdelivr.net/gh/zdz/ServerStatus-Rust@master/status.sh](https://cdn.jsdelivr.net/gh/zdz/ServerStatus-Rust@master/status.sh)
 
 ```bash
+# 下载脚本
+wget --no-check-certificate -qO status.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh'
 # ！！！请务必在root权限下执行！！！
 
 # 安装 服务端
