@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/zdz/ServerStatus-Rust">
-    <h1 align="center">✨ Rust 版 ServerStatus 云探针</h1>
+    <h1 align="center">✨ ServerStatus Cloud Probe in Rust<br>✨ Rust 版 ServerStatus 云探针</h1>
   </a>
 </p>
 
@@ -33,9 +33,19 @@
 <img width="1317" alt="image" src="https://user-images.githubusercontent.com/152173/206825541-6eaeb856-0c03-479a-b07e-006b60b41c02.png">
 <img width="1436" alt="image" src="https://user-images.githubusercontent.com/152173/165958225-25fc8fda-5798-42f8-bac5-72d778c0bab5.png">
 
+<br><br>
+<h3 align="center">
+<a href="#">简体中文</a>
+|
+<a href="docs/README_en.md">English</a>
+<details>
+  <summary>detials</summary>
+  <a href="https://github.com/mobeicanyue">mobeicanyue</a> Translated with the help of ChatGPT and DeepL
+</details>
+</h3>
+<br>
 
-
-<h2>Table of Contents</h2>
+<h2>目录</h2>
 
 - [1. 介绍](#1-介绍)
   - [🍀 主题](#-主题)
@@ -54,6 +64,7 @@
 - [6. FAQ](#6-faq)
 - [7. 相关项目](#7-相关项目)
 - [8. 最后](#8-最后)
+- [9. 项目星标趋势](#9-项目星标趋势)
 
 ## 1. 介绍
   `ServerStatus` 威力加强版，保持轻量和简单部署，增加以下主要特性：
@@ -129,11 +140,17 @@ bash -ex one-touch.sh
 
 [@Colsro](https://github.com/Colsro)  提供
 
-[@Yooona-Lim](https://github.com/Yooona-Lim)  更新
+[@mobeicanyue](https://github.com/mobeicanyue)  维护
+
+> 如果无法访问域名 `raw.githubusercontent.com`，可以使用第二个地址`cdn.jsdelivr.net`.
+
+  - [https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh](https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh)
+  - [https://cdn.jsdelivr.net/gh/zdz/ServerStatus-Rust@master/status.sh](https://cdn.jsdelivr.net/gh/zdz/ServerStatus-Rust@master/status.sh)
 
 ```bash
 # 下载脚本
 wget --no-check-certificate -qO status.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh'
+# ！！！请务必在root权限下执行！！！
 
 # 安装 服务端
 bash status.sh -i -s
@@ -399,7 +416,7 @@ python3 stat_client.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
 </details>
 
 ## 5. 开启 `vnstat` 支持
-[vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux下一个流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量和总流量，优点是重启不丢流量数据。
+[vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux的流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量和总流量，优点是重启不丢流量数据。
 
 <details>
   <summary>开启 vnstat 设置</summary>
@@ -525,4 +542,7 @@ OPTIONS:
 ## 8. 最后
 
     很高兴我的代码能跑在你的服务器上，如果对你有帮助的话，欢迎留下你的 star ⭐ 支持一下
+<br>
 
+## 9. 项目星标趋势
+[![Stargazers over time](https://starchart.cc/zdz/ServerStatus-Rust.svg)](https://starchart.cc/zdz/ServerStatus-Rust)
