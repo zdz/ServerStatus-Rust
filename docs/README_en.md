@@ -33,17 +33,17 @@
 <img width="1317" alt="image" src="https://user-images.githubusercontent.com/152173/206825541-6eaeb856-0c03-479a-b07e-006b60b41c02.png">
 <img width="1436" alt="image" src="https://user-images.githubusercontent.com/152173/165958225-25fc8fda-5798-42f8-bac5-72d778c0bab5.png">
 
-<br><br><br>
+<br><br>
 <h3 align="center">
 <a href="../README.md">简体中文</a>
 |
 <a href="#">English</a>
 <details>
-  <summary>Translate detials</summary>
+  <summary>detials</summary>
   <a href="https://github.com/mobeicanyue">mobeicanyue</a> Translated with the help of ChatGPT and DeepL
 </details>
 </h3>
-<br><br>
+<br>
 
 <h2>Table of Contents</h2>
 
@@ -233,20 +233,20 @@ admin_pass = ""
 # os labels are optional, use reported data if not filled, ndd(next due date) next renewal time, spec is host spec
 # os available values centos debian ubuntu alpine pi arch windows linux
 hosts = [
-  {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm", labels = "os=arch;ndd=2022/11/25;spec=2C/4G/60G;"}.
-  {name = "h2", password = "p2", alias = "n2", location = "🏢", type = "kvm", disabled = false}.
-  {name = "h3", password = "p3", alias = "n3", location = "🏡", type = "kvm", monthstart = 1}.
-  { name = "h4", password = "p4", alias = "n4", location = "cn", type = "kvm", notify = true, labels = "ndd=2022/11/25;spec=2C/4G/60G;"}.
+  {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm", labels = "os=arch;ndd=2022/11/25;spec=2C/4G/60G;"},
+  {name = "h2", password = "p2", alias = "n2", location = "🏢", type = "kvm", disabled = false},
+  {name = "h3", password = "p3", alias = "n3", location = "🏡", type = "kvm", monthstart = 1},
+  { name = "h4", password = "p4", alias = "n4", location = "cn", type = "kvm", notify = true, labels = "ndd=2022/11/25;spec=2C/4G/60G;"},
 ]
 
 # Dynamic registration mode, no longer need to do individual configuration for each host
 # gid is the template group id, dynamic registration unique identification, can not be repeated
 hosts_group = [
   # Can be grouped by country, region or use
-  {gid = "g1", password = "pp", location = "🏠", type = "kvm", notify = true}.
-  {gid = "g2", password = "pp", location = "🏢", type = "kvm", notify = true}.
+  {gid = "g1", password = "pp", location = "🏠", type = "kvm", notify = true},
+  {gid = "g2", password = "pp", location = "🏢", type = "kvm", notify = true},
   # For example not sending notifications can be done as a separate group
-  {gid = "silent", password = "pp", location = "🏡", type = "kvm", notify = false}.
+  {gid = "silent", password = "pp", location = "🏡", type = "kvm", notify = false},
 ]
 # Invalid data cleanup interval in dynamic registration mode, default 30s
 group_gc = 30

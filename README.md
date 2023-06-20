@@ -33,17 +33,17 @@
 <img width="1317" alt="image" src="https://user-images.githubusercontent.com/152173/206825541-6eaeb856-0c03-479a-b07e-006b60b41c02.png">
 <img width="1436" alt="image" src="https://user-images.githubusercontent.com/152173/165958225-25fc8fda-5798-42f8-bac5-72d778c0bab5.png">
 
-<br><br><br>
+<br><br>
 <h3 align="center">
 <a href="#">简体中文</a>
 |
 <a href="docs/README_en.md">English</a>
 <details>
-  <summary>Translate detials</summary>
+  <summary>detials</summary>
   <a href="https://github.com/mobeicanyue">mobeicanyue</a> Translated with the help of ChatGPT and DeepL
 </details>
 </h3>
-<br><br>
+<br>
 
 <h2>目录</h2>
 
