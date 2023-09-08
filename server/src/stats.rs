@@ -257,8 +257,8 @@ impl StatsMgr {
                         }
 
                         // labels
-                        const OS_LIST: [&str; 9] = [
-                            "centos", "debian", "ubuntu", "arch", "windows", "macos", "pi", "android", "linux",
+                        const OS_LIST: [&str; 10] = [
+                            "centos", "debian", "ubuntu", "arch", "windows", "macos", "pi", "android", "linux", "freebsd"
                         ];
                         if !o.labels.contains("os=") {
                             if let Some(sys_info) = &o.sys_info {
