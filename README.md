@@ -33,8 +33,6 @@
 <img width="1317" alt="image" src="https://user-images.githubusercontent.com/152173/206825541-6eaeb856-0c03-479a-b07e-006b60b41c02.png">
 <img width="1436" alt="image" src="https://user-images.githubusercontent.com/152173/165958225-25fc8fda-5798-42f8-bac5-72d778c0bab5.png">
 
-
-
 <h2>Table of Contents</h2>
 
 - [1. 介绍](#1-介绍)
@@ -56,6 +54,7 @@
 - [8. 最后](#8-最后)
 
 ## 1. 介绍
+
   `ServerStatus` 威力加强版，保持轻量和简单部署，增加以下主要特性：
 
 - 使用 `rust` 完全重写 `server`、`client`，单个执行文件部署
@@ -99,7 +98,6 @@ ServerStatus-web 主题由 [@mjjrock](https://github.com/mjjrock) 修改提供�
 
 </details>
 
-
 <details>
   <summary>v1.5.7 版本主题</summary>
 
@@ -111,6 +109,7 @@ ServerStatus-web 主题由 [@mjjrock](https://github.com/mjjrock) 修改提供�
 ## 2. 安装部署
 
 ### 2.1 快速体验
+
 ```bash
 # for CentOS/Debian/Ubuntu x86_64
 mkdir -p /opt/ServerStatus && cd /opt/ServerStatus
@@ -182,7 +181,6 @@ help:
     CN=true bash status.sh args
 ```
 
-
 ### 2.4 Railway 部署
 
 懒得配置 `Nginx`，`SSL` 证书？试试
@@ -190,30 +188,30 @@ help:
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/kzT46l?referralCode=pJYbdU)
 
-
 ## 3. 服务端说明
 
 ### 3.1 配置文件 `config.toml`
+
 ```toml
-# 侦听地址, ipv6 使用 [::]:9394
+# 侦听地址，ipv6 使用 [::]:9394
 grpc_addr = "0.0.0.0:9394"
 http_addr = "0.0.0.0:8080"
-# 默认30s无上报判定下线
+# 默认 30s 无上报判定下线
 offline_threshold = 30
 
-# 管理员账号,不设置默认随机生成，用于查看 /detail, /map
+# 管理员账号，不设置默认随机生成，用于查看 /detail, /map
 admin_user = ""
 admin_pass = ""
 
 # hosts 跟 hosts_group 两种配置模式任挑一种配置即可
 # name 主机唯一标识，不可重复，alias 为展示名
 # notify = false 单独禁止单台机器的告警，一般针对网络差，频繁上下线
-# monthstart = 1 没启用vnstat时，表示月流量从每月哪天开始统计
+# monthstart = 1 没启用 vnstat 时，表示月流量从每月哪天开始统计
 # disabled = true 单机禁用
 # location 支持国旗 emoji https://emojixd.com/group/flags
 # 或国家缩写，如 cn us 等等，所有国家见目录 web/static/flags
 # 自定义标签 labels = "os=centos;ndd=2022/11/25;spec=2C/4G/60G;"
-# os 标签可选，不填则使用上报数据，ndd(next due date) 下次续费时间, spec 为主机规格
+# os 标签可选，不填则使用上报数据，ndd(next due date) 下次续费时间，spec 为主机规格
 # os 可用值 centos debian ubuntu alpine pi arch windows linux
 hosts = [
   {name = "h1", password = "p1", alias = "n1", location = "🏠", type = "kvm", labels = "os=arch;ndd=2022/11/25;spec=2C/4G/60G;"},
@@ -223,7 +221,7 @@ hosts = [
 ]
 
 # 动态注册模式，不再需要针对每一个主机做单独配置
-# gid 为模板组id, 动态注册唯一标识，不可重复
+# gid 为模板组 id, 动态注册唯一标识，不可重复
 hosts_group = [
   # 可以按国家地区或用途来做分组
   {gid = "g1", password = "pp", location = "🏠", type = "kvm", notify = true},
@@ -235,7 +233,7 @@ hosts_group = [
 group_gc = 30
 
 # 不开启告警，可忽略后面配置，或者删除不需要的通知方式
-# 告警间隔默认为30s
+# 告警间隔默认为 30s
 notify_interval = 30
 # https://core.telegram.org/bots/api
 # https://jinja.palletsprojects.com/en/3.0.x/templates/#if
@@ -244,7 +242,7 @@ notify_interval = 30
 enabled = false
 bot_token = "<tg bot token>"
 chat_id = "<chat id>"
-# host 可用字段见 payload.rs 文件 HostStat 结构, {{host.xxx}} 为占位变量
+# host 可用字段见 payload.rs 文件 HostStat 结构，{{host.xxx}} 为占位变量
 # 例如 host.name 可替换为 host.alias，大家根据自己的喜好来编写通知消息
 # {{ip_info.query}} 主机 ip,  {{sys_info.host_name}} 主机 hostname
 title = "❗<b>Server Status</b>"
@@ -265,6 +263,7 @@ custom_tpl = """
 ```
 
 ### 3.2 服务端运行
+
 ```bash
 # systemd 方式， 参照 one-touch.sh 脚本 (推荐)
 
@@ -307,6 +306,7 @@ docker-compose up -d
 </details>
 
 ### 4.1 Rust 版 Client
+
 ```bash
 # 公网环境建议 headscale/nebula 组网或走 https, 使用 nginx 对 server 套 ssl 和自定义 location /report
 # alpine linux 需要安装相关命令 apk add procps iproute2 coreutils
@@ -323,31 +323,37 @@ docker-compose up -d
 
 # rust client 可用参数
 ./stat_client -h
-OPTIONS:
-    -6, --ipv6                   ipv6 only, default:false
-    -a, --addr <ADDR>            [default: http://127.0.0.1:8080/report]
-        --alias <ALIAS>          alias for host [default: unknown]
-        --cm <CM_ADDR>           China Mobile probe addr [default: cm.tz.cloudcpp.com:80]
-        --ct <CT_ADDR>           China Telecom probe addr [default: ct.tz.cloudcpp.com:80]
-        --cu <CU_ADDR>           China Unicom probe addr [default: cu.tz.cloudcpp.com:80]
-        --disable-extra          disable extra info report, default:false
-        --disable-notify         disable notify, default:false
-        --disable-ping           disable ping, default:false
-        --disable-tupd           disable t/u/p/d, default:false
-    -g, --gid <GID>              group id [default: ]
-    -h, --help                   Print help information
-        --ip-info                show ip info, default:false
-        --ip-source <IP_SOURCE>  ip info source [env: SSR_IP_SOURCE=] [default: ip-api.com]
-        --sys-info               show sys info, default:false
-        --json                   use json protocol, default:false
-        --location <LOCATION>    location [default: ]
-    -n, --vnstat                 enable vnstat, default:false
-        --vnstat-mr <VNSTAT_MR>  vnstat month rotate 1-28 [default: 1]
-    -p, --pass <PASS>            password [default: p1]
-    -t, --type <HOST_TYPE>       host type [default: ]
-    -u, --user <USER>            username [default: h1]
-    -V, --version                Print version information
-    -w, --weight <WEIGHT>        weight for rank [default: 0]
+Options:
+  -a, --addr <ADDR>                    [env: SSR_ADDR=] [default: http://127.0.0.1:8080/report]
+  -u, --user <USER>                    username [env: SSR_USER=] [default: h1]
+  -p, --pass <PASS>                    password [env: SSR_PASS=] [default: p1]
+  -n, --vnstat                         enable vnstat, default:false [env: SSR_VNSTAT=]
+      --vnstat-mr <VNSTAT_MR>          vnstat month rotate 1-28 [env: SSR_VNSTAT_MR=] [default: 1]
+      --interval <REPORT_INTERVAL>     data report interval (s) [env: SSR_INTERVAL=] [default: 1]
+      --disable-tupd                   disable t/u/p/d, default:false [env: SSR_DISABLE_TUPD=]
+      --disable-ping                   disable ping, default:false [env: SSR_DISABLE_PING=]
+      --disable-extra                  disable extra info report, default:false [env: SSR_DISABLE_EXTRA=]
+      --ct <CT_ADDR>                   China Telecom probe addr [env: SSR_CT_ADDR=] [default: ct.tz.cloudcpp.com:80]
+      --cm <CM_ADDR>                   China Mobile probe addr [env: SSR_CM_ADDR=] [default: cm.tz.cloudcpp.com:80]
+      --cu <CU_ADDR>                   China Unicom probe addr [env: SSR_CU_ADDR=] [default: cu.tz.cloudcpp.com:80]
+      --sys-info                       show sys info, default:false
+      --ip-info                        show ip info, default:false
+      --ip-source <IP_SOURCE>          ip info source [env: SSR_IP_SOURCE=] [default: ip-api.com]
+      --json                           use json protocol, default:false
+  -6, --ipv6                           ipv6 only, default:false
+  -g, --gid <GID>                      group id [env: SSR_GID=] [default: ]
+      --alias <ALIAS>                  alias for host [env: SSR_ALIAS=] [default: unknown]
+  -w, --weight <WEIGHT>                weight for rank [env: SSR_WEIGHT=] [default: 0]
+      --disable-notify                 disable notify, default:false [env: SSR_DISABLE_NOTIFY=]
+  -t, --type <HOST_TYPE>               host type [env: SSR_TYPE=] [default: ]
+      --location <LOCATION>            location [env: SSR_LOC=] [default: ]
+  -d, --debug                          debug mode, default:false [env: SSR_DEBUG=]
+  -i, --iface <IFACE>                  iface list, eg: eth0,eth1 [env: SSR_IFACE=]
+  -e, --exclude-iface <EXCLUDE_IFACE>  exclude iface [env: SSR_EXCLUDE_IFACE=] [default: lo,docker,vnet,veth,vmbr,kube,br-]
+      --proxy <PROXY>                  proxy [env: SSR_PROXY=] [default: ]
+      --no-proxy <NO_PROXY>            no proxy, eg: ip-api.com [env: SSR_NO_PROXY=] [default: ]
+  -h, --help                           Print help
+  -V, --version                        Print version
 
 # 一些参数说明
 --ip-info       # 显示本机ip信息后立即退出，目前使用 ip-api.com 数据
@@ -396,10 +402,12 @@ pip install psutil requests py-cpuinfo
 python3 stat_client.py -h
 python3 stat_client.py -a "http://127.0.0.1:8080/report" -u h1 -p p1
 ```
+
 </details>
 
 ## 5. 开启 `vnstat` 支持
-[vnstat](https://zh.wikipedia.org/wiki/VnStat) 是Linux下一个流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量和总流量，优点是重启不丢流量数据。
+
+[vnstat](https://zh.wikipedia.org/wiki/VnStat) 是 Linux 下一个流量统计工具，开启 `vnstat` 后，`server` 完全依赖客户机的 `vnstat` 数据来显示月流量和总流量，优点是重启不丢流量数据。
 
 <details>
   <summary>开启 vnstat 设置</summary>
@@ -431,6 +439,7 @@ vnstat --json m
 # 或
 python3 stat_client.py -a "http://127.0.0.1:8080/report" -u h1 -p p1 -n
 ```
+
 </details>
 
 ## 6. FAQ
@@ -466,7 +475,7 @@ server {
 
     proxy_pass http://127.0.0.1:8080/json/stats.json;
   }
-  # v1.4.0后，同样需要反代  /detail, /map
+  # v1.4.0 后，同样需要反代  /detail, /map
 
   # 其它 html,js,css 等，走本地文本
   location / {
@@ -475,6 +484,7 @@ server {
   }
 }
 ```
+
 </details>
 
 <details>
@@ -489,6 +499,7 @@ cd ServerStatus-Rust
 cargo build --release
 # 编译好的文件目录 target/release
 ```
+
 </details>
 
 <details>
@@ -505,24 +516,25 @@ OPTIONS:
     --ct <CT_ADDR>    China Telecom probe addr [default: ct.tz.cloudcpp.com:80]
     --cu <CU_ADDR>    China Unicom probe addr [default: cu.tz.cloudcpp.com:80]
 ```
+
 </details>
 
 <details>
   <summary>关于这个轮子</summary>
 
-  之前一直在使用 `Prometheus` + `Grafana` + `Alertmanager` + `node_exporter` 做VPS监控，这也是业界比较成熟的监控方案，用过一段时间后，发现非生产环境，很多监控指标都用不上，运维成本有点大。
+  之前一直在使用 `Prometheus` + `Grafana` + `Alertmanager` + `node_exporter` 做 VPS 监控，这也是业界比较成熟的监控方案，用过一段时间后，发现非生产环境，很多监控指标都用不上，运维成本有点大。
   而 `ServerStatus` 很好，足够简单和轻量，一眼可以看尽所有小机机，只是 `c++` 版本很久没迭代过，自己的一些需求在原版上不是很好修改，如自带 `tcp` 上报对跨区机器不是很友好，也不方便对上报的链路做优化 等等。这是学习 `Rust` 练手的小项目，所以不会增加复杂功能，保持小而美，简单部署，配合 [Uptime Kuma](https://github.com/louislam/uptime-kuma) 基本上可以满足个人大部分监控需求。
 
 </details>
 
 ## 7. 相关项目
-- https://github.com/BotoX/ServerStatus
-- https://github.com/cppla/ServerStatus
-- https://github.com/mojeda/ServerStatus
-- https://github.com/cokemine/ServerStatus-Hotaru
-- https://github.com/ToyoDAdoubiBackup/ServerStatus-Toyo
+
+- <https://github.com/BotoX/ServerStatus>
+- <https://github.com/cppla/ServerStatus>
+- <https://github.com/mojeda/ServerStatus>
+- <https://github.com/cokemine/ServerStatus-Hotaru>
+- <https://github.com/ToyoDAdoubiBackup/ServerStatus-Toyo>
 
 ## 8. 最后
 
     很高兴我的代码能跑在你的服务器上，如果对你有帮助的话，欢迎留下你的 star ⭐ 支持一下
-
