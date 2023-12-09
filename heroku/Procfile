@@ -1,0 +1,1 @@
+web: sed -i 's/http_addr = "0.0.0.0:8080"/http_addr = "0.0.0.0:'"$PORT"'"/' ./config.toml && ./stat_server -c ./config.toml
