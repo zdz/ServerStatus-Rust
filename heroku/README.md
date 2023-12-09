@@ -124,7 +124,7 @@ heroku ps:type basic -a serverstatus-rust-heroku
 
 访问 http://域名.com 验证是否生效。
 
-![api](https://github.com/kissyouhunter/ServerStatus-Rust/raw/heroku/heroku/readme-pics/domain.jpg)
+![domain](https://github.com/kissyouhunter/ServerStatus-Rust/raw/heroku/heroku/readme-pics/domain.jpg)
 
 ### 3. 开启 SSL
 
@@ -132,7 +132,7 @@ heroku ps:type basic -a serverstatus-rust-heroku
 
 现在就是可以通过 HTTPS 访问探针了。
 
-![api](https://github.com/kissyouhunter/ServerStatus-Rust/raw/heroku/heroku/readme-pics/ssl.jpg)
+![ssl](https://github.com/kissyouhunter/ServerStatus-Rust/raw/heroku/heroku/readme-pics/ssl.jpg)
 
 ## 四、后续操作
 
