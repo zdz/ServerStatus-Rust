@@ -124,7 +124,7 @@ heroku ps:type basic -a serverstatus-rust-heroku
 
 访问 http://域名.com 验证是否生效。
 
-![domain](https://github.com/kissyouhunter/ServerStatus-Rust/raw/heroku/heroku/readme-pics/domain.jpg)
+![domain](https://github.com/kissyouhunter/ServerStatus-Rust/raw/heroku/heroku/readme-pics/domains.jpg)
 
 ### 3. 开启 SSL
 
