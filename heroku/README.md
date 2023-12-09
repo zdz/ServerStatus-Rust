@@ -29,6 +29,8 @@ heroku plugins:install heroku-accounts
 
 以 admin@heroku.com 为例,账号密码为 Heroku Dashboard 上的 API Key（Acount 里）:
 
+![api](https://github.com/kissyouhunter/ServerStatus-Rust/raw/heroku/heroku/readme-pics/api.jpg)
+
 ```bash
 heroku accounts:add admin@heroku.com  
 Enter your Heroku credentials.
@@ -66,7 +68,7 @@ wget https://github.com/kissyouhunter/ServerStatus-Rust/raw/heroku/heroku/Procfi
 
 ### 2. 创建应用
 
-在 Heroku CLI 中创建应用,以下以 `serverstatus-rust-heroku` 为例:
+在 Heroku CLI 中创建应用,以 `serverstatus-rust-heroku` 为例:
 
 ```
 heroku apps:create serverstatus-rust-heroku
@@ -122,11 +124,15 @@ heroku ps:type basic -a serverstatus-rust-heroku
 
 访问 http://域名.com 验证是否生效。
 
+![api](https://github.com/kissyouhunter/ServerStatus-Rust/raw/heroku/heroku/readme-pics/domain.jpg)
+
 ### 3. 开启 SSL
 
 在 `SSL Certificates` 中点击 `Configure SSL`,选择 `Automatic Certificate Management (ACM)`。
 
 现在就是可以通过 HTTPS 访问探针了。
+
+![api](https://github.com/kissyouhunter/ServerStatus-Rust/raw/heroku/heroku/readme-pics/ssl.jpg)
 
 ## 四、后续操作
 
