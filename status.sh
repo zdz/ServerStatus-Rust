@@ -99,6 +99,8 @@ function check_release() {
         release="deb"
     elif grep -q -E -i "debian|ubuntu" /proc/version; then
         release="deb"
+    elif grep -q -E -i "archlinux" /proc/version; then
+        release="pkg"
     else
         echo -e "${Error} 暂不支持该 Linux 发行版"
         exit 1
@@ -116,6 +118,8 @@ function install_tool() {
     elif [[ ${release} == "deb" ]]; then
       apt -y update
       apt -y install unzip
+    elif [[ ${release} == "pkg" ]]; then
+      pacman -S unzip --noconfirm
     fi
   fi
 
@@ -126,6 +130,8 @@ function install_tool() {
     elif [[ ${release} == "deb" ]]; then
       apt -y update
       apt -y install wget
+    elif [[ ${release} == "pkg" ]]; then
+      pacman -S wget --noconfirm
     fi
   fi
 }
