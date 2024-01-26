@@ -148,7 +148,7 @@ jobs:
 
       - name: Zip Release For Server (Linux)
         if: matrix.os == 'ubuntu-latest' && contains(matrix.target, 'linux')
-        uses: TheDoctor0/zip-release@0.7.1
+        uses: TheDoctor0/zip-release@0.7.6
         with:
           type: zip
           filename: server-${{ matrix.target }}.zip
@@ -160,7 +160,7 @@ jobs:
 
       - name: Zip Release For Client (Linux)
         if: matrix.os == 'ubuntu-latest' && contains(matrix.target, 'linux')
-        uses: TheDoctor0/zip-release@0.7.1
+        uses: TheDoctor0/zip-release@0.7.6
         with:
           type: zip
           filename: client-${{ matrix.target }}.zip
@@ -171,7 +171,7 @@ jobs:
 
       - name: Zip Release For Server (MacOS/Window)
         if: true && !contains(matrix.target, 'linux')
-        uses: TheDoctor0/zip-release@0.7.1
+        uses: TheDoctor0/zip-release@0.7.6
         with:
           type: zip
           filename: server-${{ matrix.target }}.zip
@@ -182,7 +182,7 @@ jobs:
 
       - name: Zip Release For Client (MacOS/Window)
         if: true && !contains(matrix.target, 'linux')
-        uses: TheDoctor0/zip-release@0.7.1
+        uses: TheDoctor0/zip-release@0.7.6
         with:
           type: zip
           filename: client-${{ matrix.target }}.zip
