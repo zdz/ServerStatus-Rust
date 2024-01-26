@@ -15,7 +15,7 @@ use crate::Args;
 // TODO mTLS
 
 pub async fn report(args: &Args, stat_base: &mut StatRequest) -> anyhow::Result<()> {
-    if !vec![stat_base.online4, stat_base.online6].iter().any(|&x| x) {
+    if ![stat_base.online4, stat_base.online6].iter().any(|&x| x) {
         eprintln!("try get target network...");
         let addr = args.addr.replace("grpc://", "");
         let sock_addr = addr.to_socket_addrs()?.next().unwrap();

@@ -57,15 +57,15 @@ pub async fn admin_api(_claims: jwt::Claims, Path(path): Path<String>) -> Json<V
 
 pub fn init_jinja_tpl() -> Result<(), anyhow::Error> {
     let detail_data = Asset::get("/jinja/detail.jinja.html").expect("detail.jinja.html not found");
-    let detail_html: String = String::from_utf8(detail_data.data.try_into()?).unwrap();
+    let detail_html: String = String::from_utf8(detail_data.data.into()).unwrap();
     jinja::add_template(KIND, "detail", detail_html);
 
     let map_data = Asset::get("/jinja/map.jinja.html").expect("map.jinja.html not found");
-    let map_html: String = String::from_utf8(map_data.data.try_into()?).unwrap();
+    let map_html: String = String::from_utf8(map_data.data.into()).unwrap();
     jinja::add_template(KIND, "map", map_html);
 
     let client_init_sh = Asset::get("/jinja/client-init.jinja.sh").expect("client-init.jinja.sh not found");
-    let client_init_sh_s: String = String::from_utf8(client_init_sh.data.try_into()?).unwrap();
+    let client_init_sh_s: String = String::from_utf8(client_init_sh.data.into()).unwrap();
     jinja::add_template(KIND, "client-init", client_init_sh_s);
     Ok(())
 }
@@ -329,7 +329,7 @@ pub async fn get_detail(
             })
             .unwrap_or_default();
         if let Some(ip_info) = &host.ip_info {
-            let addrs = vec![
+            let addrs = [
                 ip_info.continent.as_str(),
                 ip_info.country.as_str(),
                 ip_info.region_name.as_str(),
@@ -341,7 +341,7 @@ pub async fn get_detail(
             .collect::<Vec<&str>>()
             .join("/");
 
-            let isp = vec![
+            let isp = [
                 ip_info.isp.as_str(),
                 ip_info.org.as_str(),
                 ip_info.r#as.as_str(),

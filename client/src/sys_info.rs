@@ -121,7 +121,7 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
 
     // mem 不用转。。。(KB -> KiB)
     stat.memory_total = sys.total_memory() / 1024;
-    #[cfg(any(target_os = "macos"))]
+    #[cfg(target_os = "macos")]
     {
         stat.memory_used = (sys.total_memory() - sys.available_memory()) / 1024;
     }
@@ -167,7 +167,7 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
 
     // traffic
     if args.vnstat {
-        #[cfg(any(target_os = "linux"))]
+        #[cfg(target_os = "linux")]
         {
             let (network_in, network_out, m_network_in, m_network_out) = vnstat::get_traffic(args).unwrap();
             stat.network_in = network_in;
