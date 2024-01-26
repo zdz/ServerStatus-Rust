@@ -20,7 +20,7 @@ chrono = "0.4"
 
 [dependencies]
 anyhow = "1"
-axum = {version = "0.6.18", features = ["headers"]}
+axum = {version = "0.7.4", features = ["headers"]}
 bytes = {version = "1", features = ["serde"]}
 chrono = "0.4"
 clap = {version = "4.4", features = ["derive", "unicode"]}
