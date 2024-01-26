@@ -22,8 +22,8 @@ tonic = {version = "0.9", features = ["tls"]}
 [target.'cfg(not(target_env = "msvc"))'.build-dependencies]
 chrono = "0.4"
 protobuf-src = "1"
-tonic-build = "0.9"
+tonic-build = "0.10"
 
 [build-dependencies]
 chrono = "0.4"
-tonic-build = "0.9"
+tonic-build = "0.10"
