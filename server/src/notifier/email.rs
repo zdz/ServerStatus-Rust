@@ -66,9 +66,8 @@ impl crate::notifier::Notifier for Email {
         let smtp_server = self.config.server.to_string();
         let handle = NOTIFIER_HANDLE.lock().unwrap().as_ref().unwrap().clone();
         handle.spawn(async move {
-            // Open a remote connection to gmail
             let mailer: AsyncSmtpTransport<Tokio1Executor> =
-                AsyncSmtpTransport::<Tokio1Executor>::relay(smtp_server.as_str())
+                AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(smtp_server.as_str())
                     .unwrap()
                     .credentials(creds)
                     .build();
