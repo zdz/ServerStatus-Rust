@@ -6,10 +6,6 @@
 
 <div align="center">
     <p>
-        <a href="https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml">
-            <img src="https://github.com/zdz/ServerStatus-Rust/actions/workflows/docker.yml/badge.svg"
-                  alt="Docker">
-        </a>
         <a href="https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml">
             <img src="https://github.com/zdz/ServerStatus-Rust/actions/workflows/release.yml/badge.svg" alt="Release"></a>
         <a href="https://github.com/zdz/ServerStatus-Rust/issues">
@@ -44,6 +40,7 @@
   - [2.2 快速部署](#22-快速部署)
   - [2.3 服务管理脚本部署](#23-服务管理脚本部署)
   - [2.4 Railway 部署](#24-railway-部署)
+  - [2.5 Heroku 部署](#25-heroku-部署)
 - [3. 服务端说明](#3-服务端说明)
   - [3.1 配置文件 `config.toml`](#31-配置文件-configtoml)
   - [3.2 服务端运行](#32-服务端运行)
@@ -62,6 +59,7 @@
 - 多系统支持 `Linux`、`MacOS`、`Windows`、`Android`、`Raspberry Pi`
 - 支持上下线和简单自定义规则告警 (`telegram`、`wechat`、`email`、`webhook`)
 - 支持 `http` 协议上报，方便部署到各免费容器服务和配合 `cf` 等优化上报链路
+- 支持主机分组动态注册，简化配置
 - 支持 `vnstat` 统计月流量，重启不丢流量数据
 - 支持 `railway` 快速部署
 - 支持 `systemd` 开机自启
@@ -77,9 +75,39 @@
 
 📚 完整文档迁移至 [doc.ssr.rs](https://doc.ssr.rs)
 
+📚 保姆级教程 [Google](https://www.google.com/search?q=%22serverstatus-rust%22)
+|
+[Bing](https://www.bing.com/search?q=%22serverstatus-rust%22)
+
 ### 🍀 主题
 
 如果你觉得你创造/修改的主题还不错，欢迎分享/PR，前端单独部署方法参考 [#37](https://github.com/zdz/ServerStatus-Rust/discussions/37)
+
+<details>
+  <summary>ServerStatus-theme 主题</summary>
+
+作者 [@JingBh](https://github.com/JingBh)
+👉 [主题地址](https://github.com/JingBh/ServerStatus-theme)
+支持快速部署一键命令生成
+
+| <img width="1269" alt="image" src="https://github.com/zdz/ServerStatus-Rust/assets/152173/33eb8685-b0ed-4548-92af-8cfdded7d011"> | <img width="596" alt="image" src="https://github.com/zdz/ServerStatus-Rust/assets/152173/15e9c405-6491-4f41-ad0e-68aae96d709c"> |
+|-|-|
+
+[演示：Demo](https://status.jingbh.cloud)
+
+</details>
+
+<details>
+  <summary>ServerStatus-Theme-Light 主题</summary>
+
+👉 [主题地址](https://github.com/orilights/ServerStatus-Theme-Light)
+作者 [@orilights](https://github.com/orilights)
+
+<img width="1836" alt="image" src="https://github.com/zdz/ServerStatus-Rust/assets/152173/35fdd138-31b8-46d0-8ea8-c2d4e7ef2b52">
+
+[演示：Demo](https://sstl-demo.orilight.top)
+
+</details>
 
 <details>
   <summary>Hotaru 主题</summary>
@@ -178,7 +206,7 @@ help:
         -rs -c          恢复 Client
         -rs -a          恢复 Server and Client
     -h,--help       查看帮助
-若无法访问 Github: 
+若无法访问 Github:
     CN=true bash status.sh args
 ```
 
@@ -190,6 +218,9 @@ help:
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/kzT46l?referralCode=pJYbdU)
 
+### 2.5 Heroku 部署
+
+[如何在 Heroku 上部署 Rust 版 ServerStatus 云探针](https://github.com/zdz/ServerStatus-Rust/blob/master/heroku/README.md)
 
 ## 3. 服务端说明
 
@@ -320,6 +351,8 @@ docker-compose up -d
 ./stat_client -a "http://127.0.0.1:8080/report" -u h1 -p p1
 # 或
 ./stat_client -a "grpc://127.0.0.1:9394" -u h1 -p p1
+# 不同的主机可以运行相同的命令注册到同一组
+./stat_client -a "http://127.0.0.1:8080/report" -g g1 -p pp --alias "$(hostname)"
 
 # rust client 可用参数
 ./stat_client -h
