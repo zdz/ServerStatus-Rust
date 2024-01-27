@@ -17,7 +17,7 @@ repository = "https://github.com/zdz/ServerStatus-Rust"
 bytes = {version = "1", features = ["serde"]}
 prost = "0.12"
 serde = {version = "1.0", default-features = false, features = ["derive", "alloc"]}
-tonic = {version = "0.9", features = ["tls"]}
+tonic = {version = "0.10", features = ["tls"]}
 
 [target.'cfg(not(target_env = "msvc"))'.build-dependencies]
 chrono = "0.4"
