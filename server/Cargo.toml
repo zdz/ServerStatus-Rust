@@ -39,7 +39,7 @@ prettytable-rs = "^0.10"
 prost = "0.12"
 reqwest = {version = "0.11", features = ["json", "rustls-tls"], default-features = false}
 rhai = {version = "1.16", features = ["sync", "metadata", "decimal", "no_function", "no_module", "no_closure", "unchecked"]}
-rust-embed = {version = "6.8", features = ["mime-guess"]}
+rust-embed = {version = "8.2", features = ["mime-guess"]}
 serde = {version = "1.0", default-features = false, features = ["derive", "alloc"]}
 serde_json = {version = "1.0", default-features = false, features = ["alloc"]}
 stat_common = {path = "../common"}
