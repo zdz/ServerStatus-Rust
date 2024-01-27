@@ -12,7 +12,6 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
-use sysinfo::{System, SystemExt};
 use tokio::time;
 
 use stat_common::server_status::{IpInfo, StatRequest, SysInfo};
@@ -125,6 +124,14 @@ pub struct Args {
     location: String,
     #[arg(short = 'd', long = "debug", env = "SSR_DEBUG", help = "debug mode, default:false")]
     debug: bool,
+    #[arg(
+        short = 'o',
+        long,
+        env = "SSR_ONLINE",
+        default_value = "0",
+        help = "online 1:ipv4, 2:ipv6, 3:both"
+    )]
+    online: u8,
     #[arg(
         short = 'i',
         long = "iface",
@@ -316,7 +323,7 @@ async fn main() -> Result<()> {
     }
 
     // support check
-    if !System::IS_SUPPORTED {
+    if !sysinfo::IS_SUPPORTED_SYSTEM {
         panic!("当前系统不支持，请切换到Python跨平台版本!");
     }
 
@@ -352,7 +359,7 @@ async fn main() -> Result<()> {
     }
 
     status::start_all_ping_collect_t(&args);
-    let (ipv4, ipv6) = status::get_network();
+    let (ipv4, ipv6) = status::get_network(&args);
     eprintln!("get_network (ipv4, ipv6) => ({ipv4}, {ipv6})");
 
     if !args.disable_extra {

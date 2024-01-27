@@ -1,5 +1,5 @@
 use anyhow::Result;
-use minijinja::{value::Value, Environment, Source};
+use minijinja::{value::Value, Environment};
 use once_cell::sync::Lazy;
 use std::sync::Mutex;
 
@@ -9,17 +9,13 @@ pub fn add_template<K, T, S>(kind: K, tag: T, tpl: S)
 where
     K: Into<String> + std::fmt::Display,
     T: Into<String> + std::fmt::Display,
-    S: Into<String>,
+    S: Into<String> + std::fmt::Display,
 {
     let name = format!("{kind}.{tag}");
     JINJA_ENV
         .lock()
         .as_mut()
-        .map(|env| {
-            let mut s = env.source().unwrap_or(&Source::new()).to_owned();
-            s.add_template(name, tpl).unwrap();
-            env.set_source(s);
-        })
+        .map(|env| env.add_template_owned(name, tpl.to_string()).unwrap())
         .unwrap();
 }
 

@@ -253,8 +253,13 @@ pub fn start_cpu_percent_collect_t() {
     });
 }
 
-pub fn get_network() -> (bool, bool) {
-    let mut network: [bool; 2] = [false, false];
+static ONLINE_IPV4: u8 = 1;
+static ONLINE_IPV6: u8 = 2;
+pub fn get_network(args: &Args) -> (bool, bool) {
+    let mut network: [bool; 2] = [(args.online & ONLINE_IPV4) != 0, (args.online & ONLINE_IPV6) != 0];
+    if network.iter().any(|&x| x) {
+        return network.into();
+    }
     let addrs = vec![IPV4_ADDR, IPV6_ADDR];
     for (idx, probe_addr) in addrs.into_iter().enumerate() {
         let _ = probe_addr.to_socket_addrs().map(|mut iter| {
@@ -271,7 +276,7 @@ pub fn get_network() -> (bool, bool) {
         });
     }
 
-    (network[0], network[1])
+    network.into()
 }
 
 #[derive(Debug, Default)]

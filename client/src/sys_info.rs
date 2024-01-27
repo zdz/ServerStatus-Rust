@@ -8,7 +8,7 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 use sysinfo::CpuRefreshKind;
-use sysinfo::{CpuExt, DiskExt, NetworkExt, RefreshKind, System, SystemExt};
+use sysinfo::{Components, Disks, MemoryRefreshKind, Networks, RefreshKind, System};
 
 use crate::status;
 use crate::vnstat;
@@ -65,12 +65,11 @@ lazy_static! {
 }
 
 pub fn start_net_speed_collect_t(args: &Args) {
-    let mut sys = System::new_with_specifics(RefreshKind::new().with_networks().with_networks_list());
-    sys.refresh_networks();
+    let mut networks = Networks::new_with_refreshed_list();
     let args_1 = args.clone();
     thread::spawn(move || loop {
         let (mut net_rx, mut net_tx) = (0_u64, 0_u64);
-        for (name, data) in sys.networks() {
+        for (name, data) in &networks {
             // spec iface
             if args_1.skip_iface(name) {
                 continue;
@@ -83,7 +82,7 @@ pub fn start_net_speed_collect_t(args: &Args) {
             t.net_tx = net_tx;
         }
 
-        sys.refresh_networks();
+        networks.refresh_list();
         thread::sleep(Duration::from_millis(SAMPLE_PERIOD));
     });
 }
@@ -102,19 +101,12 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
         unit = 1000;
     }
 
-    let mut sys = System::new_with_specifics(
-        RefreshKind::new()
-            .with_memory()
-            .with_disks()
-            .with_disks_list()
-            .with_networks()
-            .with_networks_list(),
-    );
+    let mut sys = System::new_with_specifics(RefreshKind::new().with_memory(MemoryRefreshKind::everything()));
 
     // uptime
-    stat.uptime = sys.uptime();
+    stat.uptime = System::uptime();
     // load average
-    let load_avg = sys.load_average();
+    let load_avg = System::load_average();
     stat.load_1 = load_avg.one;
     stat.load_5 = load_avg.five;
     stat.load_15 = load_avg.fifteen;
@@ -135,8 +127,9 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
     // hdd KB -> KiB
     let (mut hdd_total, mut hdd_avail) = (0_u64, 0_u64);
     let mut uniq_disk_set = HashSet::new();
-    for disk in sys.disks() {
-        let fs = String::from_utf8_lossy(disk.file_system()).to_lowercase();
+    let disks = Disks::new_with_refreshed_list();
+    for disk in &disks {
+        let fs = disk.file_system().to_str().unwrap().to_lowercase();
         if G_EXPECT_FS.iter().any(|&k| fs.contains(k)) {
             if uniq_disk_set.contains(disk.name()) {
                 continue;
@@ -177,7 +170,9 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
         }
     } else {
         let (mut network_in, mut network_out) = (0_u64, 0_u64);
-        for (name, data) in sys.networks() {
+
+        let networks = Networks::new_with_refreshed_list();
+        for (name, data) in &networks {
             // spec iface
             if args.skip_iface(name) {
                 continue;
@@ -225,8 +220,8 @@ pub fn collect_sys_info(args: &Args) -> SysInfo {
     info_pb.os_name = std::env::consts::OS.to_string();
     info_pb.os_arch = std::env::consts::ARCH.to_string();
     info_pb.os_family = std::env::consts::FAMILY.to_string();
-    info_pb.os_release = sys.long_os_version().unwrap_or_default();
-    info_pb.kernel_version = sys.kernel_version().unwrap_or_default();
+    info_pb.os_release = System::long_os_version().unwrap_or_default();
+    info_pb.kernel_version = System::kernel_version().unwrap_or_default();
 
     // cpu
     let global_cpu = sys.global_cpu_info();
@@ -234,7 +229,7 @@ pub fn collect_sys_info(args: &Args) -> SysInfo {
     info_pb.cpu_brand = global_cpu.brand().to_string();
     info_pb.cpu_vender_id = global_cpu.vendor_id().to_string();
 
-    info_pb.host_name = sys.host_name().unwrap_or_default();
+    info_pb.host_name = System::host_name().unwrap_or_default();
 
     info_pb
 }
@@ -256,7 +251,7 @@ pub fn gen_sys_id(sys_info: &SysInfo) -> String {
     }
 
     let mut sys = System::new();
-    let bt = sys.boot_time();
+    let bt = System::boot_time();
 
     let sys_id = format!(
         "{:x}",
@@ -286,16 +281,17 @@ pub fn gen_sys_id(sys_info: &SysInfo) -> String {
 }
 
 pub fn print_sysinfo() {
-    use sysinfo::{NetworkExt, NetworksExt, ProcessExt, System, SystemExt};
+    use sysinfo::{Components, Disks, MemoryRefreshKind, Networks, RefreshKind, System};
     let mut sys = System::new_all();
     sys.refresh_all();
 
     println!("=> disks:");
-    for disk in sys.disks() {
+    let disks = Disks::new_with_refreshed_list();
+    for disk in &disks {
         println!(
             "\t{}\t{}\t{}/{} B\tremovable:{}\tmounted on:{}",
             disk.name().to_str().unwrap_or_default(),
-            String::from_utf8(disk.file_system().into()).unwrap_or_default(),
+            disk.file_system().to_str().unwrap_or_default(),
             disk.available_space(),
             disk.total_space(),
             disk.is_removable(),
@@ -306,13 +302,15 @@ pub fn print_sysinfo() {
 
     // Network interfaces name, data received and data transmitted:
     println!("=> networks:");
-    for (interface_name, data) in sys.networks() {
-        println!("\t{}: \t{}/{} B", interface_name, data.received(), data.transmitted());
+    let networks = Networks::new_with_refreshed_list();
+    for (interface_name, data) in &networks {
+        println!("\t{interface_name}: \t{}/{} B", data.received(), data.transmitted());
     }
 
     // Components temperature:
     println!("=> components:");
-    for component in sys.components() {
+    let components = Components::new_with_refreshed_list();
+    for component in &components {
         println!("\t{component:?}");
     }
 
@@ -326,12 +324,15 @@ pub fn print_sysinfo() {
     println!("\tused swap   : {} bytes", sys.used_swap());
 
     // Display system information:
-    println!("\tSystem name:             {:?}", sys.name());
-    println!("\tSystem kernel version:   {:?}", sys.kernel_version());
-    println!("\tSystem OS version:       {:?}", sys.os_version());
-    println!("\tSystem host name:        {:?}", sys.host_name());
+    println!("\tSystem name:             {:?}", System::name());
+    println!("\tSystem kernel version:   {:?}", System::kernel_version());
+    println!("\tSystem OS version:       {:?}", System::os_version());
+    println!("\tSystem long OS version:  {:?}", System::long_os_version());
+    println!("\tSystem Dist ID:          {:?}", System::distribution_id());
+    println!("\tSystem host name:        {:?}", System::host_name());
+    println!("\tSystem cpu arch:         {:?}", System::cpu_arch());
 
-    let load_avg = sys.load_average();
+    let load_avg = System::load_average();
     println!(
         "\tone minute: {:.2}, five minutes: {:.2}, fifteen minutes: {:.2}",
         load_avg.one, load_avg.five, load_avg.fifteen,
@@ -340,8 +341,12 @@ pub fn print_sysinfo() {
     // Number of CPUs:
     let global_cpu = sys.global_cpu_info();
     println!("\tCPU Num: {}", sys.cpus().len());
-    println!("\tCPU Brand: {}", global_cpu.brand());
-    println!("\tCPU VerderId: {}", global_cpu.vendor_id());
+
+    for cpu in sys.cpus() {
+        println!("\t\tCPU Brand: {}", cpu.brand());
+        println!("\t\tCPU VerderId: {}", cpu.vendor_id());
+        println!("\t\tCPU Frequency: {}", cpu.frequency());
+    }
     // println!("\tCPU Frequency: {}", global_cpu.frequency());
 
     // Display processes ID, name na disk usage:

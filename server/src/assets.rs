@@ -1,9 +1,7 @@
 use axum::{
-    body::{boxed, Full},
     http::{header, StatusCode, Uri},
     response::{IntoResponse, Response},
 };
-
 use rust_embed::RustEmbed;
 
 #[derive(RustEmbed)]
@@ -35,16 +33,10 @@ where
         let path = self.0.into();
         match Asset::get(path.as_str()) {
             Some(content) => {
-                let body = boxed(Full::from(content.data));
-                Response::builder()
-                    .header(header::CONTENT_TYPE, content.metadata.mimetype())
-                    .body(body)
-                    .unwrap()
+                let mime = mime_guess::from_path(path).first_or_octet_stream();
+                ([(header::CONTENT_TYPE, mime.as_ref())], content.data).into_response()
             }
-            None => Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .body(boxed(Full::from("404")))
-                .unwrap(),
+            None => (StatusCode::NOT_FOUND, "404").into_response(),
         }
     }
 }

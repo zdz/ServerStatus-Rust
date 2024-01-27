@@ -1,10 +1,13 @@
 use axum::{
     async_trait,
-    extract::{FromRequestParts, TypedHeader},
-    headers::{authorization::Basic, Authorization},
+    extract::FromRequestParts,
     http::{header, request::Parts, StatusCode},
     response::{IntoResponse, Response},
     RequestPartsExt,
+};
+use axum_extra::{
+    headers::{authorization::Basic, Authorization},
+    TypedHeader,
 };
 use serde::{Deserialize, Serialize};
 
