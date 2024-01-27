@@ -136,7 +136,7 @@ jobs:
             target/${{ matrix.target }}/release/stat_server${{matrix.suffix}}
             target/${{ matrix.target }}/release/stat_client${{matrix.suffix}}
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ServerStatus-${{ matrix.target }}
           path: |
