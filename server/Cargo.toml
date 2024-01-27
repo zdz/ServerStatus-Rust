@@ -42,7 +42,7 @@ serde = {version = "1.0", default-features = false, features = ["derive", "alloc
 serde_json = {version = "1.0", default-features = false, features = ["alloc"]}
 stat_common = {path = "../common"}
 tokio = {version = "1", features = ["full"]}
-toml = "0.7"
+toml = "0.8"
 tonic = {version = "0.10", features = ["gzip", "tls"]}
 tower-http = { version = "0.5.1", features = ["cors"] }
 url = "2.5.0"
