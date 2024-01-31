@@ -1831,9 +1831,9 @@ dependencies = [
 
 [[package]]
 name = "rhai"
-version = "1.16.3"
+version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3625f343d89990133d013e39c46e350915178cf94f1bec9f49b0cbef98a3e3c"
+checksum = "7a0de8df6dd1f4886ad635d7e0fc7afc086e4f6daeff129d157287b78738516b"
 dependencies = [
  "ahash",
  "bitflags 2.4.2",
@@ -1846,13 +1846,14 @@ dependencies = [
  "serde_json",
  "smallvec",
  "smartstring",
+ "thin-vec",
 ]
 
 [[package]]
 name = "rhai_codegen"
-version = "1.6.0"
+version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "853977598f084a492323fe2f7896b4100a86284ee8473612de60021ea341310f"
+checksum = "89789ba6e8fd0889ae70b39c09000148431c9a1d618eb9d388373f391a55c988"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2415,6 +2416,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "thin-vec"
+version = "0.2.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a38c90d48152c236a3ab59271da4f4ae63d678c5d7ad6b7714d7cb9760be5e4b"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
