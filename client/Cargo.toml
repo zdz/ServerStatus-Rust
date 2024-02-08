@@ -37,7 +37,7 @@ serde_json = {version = "1.0", default-features = false, features = ["alloc"]}
 stat_common = {path = "../common"}
 sysinfo = "0.30.5"
 tokio = {version = "1", features = ["full"]}
-tonic = {version = "0.10", features = ["tls"]}
+tonic = {version = "0.11", features = ["tls"]}
 tower = { version = "0.4" }
 md5 = "0.7.0"
 
