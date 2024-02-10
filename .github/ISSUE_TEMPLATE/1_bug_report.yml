@@ -1,0 +1,59 @@
+name: '🐛 Bug Report'
+description: 'Report an bug'
+title: '[Bug] '
+labels: ['bug']
+body:
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      options:
+        - label: I have updated the version to the latest Release version
+          required: true
+        - label: I've read the documentation in detail and still can't solve it
+          required: true
+        - label: I have searched existing Issues | Discussions, but still can't solve it
+          required: true
+        - label: I've tried a Google search and still can't figure it out
+          required: true
+
+  - type: dropdown
+    attributes:
+      label: '💻 Operating System'
+      options:
+        - Centos
+        - Debian
+        - Ubuntu
+        - Other Linux
+        - macOS
+        - Windows
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: '🐛 Bug Description'
+      description: A clear and concise description of the bug.
+      placeholder: |
+        1. ./stat_server -V
+        2. ./stat_client -V
+        3. uname -a
+        4. ...
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: '🚦 Expected Behavior'
+      description: A clear and concise description of what you expected to happen.
+
+  - type: textarea
+    attributes:
+      label: '📷 Recurrence Steps'
+      description: A clear and concise description of how to recurrence.
+
+  - type: textarea
+    attributes:
+      label: '📝 Additional Information'
+      description: If your problem needs further explanation, or if the issue you're seeing cannot be reproduced in a gist, please add more information here.
