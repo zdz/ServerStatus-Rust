@@ -24,8 +24,6 @@ use stat_common::server_status::StatRequest;
 
 const SAMPLE_PERIOD: u64 = 1000; //ms
 const TIMEOUT_MS: u64 = 1000;
-static IPV4_ADDR: &str = "ipv4.google.com:80";
-static IPV6_ADDR: &str = "ipv6.google.com:80";
 
 pub fn get_uptime() -> u64 {
     fs::read_to_string("/proc/uptime")
@@ -260,7 +258,7 @@ pub fn get_network(args: &Args) -> (bool, bool) {
     if network.iter().any(|&x| x) {
         return network.into();
     }
-    let addrs = vec![IPV4_ADDR, IPV6_ADDR];
+    let addrs = vec![&args.ipv4_address, &args.ipv6_address];
     for (idx, probe_addr) in addrs.into_iter().enumerate() {
         let _ = probe_addr.to_socket_addrs().map(|mut iter| {
             if let Some(addr) = iter.next() {
