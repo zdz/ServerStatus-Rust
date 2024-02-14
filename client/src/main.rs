@@ -96,6 +96,20 @@ pub struct Args {
         help = "ip info source"
     )]
     ip_source: String,
+    #[arg(
+        long = "ipv4-address",
+        env = "SSR_IPV4_ADDRESS",
+        default_value = "ipv4.google.com:80",
+        help = "ipv4 check address"
+    )]
+    ipv4_address: String,
+    #[arg(
+        long = "ipv6-address",
+        env = "SSR_IPV6_ADDRESS",
+        default_value = "ipv6.google.com:80",
+        help = "ipv6 check address"
+    )]
+    ipv6_address: String,
     #[arg(long = "json", help = "use json protocol, default:false")]
     json: bool,
     #[arg(short = '6', long = "ipv6", help = "ipv6 only, default:false")]
