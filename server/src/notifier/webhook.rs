@@ -2,7 +2,6 @@
 // #![allow(unused)]
 use anyhow::Result;
 use chrono::Local;
-use hyper::Body;
 use reqwest;
 use rhai::serde::{from_dynamic, to_dynamic};
 use rhai::{Array, Dynamic, Engine, ImmutableString, Scope, AST};
@@ -89,7 +88,7 @@ impl Webhook {
             let mut http_client_builder = http_client
                 .post(&r.url)
                 .timeout(Duration::from_secs(r.timeout.into()))
-                .body(Body::from(content));
+                .body(reqwest::Body::from(content.into_bytes()));
 
             for (k, v) in r.headers.iter() {
                 http_client_builder = http_client_builder.header(k, v);
