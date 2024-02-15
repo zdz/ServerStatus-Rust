@@ -1,10 +1,16 @@
 // #![allow(unused)]
-use tonic::{transport::Server, Request, Response, Status};
+use anyhow::Result;
+use std::str::FromStr;
+use tonic::{
+    transport::{Certificate, Identity, Server, ServerTlsConfig},
+    Request, Response, Status,
+};
 
 use stat_common::server_status;
 use stat_common::server_status::server_status_server::{ServerStatus, ServerStatusServer};
 use stat_common::server_status::StatRequest;
 
+use crate::config::Config;
 use crate::G_CONFIG;
 use crate::G_STATS_MGR;
 
@@ -63,14 +69,39 @@ fn check_auth(req: Request<()>) -> Result<Request<()>, Status> {
     }
 }
 
-pub async fn serv_grpc(addr: &str) -> anyhow::Result<()> {
-    let sock_addr = addr.parse().unwrap();
+pub async fn serv_grpc(cfg: &Config) -> anyhow::Result<()> {
+    let sock_addr = cfg.grpc_addr.parse().unwrap();
     let sss = ServerStatusSrv::default();
-    eprintln!("🚀 listening on grpc://{sock_addr}");
     let svc = ServerStatusServer::with_interceptor(sss, check_auth);
-    Server::builder()
-        .add_service(svc)
-        .serve(sock_addr)
-        .await
-        .map_err(anyhow::Error::new)
+
+    if cfg.grpc_tls > 0 {
+        let mut proto = " + TLS";
+        let tls_dir = std::path::PathBuf::from_str(&cfg.tls_dir)?;
+        let cert = std::fs::read_to_string(tls_dir.join("server.pem"))?;
+        let key = std::fs::read_to_string(tls_dir.join("server.key"))?;
+        let identity = Identity::from_pem(cert, key);
+
+        let mut tls = ServerTlsConfig::new().identity(identity);
+        if cfg.grpc_tls > 1 {
+            let ca = Certificate::from_pem(std::fs::read_to_string(tls_dir.join("ca.pem"))?);
+            tls = tls.client_ca_root(ca);
+            proto = " + mTLS";
+        }
+
+        eprintln!("🚀 listening on grpc://{sock_addr}{proto}");
+        Server::builder()
+            .tls_config(tls)?
+            .add_service(svc)
+            .serve(sock_addr)
+            .await
+            .map_err(anyhow::Error::new)
+    } else {
+        eprintln!("🚀 listening on grpc://{sock_addr}");
+        Server::builder()
+            .accept_http1(true)
+            .add_service(svc)
+            .serve(sock_addr)
+            .await
+            .map_err(anyhow::Error::new)
+    }
 }

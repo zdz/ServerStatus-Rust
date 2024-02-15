@@ -110,6 +110,14 @@ pub struct Args {
         help = "ipv6 check address"
     )]
     ipv6_address: String,
+    #[arg(
+        short = 'o',
+        long,
+        env = "SSR_ONLINE",
+        default_value = "0",
+        help = "online 1:ipv4, 2:ipv6, 3:both"
+    )]
+    online: u8,
     #[arg(long = "json", help = "use json protocol, default:false")]
     json: bool,
     #[arg(short = '6', long = "ipv6", help = "ipv6 only, default:false")]
@@ -134,18 +142,14 @@ pub struct Args {
     disable_notify: bool,
     #[arg(short = 't', long = "type", env = "SSR_TYPE", default_value = "", help = "host type")]
     host_type: String,
+    #[arg(long = "mtls", env = "SSR_MTLS", help = "enable mTLS, default:false")]
+    mtls: bool,
+    #[arg(long, env = "SSR_TLS_DIR", default_value = "tls", help = "tls certs dir")]
+    tls_dir: String,
     #[arg(long, env = "SSR_LOC", default_value = "", help = "location")]
     location: String,
     #[arg(short = 'd', long = "debug", env = "SSR_DEBUG", help = "debug mode, default:false")]
     debug: bool,
-    #[arg(
-        short = 'o',
-        long,
-        env = "SSR_ONLINE",
-        default_value = "0",
-        help = "online 1:ipv4, 2:ipv6, 3:both"
-    )]
-    online: u8,
     #[arg(
         short = 'i',
         long = "iface",
@@ -280,7 +284,7 @@ fn http_report(args: &Args, stat_base: &mut StatRequest) -> Result<()> {
                 .post(&url)
                 .basic_auth(auth_user, Some(auth_pass))
                 .timeout(Duration::from_secs(3))
-                .header(header::CONTENT_TYPE, content_type)
+                .header(header::CONTENT_TYPE.as_str(), content_type)
                 .header("ssr-auth", ssr_auth)
                 .body(body_data.unwrap())
                 .send()
@@ -419,7 +423,7 @@ async fn main() -> Result<()> {
         let result = http_report(&args, &mut stat_base);
         dbg!(&result);
     } else if args.addr.starts_with("grpc") {
-        let result = grpc::report(&args, &mut stat_base).await;
+        let result = { grpc::report(&args, &mut stat_base).await };
         dbg!(&result);
     } else {
         eprint!("invalid addr scheme!");

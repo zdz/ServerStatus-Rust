@@ -181,12 +181,9 @@ async fn main() -> Result<(), anyhow::Error> {
     }
 
     // serv grpc
-    tokio::spawn(async move {
-        let addr = &*G_CONFIG.get().unwrap().grpc_addr;
-        grpc::serv_grpc(addr).await
-    });
+    tokio::spawn(async move { grpc::serv_grpc(cfg).await });
 
-    let http_addr = G_CONFIG.get().unwrap().http_addr.to_string();
+    let http_addr = cfg.http_addr.to_string();
     eprintln!("🚀 listening on http://{http_addr}");
 
     let listener = TcpListener::bind(&http_addr).await.unwrap();

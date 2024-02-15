@@ -21,6 +21,9 @@ fn default_http_addr() -> String {
 fn default_workspace() -> String {
     "/opt/ServerStatus".to_string()
 }
+fn default_tls_dir() -> String {
+    "tls".to_string()
+}
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct Host {
@@ -104,6 +107,10 @@ pub struct Config {
     pub notify_interval: u64,
     #[serde(default = "Default::default")]
     pub offline_threshold: u64,
+    #[serde(default = "Default::default")]
+    pub grpc_tls: u32,
+    #[serde(default = "default_tls_dir")]
+    pub tls_dir: String,
     // admin user & pass
     pub admin_user: Option<String>,
     pub admin_pass: Option<String>,
