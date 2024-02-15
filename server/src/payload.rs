@@ -1,6 +1,6 @@
 #![deny(warnings)]
 use serde::{Deserialize, Serialize};
-use stat_common::server_status::{IpInfo, SysInfo};
+use stat_common::server_status::{DiskInfo, IpInfo, SysInfo};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn default_as_true() -> bool {
@@ -61,7 +61,7 @@ pub struct HostStat {
     #[serde(default)]
     pub last_network_out: u64,
 
-    pub cpu: f32,
+    pub cpu: f64,
     pub memory_total: u64,
     pub memory_used: u64,
     pub swap_total: u64,
@@ -97,6 +97,8 @@ pub struct HostStat {
     // false: KiB (1024), true: KB (1000)
     #[serde(default = "Default::default")]
     pub si: bool,
+    #[serde(default = "Default::default", skip_serializing)]
+    pub disks: Vec<DiskInfo>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

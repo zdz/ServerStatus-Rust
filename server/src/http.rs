@@ -6,7 +6,6 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
-
 use minijinja::context;
 use prettytable::Table;
 use prost::Message;
@@ -14,7 +13,7 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::fmt::Write as _;
 
-use stat_common::server_status::StatRequest;
+use stat_common::{server_status::StatRequest, utils::bytes2human};
 
 use crate::auth;
 use crate::jinja;
@@ -307,7 +306,8 @@ pub async fn get_detail(
         "在线时间",
         "IP",
         "系统信息",
-        "IP信息"
+        "IP信息",
+        "磁盘信息"
     ]);
     for (idx, host) in o.servers.iter().enumerate() {
         let sys_info = host
@@ -328,6 +328,24 @@ pub async fn get_detail(
                 s
             })
             .unwrap_or_default();
+
+        let mut di: String = "".to_string();
+        if !host.disks.is_empty() {
+            let mut t = Table::new();
+            t.set_titles(row!["name", "mp", "fs", "total", "used", "free"]);
+            for disk in &host.disks {
+                t.add_row(row![
+                    disk.name,
+                    disk.mount_point,
+                    disk.file_system,
+                    bytes2human(disk.total, 2, host.si),
+                    bytes2human(disk.used, 2, host.si),
+                    bytes2human(disk.free, 2, host.si),
+                ]);
+            }
+            di = t.to_string();
+        }
+
         if let Some(ip_info) = &host.ip_info {
             let addrs = [
                 ip_info.continent.as_str(),
@@ -361,7 +379,8 @@ pub async fn get_detail(
                 host.uptime_str,
                 ip_info.query,
                 sys_info,
-                format!("{addrs}\n{isp}")
+                format!("{addrs}\n{isp}"),
+                di
             ]);
         } else {
             table.add_row(row![
@@ -372,7 +391,8 @@ pub async fn get_detail(
                 host.uptime_str,
                 "xx.xx.xx.xx".to_string(),
                 sys_info,
-                "".to_string()
+                "".to_string(),
+                di
             ]);
         }
     }

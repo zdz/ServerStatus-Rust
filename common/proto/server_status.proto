@@ -38,6 +38,15 @@ message SysInfo {
   string host_name = 11;
 }
 
+message DiskInfo {
+  string name = 1;
+  string mount_point = 2;
+  string file_system = 3;
+  uint64 total = 4;
+  uint64 used = 5;
+  uint64 free = 6;
+}
+
 message StatRequest {
   string name = 1;
   string version = 2;
@@ -102,6 +111,7 @@ message StatRequest {
   bool notify = 44;
   // false: KiB (1024), true: KB (1000)
   bool si = 45;
+  repeated DiskInfo disks = 46;
 }
 
 message Response {

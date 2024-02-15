@@ -1,6 +1,7 @@
 #![deny(warnings)]
 #![allow(unused)]
 use lazy_static::lazy_static;
+use prettytable::{row, Table};
 use std::collections::HashSet;
 use std::fs;
 use std::sync::Arc;
@@ -13,7 +14,10 @@ use sysinfo::{Components, Disks, MemoryRefreshKind, Networks, RefreshKind, Syste
 use crate::status;
 use crate::vnstat;
 use crate::Args;
-use stat_common::server_status::{StatRequest, SysInfo};
+use stat_common::{
+    server_status::{DiskInfo, StatRequest, SysInfo},
+    utils::bytes2human,
+};
 
 const SAMPLE_PERIOD: u64 = 1000; //ms
 
@@ -129,16 +133,30 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
     let mut uniq_disk_set = HashSet::new();
     let disks = Disks::new_with_refreshed_list();
     for disk in &disks {
-        let fs = disk.file_system().to_str().unwrap().to_lowercase();
+        let di = DiskInfo {
+            name: disk.name().to_str().unwrap().to_string(),
+            mount_point: disk.mount_point().to_str().unwrap().to_string(),
+            file_system: disk.file_system().to_str().unwrap().to_string(),
+            total: disk.total_space(),
+            used: disk.total_space() - disk.available_space(),
+            free: disk.available_space(),
+        };
+
+        let fs = di.file_system.to_lowercase();
         if G_EXPECT_FS.iter().any(|&k| fs.contains(k)) {
-            if uniq_disk_set.contains(disk.name()) {
-                continue;
+            #[cfg(not(target_os = "windows"))]
+            {
+                if uniq_disk_set.contains(disk.name()) {
+                    continue;
+                }
+                uniq_disk_set.insert(disk.name());
             }
-            uniq_disk_set.insert(disk.name());
 
             hdd_total += disk.total_space();
             hdd_avail += disk.available_space();
         }
+
+        stat.disks.push(di);
     }
 
     stat.hdd_total = hdd_total / unit.pow(2);
@@ -224,10 +242,12 @@ pub fn collect_sys_info(args: &Args) -> SysInfo {
     info_pb.kernel_version = System::kernel_version().unwrap_or_default();
 
     // cpu
-    let global_cpu = sys.global_cpu_info();
-    info_pb.cpu_num = sys.cpus().len() as u32;
-    info_pb.cpu_brand = global_cpu.brand().to_string();
-    info_pb.cpu_vender_id = global_cpu.vendor_id().to_string();
+    let cpus = sys.cpus();
+    info_pb.cpu_num = cpus.len() as u32;
+    if let Some(cpu) = cpus.iter().next() {
+        info_pb.cpu_brand = cpu.brand().to_string();
+        info_pb.cpu_vender_id = cpu.vendor_id().to_string();
+    }
 
     info_pb.host_name = System::host_name().unwrap_or_default();
 
@@ -285,72 +305,108 @@ pub fn print_sysinfo() {
     let mut sys = System::new_all();
     sys.refresh_all();
 
-    println!("=> disks:");
-    let disks = Disks::new_with_refreshed_list();
-    for disk in &disks {
-        println!(
-            "\t{}\t{}\t{}/{} B\tremovable:{}\tmounted on:{}",
-            disk.name().to_str().unwrap_or_default(),
-            disk.file_system().to_str().unwrap_or_default(),
-            disk.available_space(),
-            disk.total_space(),
-            disk.is_removable(),
-            disk.mount_point().to_str().unwrap_or_default(),
-        );
-        // println!("\t{:?}", disk);
+    let mut si = false;
+    #[cfg(target_os = "macos")]
+    {
+        si = true;
     }
 
-    // Network interfaces name, data received and data transmitted:
-    println!("=> networks:");
-    let networks = Networks::new_with_refreshed_list();
-    for (interface_name, data) in &networks {
-        println!("\t{interface_name}: \t{}/{} B", data.received(), data.transmitted());
-    }
+    let mut sysinfo_t = Table::new();
+    sysinfo_t.set_titles(row!["Category", "Detail"]);
 
     // Components temperature:
-    println!("=> components:");
+    let mut components_sb = String::new();
     let components = Components::new_with_refreshed_list();
     for component in &components {
-        println!("\t{component:?}");
+        components_sb.push_str(&format!("{component:?}\n"));
     }
+    sysinfo_t.add_row(row!["Components", components_sb]);
 
-    println!("=> system:");
-    // RAM and swap information:
-    println!("\ttotal memory: {} bytes", sys.total_memory());
-    println!("\tused memory : {} bytes", sys.used_memory());
-    println!("\tavai memory : {} bytes", sys.available_memory());
-    println!("\tfree memory : {} bytes", sys.free_memory());
-    println!("\ttotal swap  : {} bytes", sys.total_swap());
-    println!("\tused swap   : {} bytes", sys.used_swap());
+    // Network interfaces name, data received and data transmitted:
+    let mut network_t = Table::new();
+    network_t.set_format(*prettytable::format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
+    network_t.set_titles(row!["Name", "received", "transmitted"]);
+    let networks = Networks::new_with_refreshed_list();
+    for (interface_name, data) in &networks {
+        network_t.add_row(row![interface_name, data.received(), data.transmitted()]);
+    }
+    sysinfo_t.add_row(row!["Networks", network_t]);
 
-    // Display system information:
-    println!("\tSystem name:             {:?}", System::name());
-    println!("\tSystem kernel version:   {:?}", System::kernel_version());
-    println!("\tSystem OS version:       {:?}", System::os_version());
-    println!("\tSystem long OS version:  {:?}", System::long_os_version());
-    println!("\tSystem Dist ID:          {:?}", System::distribution_id());
-    println!("\tSystem host name:        {:?}", System::host_name());
-    println!("\tSystem cpu arch:         {:?}", System::cpu_arch());
+    let mut system_t = Table::new();
+    system_t.set_format(*prettytable::format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
+    system_t.set_titles(row!["type", "value"]);
+
+    system_t.add_row(row!["System name", System::name().unwrap_or_default()]);
+    system_t.add_row(row!["Kernel version", System::kernel_version().unwrap_or_default()]);
+    system_t.add_row(row!["OS version", System::os_version().unwrap_or_default()]);
+    system_t.add_row(row!["Long OS version", System::long_os_version().unwrap_or_default()]);
+    system_t.add_row(row!["Distribution ID", System::distribution_id()]);
+    system_t.add_row(row!["Host name", System::host_name().unwrap_or_default()]);
+    system_t.add_row(row!["CPU arch", System::cpu_arch().unwrap_or_default()]);
+
+    let mut cpu_t = Table::new();
+    cpu_t.set_format(*prettytable::format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
+    cpu_t.set_titles(row!["#", "Brand", "VerderId", "Frequency"]);
+    for (idx, cpu) in sys.cpus().iter().enumerate() {
+        cpu_t.add_row(row![idx, cpu.brand(), cpu.vendor_id(), cpu.frequency()]);
+    }
+    system_t.add_row(row!["CPU", cpu_t]);
 
     let load_avg = System::load_average();
-    println!(
-        "\tone minute: {:.2}, five minutes: {:.2}, fifteen minutes: {:.2}",
-        load_avg.one, load_avg.five, load_avg.fifteen,
-    );
+    system_t.add_row(row![
+        "Load Average",
+        format!("{:.2}, {:.2}, {:.2}", load_avg.one, load_avg.five, load_avg.fifteen)
+    ]);
 
-    // Number of CPUs:
-    let global_cpu = sys.global_cpu_info();
-    println!("\tCPU Num: {}", sys.cpus().len());
+    let mut mem_t = Table::new();
+    mem_t.set_format(*prettytable::format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
+    mem_t.set_titles(row!["-", "bytes", "human"]);
+    mem_t.add_row(row![
+        "total memory",
+        sys.total_memory(),
+        bytes2human(sys.total_memory(), 2, si)
+    ]);
+    mem_t.add_row(row![
+        "used memory",
+        sys.used_memory(),
+        bytes2human(sys.used_memory(), 2, si)
+    ]);
+    mem_t.add_row(row![
+        "avai memory",
+        sys.available_memory(),
+        bytes2human(sys.available_memory(), 2, si)
+    ]);
+    mem_t.add_row(row![
+        "free memory",
+        sys.free_memory(),
+        bytes2human(sys.free_memory(), 2, si)
+    ]);
+    mem_t.add_row(row![
+        "total swap",
+        sys.total_swap(),
+        bytes2human(sys.total_swap(), 2, si)
+    ]);
+    mem_t.add_row(row!["used swap", sys.used_swap(), bytes2human(sys.used_swap(), 2, si)]);
 
-    for cpu in sys.cpus() {
-        println!("\t\tCPU Brand: {}", cpu.brand());
-        println!("\t\tCPU VerderId: {}", cpu.vendor_id());
-        println!("\t\tCPU Frequency: {}", cpu.frequency());
+    system_t.add_row(row!["Mem", mem_t]);
+
+    sysinfo_t.add_row(row!["System", system_t]);
+
+    let mut dt = Table::new();
+    dt.set_format(*prettytable::format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
+    dt.set_titles(row!["name", "mount_point", "fs", "total", "available", "is_removable"]);
+    let disks = Disks::new_with_refreshed_list();
+    for disk in &disks {
+        dt.add_row(row![
+            disk.name().to_str().unwrap_or_default(),
+            disk.mount_point().to_str().unwrap_or_default(),
+            disk.file_system().to_str().unwrap_or_default(),
+            bytes2human(disk.total_space(), 2, si),
+            bytes2human(disk.available_space(), 2, si),
+            disk.is_removable(),
+        ]);
     }
-    // println!("\tCPU Frequency: {}", global_cpu.frequency());
+    sysinfo_t.add_row(row!["Disks", dt]);
 
-    // Display processes ID, name na disk usage:
-    // for (pid, process) in sys.processes() {
-    //     println!("[{}] {} {:?}", pid, process.name(), process.disk_usage());
-    // }
+    sysinfo_t.printstd();
 }
