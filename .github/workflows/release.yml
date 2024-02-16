@@ -48,16 +48,16 @@ jobs:
             use-cross: true
             cargo-flags: ""
 
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            suffix: ""
-            use-cross: false
-            cargo-flags: ""
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            suffix: ""
-            use-cross: true
-            cargo-flags: ""
+          # - os: macos-latest
+          #   target: x86_64-apple-darwin
+          #   suffix: ""
+          #   use-cross: false
+          #   cargo-flags: ""
+          # - os: macos-latest
+          #   target: aarch64-apple-darwin
+          #   suffix: ""
+          #   use-cross: true
+          #   cargo-flags: ""
 
           - os: windows-latest
             target: x86_64-pc-windows-msvc
