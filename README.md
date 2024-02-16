@@ -38,7 +38,7 @@
 - [2. 安装部署](#2-安装部署)
   - [2.1 快速体验](#21-快速体验)
   - [2.2 快速部署](#22-快速部署)
-  - [2.3 服务管理脚本部署](#23-服务管理脚本部署)
+  - [2.3 服务管理脚本](#23-服务管理脚本)
   - [2.4 Railway 部署](#24-railway-部署)
   - [2.5 Heroku 部署](#25-heroku-部署)
 - [3. 服务端说明](#3-服务端说明)
@@ -59,6 +59,7 @@
 - 多系统支持 `Linux`、`MacOS`、`Windows`、`Android`、`Raspberry Pi`
 - 支持上下线和简单自定义规则告警 (`telegram`、`wechat`、`email`、`webhook`)
 - 支持 `http` 协议上报，方便部署到各免费容器服务和配合 `cf` 等优化上报链路
+- 支持 `cloudflare tunnels` 和 `mTLS` 部署
 - 支持主机分组动态注册，简化配置
 - 支持 `vnstat` 统计月流量，重启不丢流量数据
 - 支持 `railway` 快速部署
@@ -143,25 +144,27 @@ ServerStatus-web 主题由 [@mjjrock](https://github.com/mjjrock) 修改提供�
 # for CentOS/Debian/Ubuntu x86_64
 mkdir -p /opt/ServerStatus && cd /opt/ServerStatus
 # apt install -y unzip / yum install -y unzip
-wget --no-check-certificate -qO one-touch.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/one-touch.sh'
+wget --no-check-certificate -qO one-touch.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/scripts/one-touch.sh'
 bash -ex one-touch.sh
 # 部署完毕，打开 http://127.0.0.1:8080/ 或 http://<你的IP>:8080/
-# 自定义部署可参照 one-touch.sh 脚本
+# 自定义部署可参照 scripts/one-touch.sh 脚本
 ```
 
 ### 2.2 快速部署
 
 👉 [快速部署](https://doc.ssr.rs/rapid_deploy)
 
-### 2.3 服务管理脚本部署
+### 2.3 服务管理脚本
 
-[@Colsro](https://github.com/Colsro)  提供
+<details>
+  <summary>服务管理脚本说明</summary>
 
-[@Yooona-Lim](https://github.com/Yooona-Lim)  更新
+由 [@Colsro](https://github.com/Colsro) &
+[@Yooona-Lim](https://github.com/Yooona-Lim)  贡献
 
 ```bash
 # 下载脚本
-wget --no-check-certificate -qO status.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/status.sh'
+wget --no-check-certificate -qO status.sh 'https://raw.githubusercontent.com/zdz/ServerStatus-Rust/master/scripts/status.sh'
 
 # 安装 服务端
 bash status.sh -i -s
@@ -210,6 +213,7 @@ help:
     CN=true bash status.sh args
 ```
 
+</details>
 
 ### 2.4 Railway 部署
 
@@ -297,7 +301,7 @@ custom_tpl = """
 
 ### 3.2 服务端运行
 ```bash
-# systemd 方式， 参照 one-touch.sh 脚本 (推荐)
+# systemd 方式， 参照 scripts/one-touch.sh 脚本 (推荐)
 
 # 💪 手动方式
 # help
@@ -343,7 +347,7 @@ docker-compose up -d
 # alpine linux 需要安装相关命令 apk add procps iproute2 coreutils
 # 如果 Rust 版客户端在你的系统无法使用，请切换到下面 4.2 Python 跨平台版本
 
-# systemd 方式， 参照 one-touch.sh 脚本 (推荐)
+# systemd 方式， 参照 scripts/one-touch.sh 脚本 (推荐)
 
 # 💪 手动方式
 # Rust 版本 Client
@@ -515,7 +519,7 @@ server {
 
 ```bash
 # 按提示安装 rust 编译器
-curl https://sh.rustup.rs -sSf | sh
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 yum install -y openssl-devel
 git clone https://github.com/zdz/ServerStatus-Rust.git
 cd ServerStatus-Rust

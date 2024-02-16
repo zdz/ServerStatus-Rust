@@ -130,7 +130,10 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
 
     // hdd KB -> KiB
     let (mut hdd_total, mut hdd_avail) = (0_u64, 0_u64);
+
+    #[cfg(not(target_os = "windows"))]
     let mut uniq_disk_set = HashSet::new();
+
     let disks = Disks::new_with_refreshed_list();
     for disk in &disks {
         let di = DiskInfo {
