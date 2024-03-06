@@ -39,7 +39,7 @@ rustls-pemfile = { version = "2" }
 serde = {version = "1.0", default-features = false, features = ["derive", "alloc"]}
 serde_json = {version = "1.0", default-features = false, features = ["alloc"]}
 stat_common = {path = "../common"}
-sysinfo = "0.30.5"
+sysinfo = "0.30.7"
 tokio = {version = "1", features = ["full"]}
 tokio-rustls = { version = "0.25" }
 tonic = {version = "0.11", features = ["tls", "tls-webpki-roots", "gzip"]}
