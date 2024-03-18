@@ -1,0 +1,17 @@
+[project]
+name = "stat_client"
+readme = "../README.md"
+
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[tool.maturin]
+bindings = "bin"
+
+[project.urls]
+Homepage = "https://github.com/zdz/ServerStatus-Rust"
+Documentation = "https://doc.ssr.rs"
+Repository = "https://github.com/zdz/ServerStatus-Rust"
+Issues = "https://github.com/zdz/ServerStatus-Rust/issues"
+# Changelog = "https://github.com/zdz/ServerStatus-Rust/CHANGELOG.md"

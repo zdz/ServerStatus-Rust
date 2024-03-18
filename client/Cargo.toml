@@ -8,9 +8,10 @@ rust-version = "1.76"
 authors = ["doge <doge.py@gmail.com>"]
 categories = ["monitoring-tools"]
 description = "A simple server monitoring tool"
-keywords = ["devops", "notifications", "monitoring", "dashboard", "alerting"]
+keywords = ["stat_client", "serverstatus", "monitor"]
 license = "Apache-2.0"
-readme = "README.md"
+readme = "../README.md"
+homepage = "https://github.com/zdz/ServerStatus-Rust"
 repository = "https://github.com/zdz/ServerStatus-Rust"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -38,7 +39,7 @@ rustls = { version = "0.23", default-features = false }
 rustls-pemfile = { version = "2" }
 serde = {version = "1.0", default-features = false, features = ["derive", "alloc"]}
 serde_json = {version = "1.0", default-features = false, features = ["alloc"]}
-stat_common = {path = "../common"}
+stat_common = {path = "../common", version = "1.1.4"}
 sysinfo = "0.30.7"
 tokio = {version = "1", features = ["full"]}
 tokio-rustls = { version = "0.25" }
@@ -51,3 +52,23 @@ url = "2.5.0"
 default = ["sysinfo"]
 native = []
 sysinfo = []
+
+[package.metadata.deb]
+maintainer = "zdz <doge.py@gmail.com>"
+copyright = "2021-present, zdz <doge.py@gmail.com>"
+license-file = ["../LICENSE", "4"]
+extended-description = """\
+A simple server monitoring tool"""
+section = "utility"
+priority = "optional"
+assets = [
+    ["target/release/stat_client", "/opt/ServerStatus/", "755"],
+    ["../systemd/stat_client.service", "/opt/ServerStatus/stat_client.service", "644"]
+]
+
+[package.metadata.generate-rpm]
+assets = [
+    { source = "target/release/stat_client", dest = "/opt/ServerStatus/stat_client", mode = "0755" },
+    { source = "LICENSE", dest = "/usr/share/doc/ServerStatus/LICENSE", doc = true, mode = "0644" },
+    { source = "../systemd/stat_client.service", dest = "/opt/ServerStatus/stat_client.service", config = true, mode = "0644" },
+]
