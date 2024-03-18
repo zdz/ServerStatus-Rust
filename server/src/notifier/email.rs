@@ -1,7 +1,7 @@
 #![deny(warnings)]
 use anyhow::Result;
 use lettre::{
-    message::{header, MultiPart, SinglePart},
+    message::{header, Mailboxes, MultiPart, SinglePart},
     transport::smtp::authentication::Credentials,
     AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
 };
@@ -48,10 +48,16 @@ impl crate::notifier::Notifier for Email {
     }
 
     fn send_notify(&self, html_content: String) -> Result<()> {
-        let email = Message::builder()
-            .from(format!("ServerStatus <{}>", self.config.username).parse().unwrap())
-            .to(self.config.to.parse().unwrap())
+        let mut builder = Message::builder()
             .subject(self.config.subject.to_string())
+            .from(format!("ServerStatus <{}>", self.config.username).parse().unwrap());
+
+        let mailboxes: Mailboxes = self.config.to.parse().expect("Invalid email addresses");
+        for mailbox in mailboxes.iter() {
+            builder = builder.to(mailbox.clone());
+        }
+
+        let email = builder
             .multipart(
                 MultiPart::alternative().singlepart(
                     SinglePart::builder()
