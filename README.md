@@ -518,6 +518,10 @@ server {
   <summary>如何源码编译</summary>
 
 ```bash
+#
+cargo install stat_server
+cargo install stat_client
+# or
 # 按提示安装 rust 编译器
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 yum install -y openssl-devel
