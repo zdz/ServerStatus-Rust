@@ -331,7 +331,7 @@ function get_status() {
         MIRROR="https://gh-proxy.com/"
     fi
     install_tool
-    rm -f ServerStatus-${arch}-unknown-linux-musl.zip stat_*
+    rm -f *-unknown-*.zip stat_*
     cd /tmp || exit
 
     # 判断为空或者 "-a" "--all"，为空可以兼容前面的函数功能
