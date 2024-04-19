@@ -1975,9 +1975,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.2"
+version = "0.23.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dfbdb5ddfafe3040e01fe9dced711e27b5336ac97d4a9b2089f0066a04b5846"
+checksum = "afabcee0551bd1aa3e18e5adbf2c0544722014b899adb31bd186ec638d3da97e"
 dependencies = [
  "once_cell",
  "rustls-pki-types",
@@ -2258,7 +2258,7 @@ dependencies = [
  "prost",
  "regex",
  "reqwest",
- "rustls 0.23.2",
+ "rustls 0.23.5",
  "rustls-pemfile 2.1.1",
  "serde",
  "serde_json",
