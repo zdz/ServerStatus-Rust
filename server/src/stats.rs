@@ -313,7 +313,7 @@ impl StatsMgr {
                     latest_save_ts = now;
                     if !resp.servers.is_empty() {
                         if let Ok(mut file) = File::create("stats.json") {
-                            file.write(serde_json::to_string(&resp).unwrap().as_bytes());
+                            file.write_all(serde_json::to_string(&resp).unwrap().as_bytes());
                             file.flush();
                             trace!("save stats.json succ!");
                         } else {
