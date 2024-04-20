@@ -35,14 +35,14 @@ prettytable-rs = "^0.10"
 prost = "0.12"
 regex = "1.10"
 reqwest = {version = "0.11", features = ["json", "rustls-tls", "brotli", "gzip", "deflate", "stream", "socks"], default-features = false}
-rustls = { version = "0.23", default-features = false }
+rustls = { version = "0.23.5", default-features = false }
 rustls-pemfile = { version = "2" }
 serde = {version = "1.0", default-features = false, features = ["derive", "alloc"]}
 serde_json = {version = "1.0", default-features = false, features = ["alloc"]}
 stat_common = {path = "../common", version = "1.1.4"}
 sysinfo = "0.30.7"
 tokio = {version = "1", features = ["full"]}
-tokio-rustls = { version = "0.25" }
+tokio-rustls = { version = "0.26" }
 tonic = {version = "0.11", features = ["tls", "tls-webpki-roots", "gzip"]}
 tower = { version = "0.4" }
 webpki-roots = "0.26"
