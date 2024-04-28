@@ -24,7 +24,7 @@ anyhow = "1"
 bytes = {version = "1", features = ["serde"]}
 chrono = "0.4"
 clap = {version = "4.5", features = ["derive", "unicode", "env"]}
-fastrand = "2.0.1"
+fastrand = "2.1.0"
 hyper = {version = "1.2", features = ["full"]}
 lazy_static = "1.4"
 log = "0.4"
