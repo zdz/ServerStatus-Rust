@@ -28,7 +28,7 @@ chrono = "0.4"
 clap = {version = "4.5", features = ["derive", "unicode"]}
 futures-util = {version = "0.3", default-features = false}
 hyper = {version = "1.2", features = ["full"]}
-jsonwebtoken = "9.2"
+jsonwebtoken = "9.3.0"
 lazy_static = "1.4"
 lettre = {version = "0.11", default-features = false, features = ["smtp-transport", "pool", "hostname", "builder", "rustls-tls", "tokio1-rustls-tls"]}
 log = "0.4"
