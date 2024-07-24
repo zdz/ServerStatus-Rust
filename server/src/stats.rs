@@ -262,7 +262,7 @@ impl StatsMgr {
                         ];
                         if !o.labels.contains("os=") {
                             if let Some(sys_info) = &o.sys_info {
-                                let os_r = sys_info.os_release.to_lowercase();
+                                let os_r = format!("{} {}",sys_info.os_release.to_lowercase(),sys_info.os_name.to_lowercase());
                                 for s in OS_LIST.iter() {
                                     if os_r.contains(s) {
                                         if o.labels.is_empty() {
