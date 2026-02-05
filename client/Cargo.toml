@@ -77,3 +77,11 @@ assets = [
     { source = "LICENSE", dest = "/usr/share/doc/ServerStatus/LICENSE", doc = true, mode = "0644" },
     { source = "../systemd/stat_client.service", dest = "/opt/ServerStatus/stat_client.service", config = true, mode = "0644" },
 ]
+
+
+[profile.release]
+opt-level = "z"      # 优化文件大小 (s 是优化速度和体积，z 是极致体积)
+lto = true           # 开启链接时优化 (跨模块删除无用代码)
+codegen-units = 1    # 限制并行编译单元，增加优化空间
+panic = "abort"      # 发生 panic 时直接退出，不包含回溯栈信息 (减小体积明显)
+strip = true         # 自动从生成的二进制文件中剥离符号信息
