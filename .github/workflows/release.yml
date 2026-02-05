@@ -10,6 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # --- macOS 编译 ---
   macos:
     runs-on: macos-latest
     name: macos (${{ matrix.platform.target }})
@@ -23,6 +24,13 @@ jobs:
           - target: "x86_64-apple-darwin"
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          version: "3.x"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.platform.target }}
@@ -30,56 +38,27 @@ jobs:
       - name: Build release
         run: cargo build --release --target ${{ matrix.platform.target }}
 
-      - name: Strip
-        continue-on-error: true
-        run: |
-          strip target/${{ matrix.platform.target }}/release/stat_server
-          strip target/${{ matrix.platform.target }}/release/stat_client
-          cp config.toml target/${{ matrix.platform.target }}/release/
-          cp systemd/stat_server.service target/${{ matrix.platform.target }}/release/
-          cp systemd/stat_client.service target/${{ matrix.platform.target }}/release/
-
-      - name: Compress binaries
-        continue-on-error: true
-        uses: svenstaro/upx-action@v2
-        with:
-          strip: false
-          args: -q --best --lzma
-          files: |
-            target/${{ matrix.platform.target }}/release/stat_server
-            target/${{ matrix.platform.target }}/release/stat_client
-
-      - name: Zip Release - Server
+      - name: Zip Release
         uses: TheDoctor0/zip-release@0.7.6
         with:
           type: zip
-          filename: server-${{ matrix.platform.target }}.zip
+          filename: ServerStatus-${{ matrix.platform.target }}.zip
           directory: target/${{ matrix.platform.target }}/release/
           path: |
             stat_server
-            config.toml
-
-      - name: Zip Release - Client
-        uses: TheDoctor0/zip-release@0.7.6
-        with:
-          type: zip
-          filename: client-${{ matrix.platform.target }}.zip
-          directory: target/${{ matrix.platform.target }}/release/
-          path: |
             stat_client
+            config.toml
 
       - name: Upload binaries to GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         with:
-          # 手动运行时指定一个 tag 名字，否则可能失败
           tag_name: ${{ github.ref_name }}
-          files: |
-            target/${{ matrix.platform.target }}/release/server-${{ matrix.platform.target }}.zip
-            target/${{ matrix.platform.target }}/release/client-${{ matrix.platform.target }}.zip
+          files: target/${{ matrix.platform.target }}/release/ServerStatus-${{ matrix.platform.target }}.zip
           generate_release_notes: true
           draft: false
 
+  # --- Linux (musl) 编译 ---
   linux:
     runs-on: ubuntu-latest
     name: linux (${{ matrix.platform.target }})
@@ -95,60 +74,42 @@ jobs:
       image: docker://ghcr.io/rust-cross/rust-musl-cross:${{ matrix.platform.target }}
     steps:
       - uses: actions/checkout@v4
+      
+      # 容器内也需要 protoc
+      - name: Install Protoc
+        run: |
+          apt-get update -y -qq
+          apt-get install -y -qq protobuf-compiler zip git llvm
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.platform.target }}
 
-      - name: Install packages
-        run: |
-          apt-get update -y -qq
-          apt-get install zip git llvm -y -qq
-
       - name: Build release
         run: cargo build --release --target ${{ matrix.platform.target }}
 
-      - name: LLVM Strip
-        continue-on-error: true
-        run: |
-          llvm-strip target/${{ matrix.platform.target }}/release/stat_server
-          llvm-strip target/${{ matrix.platform.target }}/release/stat_client
-          cp config.toml target/${{ matrix.platform.target }}/release/
-          cp systemd/stat_server.service target/${{ matrix.platform.target }}/release/
-          cp systemd/stat_client.service target/${{ matrix.platform.target }}/release/
-
-      - name: Zip Release - Server
+      - name: Zip Release
         uses: TheDoctor0/zip-release@0.7.6
         with:
           type: zip
-          filename: server-${{ matrix.platform.target }}.zip
+          filename: ServerStatus-${{ matrix.platform.target }}.zip
           directory: target/${{ matrix.platform.target }}/release/
           path: |
             stat_server
-            stat_server.service
-            config.toml
-
-      - name: Zip Release - Client
-        uses: TheDoctor0/zip-release@0.7.6
-        with:
-          type: zip
-          filename: client-${{ matrix.platform.target }}.zip
-          directory: target/${{ matrix.platform.target }}/release/
-          path: |
             stat_client
-            stat_client.service
+            config.toml
 
       - name: Upload binaries to GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         with:
           tag_name: ${{ github.ref_name }}
-          files: |
-            target/${{ matrix.platform.target }}/release/server-${{ matrix.platform.target }}.zip
-            target/${{ matrix.platform.target }}/release/client-${{ matrix.platform.target }}.zip
+          files: target/${{ matrix.platform.target }}/release/ServerStatus-${{ matrix.platform.target }}.zip
           generate_release_notes: true
           draft: false
 
+  # --- Windows & Android 交叉编译 ---
   windows-or-linux-others:
     name: Cross build for ${{ matrix.platform.target }}
     runs-on: ${{ matrix.platform.os }}
@@ -172,6 +133,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          version: "3.x"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.platform.target }}
@@ -193,17 +161,18 @@ jobs:
         uses: TheDoctor0/zip-release@0.7.6
         with:
           type: zip
-          filename: bin-${{ matrix.platform.target }}.zip
+          filename: ServerStatus-${{ matrix.platform.target }}.zip
           directory: target/${{ matrix.platform.target }}/release/
           path: |
             stat_server${{matrix.platform.suffix}}
             stat_client${{matrix.platform.suffix}}
+            config.toml
 
       - name: Upload binaries to GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         with:
           tag_name: ${{ github.ref_name }}
-          files: target/${{ matrix.platform.target }}/release/bin-${{ matrix.platform.target }}.zip
+          files: target/${{ matrix.platform.target }}/release/ServerStatus-${{ matrix.platform.target }}.zip
           generate_release_notes: true
           draft: false
