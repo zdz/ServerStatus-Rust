@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - "v*"
-
   workflow_dispatch:
 
 env:
@@ -24,34 +23,12 @@ jobs:
           - target: "x86_64-apple-darwin"
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.11
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.platform.target }}
 
-      - name: Build python wheels - server
-        uses: PyO3/maturin-action@v1
-        with:
-          working-directory: server
-          target: ${{ matrix.platform.target }}
-          args: --release --strip
-          sccache: "true"
-      - name: Build python wheels - client
-        uses: PyO3/maturin-action@v1
-        with:
-          working-directory: client
-          target: ${{ matrix.platform.target }}
-          args: --release --strip
-          sccache: "true"
-
-      - name: Upload wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-macos-${{ matrix.platform.target }}
-          path: target/wheels/stat*.whl
-          if-no-files-found: error
+      - name: Build release
+        run: cargo build --release --target ${{ matrix.platform.target }}
 
       - name: Strip
         continue-on-error: true
@@ -63,10 +40,7 @@ jobs:
           cp systemd/stat_client.service target/${{ matrix.platform.target }}/release/
 
       - name: Compress binaries
-        # Upx may not support some platforms. Ignore the errors
         continue-on-error: true
-        # Disable upx for mips. See https://github.com/upx/upx/issues/387
-        if: true && !contains(matrix.platform.target, 'mips')
         uses: svenstaro/upx-action@v2
         with:
           strip: false
@@ -74,16 +48,6 @@ jobs:
           files: |
             target/${{ matrix.platform.target }}/release/stat_server
             target/${{ matrix.platform.target }}/release/stat_client
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ServerStatusRust-${{ matrix.platform.target }}
-          path: |
-            target/${{ matrix.platform.target }}/release/stat_server
-            target/${{ matrix.platform.target }}/release/stat_client
-            target/${{ matrix.platform.target }}/release/config.toml
-            target/${{ matrix.platform.target }}/release/stat_server.service
-            target/${{ matrix.platform.target }}/release/stat_client.service
 
       - name: Zip Release - Server
         uses: TheDoctor0/zip-release@0.7.6
@@ -107,16 +71,16 @@ jobs:
       - name: Upload binaries to GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          # 手动运行时指定一个 tag 名字，否则可能失败
+          tag_name: ${{ github.ref_name }}
           files: |
             target/${{ matrix.platform.target }}/release/server-${{ matrix.platform.target }}.zip
             target/${{ matrix.platform.target }}/release/client-${{ matrix.platform.target }}.zip
           generate_release_notes: true
-          draft: true
+          draft: false
 
-  linux: # (x86_64, aarch64) x (pypi, deb, rpm)
+  linux:
     runs-on: ubuntu-latest
     name: linux (${{ matrix.platform.target }})
     permissions:
@@ -126,14 +90,7 @@ jobs:
       matrix:
         platform:
           - target: "x86_64-unknown-linux-musl"
-            cargo-flags: "--no-default-features --features stat_client/native"
-            client-flags: "--no-default-features --features native"
-            server-flags: ""
           - target: "aarch64-unknown-linux-musl"
-            cargo-flags: "--no-default-features --features stat_client/native"
-            client-flags: "--no-default-features --features native"
-            server-flags: ""
-
     container:
       image: docker://ghcr.io/rust-cross/rust-musl-cross:${{ matrix.platform.target }}
     steps:
@@ -145,95 +102,20 @@ jobs:
 
       - name: Install packages
         run: |
-          pip install cargo-generate-rpm cargo-deb
-          sudo apt-get update -y -qq
-          sudo apt-get install zip git -y -qq
-          echo $PWD
-          git config --global --add safe.directory $PWD
-          git rev-parse --short HEAD
+          apt-get update -y -qq
+          apt-get install zip git llvm -y -qq
 
-      # wheels
-      - name: Build python wheels - server
-        uses: PyO3/maturin-action@v1
-        with:
-          container: off
-          manylinux: auto
-          working-directory: server
-          target: ${{ matrix.platform.target }}
-          args: --release --strip ${{matrix.platform.server-flags}}
-          sccache: "true"
+      - name: Build release
+        run: cargo build --release --target ${{ matrix.platform.target }}
 
-      - name: Build python wheels - client
-        uses: PyO3/maturin-action@v1
-        with:
-          container: off
-          manylinux: auto
-          working-directory: client
-          target: ${{ matrix.platform.target }}
-          args: --release --strip ${{matrix.platform.client-flags}}
-          sccache: "true"
-
-      - name: Build Debian package
-        run: |
-          cargo deb -p stat_server --target=${{ matrix.platform.target }} --no-build --no-strip
-          cargo deb -p stat_client --target=${{ matrix.platform.target }} --no-build --no-strip
-
-      - name: Build RPM package
-        run: |
-          cargo generate-rpm -p server --target=${{ matrix.platform.target }}
-          cargo generate-rpm -p client --target=${{ matrix.platform.target }}
-
-      - name: Upload wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-linux-${{ matrix.platform.target }}
-          path: target/wheels/stat*.whl
-          if-no-files-found: error
-      - name: Upload deb artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.platform.target }}-deb
-          path: target/${{ matrix.platform.target }}/debian/stat*.deb
-          if-no-files-found: error
-      - name: Upload RPM artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.platform.target }}-rpm
-          path: target/${{ matrix.platform.target }}/generate-rpm/stat*.rpm
-          if-no-files-found: error
-
-      - name: LLVM Strip (Linux)
+      - name: LLVM Strip
         continue-on-error: true
         run: |
-          sudo apt-get install -y llvm
           llvm-strip target/${{ matrix.platform.target }}/release/stat_server
           llvm-strip target/${{ matrix.platform.target }}/release/stat_client
           cp config.toml target/${{ matrix.platform.target }}/release/
           cp systemd/stat_server.service target/${{ matrix.platform.target }}/release/
           cp systemd/stat_client.service target/${{ matrix.platform.target }}/release/
-
-      - name: Compress binaries
-        # Upx may not support some platforms. Ignore the errors
-        continue-on-error: true
-        # Disable upx for mips. See https://github.com/upx/upx/issues/387
-        if: true && !contains(matrix.platform.target, 'mips')
-        uses: svenstaro/upx-action@v2
-        with:
-          strip: false
-          args: -q --best --lzma
-          files: |
-            target/${{ matrix.platform.target }}/release/stat_server
-            target/${{ matrix.platform.target }}/release/stat_client
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ServerStatusRust-${{ matrix.platform.target }}
-          path: |
-            target/${{ matrix.platform.target }}/release/stat_server
-            target/${{ matrix.platform.target }}/release/stat_client
-            target/${{ matrix.platform.target }}/release/config.toml
-            target/${{ matrix.platform.target }}/release/stat_server.service
-            target/${{ matrix.platform.target }}/release/stat_client.service
 
       - name: Zip Release - Server
         uses: TheDoctor0/zip-release@0.7.6
@@ -259,16 +141,13 @@ jobs:
       - name: Upload binaries to GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          tag_name: ${{ github.ref_name }}
           files: |
             target/${{ matrix.platform.target }}/release/server-${{ matrix.platform.target }}.zip
             target/${{ matrix.platform.target }}/release/client-${{ matrix.platform.target }}.zip
-            target/${{ matrix.platform.target }}/debian/stat*.deb
-            target/${{ matrix.platform.target }}/generate-rpm/stat*.rpm
           generate_release_notes: true
-          draft: true
+          draft: false
 
   windows-or-linux-others:
     name: Cross build for ${{ matrix.platform.target }}
@@ -282,184 +161,49 @@ jobs:
             target: aarch64-linux-android
             suffix: ""
             use-cross: true
-            cargo-flags: ""
-          # 32bit
-          - os: ubuntu-latest
-            target: armv7-linux-androideabi
-            suffix: ""
-            use-cross: true
-            cargo-flags: ""
-
           - os: ubuntu-latest
             target: armv7-unknown-linux-musleabihf
             suffix: ""
             use-cross: true
-            cargo-flags: ""
-
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             suffix: .exe
             use-cross: false
-            cargo-flags: ""
-          # - os: windows-latest
-          #   target: x86_64-pc-windows-gnu
-          #   suffix: .exe
-          #   use-cross: false
-          #   cargo-flags: ""
 
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          override: true
-          profile: minimal
-          toolchain: stable
-          target: ${{ matrix.platform.target }}
+          targets: ${{ matrix.platform.target }}
 
-      - name: Install Protoc
-        if: matrix.platform.os == 'windows-latest'
-        uses: arduino/setup-protoc@v1
-        with:
-          version: "3.x"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      # https://blog.rust-lang.org/2023/01/09/android-ndk-update-r25.html
-      # https://github.com/cross-rs/cross/issues/1222
-      - name: Update Cross
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          use-cross: false
-          args: cross --git https://github.com/cross-rs/cross
+      - name: Install Cross
+        if: matrix.platform.use-cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
 
       - name: Build release
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          use-cross: ${{ matrix.platform.use-cross }}
-          args: --locked --release --target=${{ matrix.platform.target }} ${{ matrix.platform.cargo-flags }}
-
-      - name: Strip (MacOS/Window)
-        if: matrix.platform.os != 'ubuntu-latest'
-        continue-on-error: true
         run: |
-          strip target/${{ matrix.platform.target }}/release/stat_server${{matrix.platform.suffix}}
-          strip target/${{ matrix.platform.target }}/release/stat_client${{matrix.platform.suffix}}
-          cp config.toml target/${{ matrix.platform.target }}/release/
-          cp systemd/stat_server.service target/${{ matrix.platform.target }}/release/
-          cp systemd/stat_client.service target/${{ matrix.platform.target }}/release/
+          if [ "${{ matrix.platform.use-cross }}" = "true" ]; then
+            cross build --release --target=${{ matrix.platform.target }}
+          else
+            cargo build --release --target=${{ matrix.platform.target }}
+          fi
+        shell: bash
 
-      - name: LLVM Strip (Linux)
-        if: matrix.platform.os == 'ubuntu-latest'
-        continue-on-error: true
-        run: |
-          sudo apt-get install -y llvm
-          llvm-strip target/${{ matrix.platform.target }}/release/stat_server${{matrix.platform.suffix}}
-          llvm-strip target/${{ matrix.platform.target }}/release/stat_client${{matrix.platform.suffix}}
-          cp config.toml target/${{ matrix.platform.target }}/release/
-          cp systemd/stat_server.service target/${{ matrix.platform.target }}/release/
-          cp systemd/stat_client.service target/${{ matrix.platform.target }}/release/
-
-      - name: Compress binaries
-        # Upx may not support some platforms. Ignore the errors
-        continue-on-error: true
-        # Disable upx for mips. See https://github.com/upx/upx/issues/387
-        if: true && !contains(matrix.platform.target, 'mips')
-        uses: svenstaro/upx-action@v2
-        with:
-          strip: false
-          args: -q --best --lzma
-          files: |
-            target/${{ matrix.platform.target }}/release/stat_server${{matrix.platform.suffix}}
-            target/${{ matrix.platform.target }}/release/stat_client${{matrix.platform.suffix}}
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ServerStatus-${{ matrix.platform.target }}
-          path: |
-            target/${{ matrix.platform.target }}/release/stat_server${{matrix.platform.suffix}}
-            target/${{ matrix.platform.target }}/release/stat_client${{matrix.platform.suffix}}
-            target/${{ matrix.platform.target }}/release/config.toml
-            target/${{ matrix.platform.target }}/release/stat_server.service
-            target/${{ matrix.platform.target }}/release/stat_client.service
-
-      - name: Zip Release - Server (Linux)
-        if: matrix.platform.os == 'ubuntu-latest' && contains(matrix.platform.target, 'linux')
+      - name: Zip Release
         uses: TheDoctor0/zip-release@0.7.6
         with:
           type: zip
-          filename: server-${{ matrix.platform.target }}.zip
+          filename: bin-${{ matrix.platform.target }}.zip
           directory: target/${{ matrix.platform.target }}/release/
           path: |
             stat_server${{matrix.platform.suffix}}
-            stat_server.service
-            config.toml
-
-      - name: Zip Release - Client (Linux)
-        if: matrix.platform.os == 'ubuntu-latest' && contains(matrix.platform.target, 'linux')
-        uses: TheDoctor0/zip-release@0.7.6
-        with:
-          type: zip
-          filename: client-${{ matrix.platform.target }}.zip
-          directory: target/${{ matrix.platform.target }}/release/
-          path: |
-            stat_client${{matrix.platform.suffix}}
-            stat_client.service
-
-      - name: Zip Release - Server (MacOS/Window)
-        if: true && !contains(matrix.platform.target, 'linux')
-        uses: TheDoctor0/zip-release@0.7.6
-        with:
-          type: zip
-          filename: server-${{ matrix.platform.target }}.zip
-          directory: target/${{ matrix.platform.target }}/release/
-          path: |
-            stat_server${{matrix.platform.suffix}}
-            config.toml
-
-      - name: Zip Release - Client (MacOS/Window)
-        if: true && !contains(matrix.platform.target, 'linux')
-        uses: TheDoctor0/zip-release@0.7.6
-        with:
-          type: zip
-          filename: client-${{ matrix.platform.target }}.zip
-          directory: target/${{ matrix.platform.target }}/release/
-          path: |
             stat_client${{matrix.platform.suffix}}
 
       - name: Upload binaries to GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: |
-            target/${{ matrix.platform.target }}/release/server-${{ matrix.platform.target }}.zip
-            target/${{ matrix.platform.target }}/release/client-${{ matrix.platform.target }}.zip
+          tag_name: ${{ github.ref_name }}
+          files: target/${{ matrix.platform.target }}/release/bin-${{ matrix.platform.target }}.zip
           generate_release_notes: true
-          draft: true
-
-  release:
-    name: PyPI Release
-    runs-on: ubuntu-latest
-    environment:
-      name: PyPI
-      url: https://pypi.org/project/ServerStatus-Rust/
-    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-    needs: [linux, macos]
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: dist/
-          pattern: wheels-*
-          merge-multiple: true
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.11
-      - name: Publish to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: |
-          pip install --upgrade twine
-          twine upload --skip-existing dist/*.whl
+          draft: false
