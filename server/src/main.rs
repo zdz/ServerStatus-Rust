@@ -62,7 +62,7 @@ fn create_app_router() -> Router {
         .route("/json/stats.json", get(http::get_stats_json)) // 兼容就旧主题
         // .route("/config.pub.json", get(http::get_site_config_json)) // TODO
         .route("/api/admin/authorize", post(jwt::authorize))
-        .route("/api/admin/:path", get(http::admin_api)) // stats.json || config.json
+        .route("/api/admin/{path}", get(http::admin_api)) // stats.json || config.json
         // .route("/admin", get(assets::admin_index_handler))
         .route("/detail", get(http::get_detail))
         .route("/map", get(http::get_map))
