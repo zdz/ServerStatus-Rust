@@ -166,9 +166,9 @@ jobs:
       - name: Build release
         run: |
           if [ "${{ matrix.platform.use-cross }}" = "true" ]; then
-            cross build --release --target=${{ matrix.platform.target }}
+            cross build --locked --release --target=${{ matrix.platform.target }}
           else
-            cargo build --release --target=${{ matrix.platform.target }}
+            cargo build --locked --release --target=${{ matrix.platform.target }}
           fi
         shell: bash
 
