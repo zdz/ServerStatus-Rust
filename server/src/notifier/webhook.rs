@@ -37,9 +37,10 @@ pub struct Webhook {
     ast_list: Vec<Option<AST>>,
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn join(arr: Array, sep: ImmutableString) -> ImmutableString {
     arr.iter()
-        .map(|e| e.to_string())
+        .map(std::string::ToString::to_string)
         .collect::<Vec<_>>()
         .join(sep.as_str())
         .into()
@@ -49,8 +50,9 @@ fn now_str() -> ImmutableString {
     Local::now().format("%Y-%m-%d %H:%M:%S %Z").to_string().into()
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn to_json(o: Dynamic) -> ImmutableString {
-    serde_json::to_string(&o).map(|s| s.into()).unwrap_or_default()
+    serde_json::to_string(&o).map(std::convert::Into::into).unwrap_or_default()
 }
 
 impl Webhook {
@@ -66,7 +68,7 @@ impl Webhook {
         o.engine.register_fn("join", join);
         o.engine.register_fn("now_str", now_str);
 
-        for r in o.config.receiver.iter() {
+        for r in &o.config.receiver {
             if r.enabled {
                 let ast = o.engine.compile(&r.script).unwrap();
                 o.ast_list.push(Some(ast));
@@ -77,9 +79,9 @@ impl Webhook {
 
         o
     }
-    fn call_webhook(&self, r: &'static Receiver, content: String) -> Result<()> {
+    fn call_webhook(&self, r: &'static Receiver, content: String) {
         if content.is_empty() {
-            return Ok(());
+            return;
         }
 
         let handle = NOTIFIER_HANDLE.lock().unwrap().as_ref().unwrap().clone();
@@ -90,7 +92,7 @@ impl Webhook {
                 .timeout(Duration::from_secs(r.timeout.into()))
                 .body(reqwest::Body::from(content.into_bytes()));
 
-            for (k, v) in r.headers.iter() {
+            for (k, v) in &r.headers {
                 http_client_builder = http_client_builder.header(k, v);
             }
 
@@ -103,14 +105,13 @@ impl Webhook {
             //
             match http_client_builder.send().await {
                 Ok(resp) => {
-                    info!("webhook send msg resp => {:?}", resp);
+                    info!("webhook send msg resp => {resp:?}");
                 }
                 Err(err) => {
-                    error!("webhook send msg error => {:?}", err);
+                    error!("webhook send msg error => {err:?}");
                 }
             }
         });
-        Ok(())
     }
 }
 impl crate::notifier::Notifier for Webhook {
@@ -119,16 +120,16 @@ impl crate::notifier::Notifier for Webhook {
     }
 
     fn send_notify(&self, content: String) -> Result<()> {
-        info!("{}", content);
+        info!("{content}");
         Ok(())
     }
 
     fn notify_test(&self) -> Result<()> {
-        for r in self.config.receiver.iter() {
+        for r in &self.config.receiver {
             if !r.enabled {
                 continue;
             }
-            self.call_webhook(r, "❗ServerStatus test msg".into())?;
+            self.call_webhook(r, "❗ServerStatus test msg".into());
         }
         Ok(())
     }
@@ -153,7 +154,7 @@ impl crate::notifier::Notifier for Webhook {
             // [notify, json_body/content]
             if let Ok(v) = from_dynamic::<Array>(&res) {
                 if v.len() >= 2 && from_dynamic::<bool>(&v[0]).unwrap_or_default() {
-                    self.call_webhook(r, serde_json::to_string(&v[1]).unwrap_or_default())?
+                    self.call_webhook(r, serde_json::to_string(&v[1]).unwrap_or_default());
                 }
             }
         }

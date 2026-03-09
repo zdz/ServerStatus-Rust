@@ -3,7 +3,7 @@ edition = "2021"
 name = "stat_server"
 version = "1.8.2"
 
-rust-version = "1.76"
+rust-version = "1.94"
 
 authors = ["doge <doge.py@gmail.com>"]
 categories = ["monitoring-tools"]
@@ -45,7 +45,7 @@ prost = "0.14.3"
 reqwest = {version = "0.13.1", features = ["json", "rustls"], default-features = false}
 rhai = {version = "1.24.0", features = ["sync", "metadata", "decimal", "no_function", "no_module", "no_closure", "unchecked"]}
 rust-embed = {version = "8.11.0", features = ["mime-guess"]}
-serde = {version = "1.0.228", default-features = false, features = ["derive", "alloc"]}
+serde = {version = "1.0.228", default-features = false, features = ["derive", "alloc", "rc"]}
 serde_json = {version = "1.0.149", default-features = false, features = ["alloc"]}
 stat_common = {path = "../common", version = "1.1.4"}
 tokio = {version = "1.49.0", features = ["full"]}

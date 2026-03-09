@@ -39,6 +39,7 @@ pub static G_CONFIG: Lazy<Mutex<ClientConfig>> = Lazy::new(|| Mutex::new(ClientC
 // https://docs.rs/clap/latest/clap/_derive/index.html#command-attributes
 #[derive(Parser, Debug, Clone)]
 #[command(author, version = env!("APP_VERSION"), about, long_about = None)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct Args {
     #[arg(short, long, env = "SSR_ADDR", default_value = "http://127.0.0.1:8080/report")]
     addr: String,
@@ -176,6 +177,7 @@ pub struct Args {
 }
 
 impl Args {
+    #[must_use] 
     pub fn skip_iface(&self, name: &str) -> bool {
         if !self.iface.is_empty() {
             if self.iface.iter().any(|fa| name.eq(fa)) {
@@ -235,7 +237,7 @@ fn http_report(args: &Args, stat_base: &mut StatRequest) -> Result<()> {
                 }
                 retries += 1;
                 let delay = Duration::from_secs(2u64.pow(retries)); // Exponential backoff
-                eprintln!("Name resolution failed, retrying in {:?}...", delay);
+                eprintln!("Name resolution failed, retrying in {delay:?}...");
                 sleep(delay);
             }
         }
@@ -282,15 +284,15 @@ fn http_report(args: &Args, stat_base: &mut StatRequest) -> Result<()> {
         // dbg!(&body_data.as_ref().unwrap().len());
 
         let client = http_client.clone();
-        let url = args.addr.to_string();
-        let auth_pass = args.pass.to_string();
+        let url = args.addr.clone();
+        let auth_pass = args.pass.clone();
         let auth_user: String;
         let ssr_auth: &str;
         if args.gid.is_empty() {
-            auth_user = args.user.to_string();
+            auth_user = args.user.clone();
             ssr_auth = "single";
         } else {
-            auth_user = args.gid.to_string();
+            auth_user = args.gid.clone();
             ssr_auth = "group";
         }
 
@@ -307,10 +309,10 @@ fn http_report(args: &Args, stat_base: &mut StatRequest) -> Result<()> {
                 .await
             {
                 Ok(resp) => {
-                    info!("report resp => {:?}", resp);
+                    info!("report resp => {resp:?}");
                 }
                 Err(err) => {
-                    error!("report error => {:?}", err);
+                    error!("report error => {err:?}");
                 }
             }
         });
@@ -326,13 +328,13 @@ async fn refresh_ip_info(args: &Args) {
         info!("get ip info from ip-api.com");
         match geoip::get_ip_info(args).await {
             Ok(ip_info) => {
-                info!("refresh_ip_info succ => {:?}", ip_info);
+                info!("refresh_ip_info succ => {ip_info:?}");
                 if let Ok(mut o) = G_CONFIG.lock() {
                     o.ip_info = Some(ip_info);
                 }
             }
             Err(err) => {
-                error!("refresh_ip_info error => {:?}", err);
+                error!("refresh_ip_info error => {err:?}");
             }
         }
 
@@ -357,8 +359,9 @@ async fn main() -> Result<()> {
     }
 
     // support check
-    if !sysinfo::IS_SUPPORTED_SYSTEM {
-        panic!("当前系统不支持，请切换到Python跨平台版本!");
+    #[allow(clippy::assertions_on_constants)]
+    {
+        assert!(sysinfo::IS_SUPPORTED_SYSTEM, "当前系统不支持，请切换到Python跨平台版本!");
     }
 
     let sys_info = sys_info::collect_sys_info(&args);
@@ -403,7 +406,7 @@ async fn main() -> Result<()> {
     }
 
     let mut stat_base = StatRequest {
-        name: args.user.to_string(),
+        name: args.user.clone(),
         frame: "data".to_string(),
         online4: ipv4,
         online6: ipv6,
@@ -414,24 +417,24 @@ async fn main() -> Result<()> {
         ..Default::default()
     };
     if !args.gid.is_empty() {
-        stat_base.gid = args.gid.to_owned();
+        stat_base.gid = args.gid.clone();
         if stat_base.name.eq("h1") {
             stat_base.name = sys_id;
         }
         if args.alias.eq("unknown") {
-            args.alias = stat_base.name.to_owned();
+            args.alias = stat_base.name.clone();
         } else {
-            stat_base.alias = args.alias.to_owned();
+            stat_base.alias = args.alias.clone();
         }
     }
     if args.disable_notify {
         stat_base.notify = false;
     }
     if !args.host_type.is_empty() {
-        stat_base.r#type = args.host_type.to_owned();
+        stat_base.r#type = args.host_type.clone();
     }
     if !args.location.is_empty() {
-        stat_base.location = args.location.to_owned();
+        stat_base.location = args.location.clone();
     }
     // dbg!(&stat_base);
 

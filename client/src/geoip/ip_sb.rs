@@ -43,10 +43,10 @@ impl From<ApiResp> for IpInfo {
             region_name: resp.region,
             city: resp.city,
 
-            isp: resp.isp.to_string(),
-            org: resp.organization.to_string(),
+            isp: resp.isp.clone(),
+            org: resp.organization.clone(),
             r#as: resp.asn.to_string(),
-            asname: resp.asn_organization.to_string(),
+            asname: resp.asn_organization.clone(),
 
             lat: resp.latitude,
             lon: resp.longitude,

@@ -40,17 +40,17 @@ impl From<IpApiResp> for IpInfo {
     fn from(resp: IpApiResp) -> Self {
         IpInfo {
             source: SOURCE.to_string(),
-            query: resp.query.to_string(),
+            query: resp.query.clone(),
 
-            continent: resp.continent.to_string(),
-            country: resp.country.to_string(),
-            region_name: resp.region_name.to_string(),
-            city: resp.city.to_string(),
+            continent: resp.continent.clone(),
+            country: resp.country.clone(),
+            region_name: resp.region_name.clone(),
+            city: resp.city.clone(),
 
-            isp: resp.isp.to_string(),
-            org: resp.org.to_string(),
-            r#as: resp.r#as.to_string(),
-            asname: resp.asname.to_string(),
+            isp: resp.isp.clone(),
+            org: resp.org.clone(),
+            r#as: resp.r#as.clone(),
+            asname: resp.asname.clone(),
 
             lat: resp.lat,
             lon: resp.lon,

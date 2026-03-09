@@ -1,5 +1,5 @@
 #![allow(unused)]
-use lazy_static::lazy_static;
+#![allow(clippy::cast_precision_loss, clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::similar_names, clippy::many_single_char_names)]
 use once_cell::sync::OnceCell;
 use regex::Regex;
 use std::collections::HashMap;
@@ -14,7 +14,7 @@ use std::net::{Shutdown, ToSocketAddrs};
 use std::process::Command;
 use std::str;
 use std::sync::Arc;
-use std::sync::Mutex;
+use std::sync::{LazyLock, Mutex};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -54,10 +54,8 @@ pub fn get_loadavg() -> (f64, f64, f64) {
         .unwrap()
 }
 
-static MEMORY_REGEX: &str = r#"^(?P<key>\S*):\s*(?P<value>\d*)\s*kB"#;
-lazy_static! {
-    static ref MEMORY_REGEX_RE: Regex = Regex::new(MEMORY_REGEX).unwrap();
-}
+static MEMORY_REGEX: &str = r"^(?P<key>\S*):\s*(?P<value>\d*)\s*kB";
+static MEMORY_REGEX_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(MEMORY_REGEX).unwrap());
 pub fn get_memory() -> (u64, u64, u64, u64) {
     let file = File::open("/proc/meminfo").unwrap();
     let buf_reader = BufReader::new(file);
@@ -66,7 +64,7 @@ pub fn get_memory() -> (u64, u64, u64, u64) {
         let l = line.unwrap();
         if let Some(caps) = MEMORY_REGEX_RE.captures(&l) {
             res_dict.insert(caps["key"].to_string(), caps["value"].parse::<u64>().unwrap());
-        };
+        }
     }
 
     let mem_total = res_dict["MemTotal"];
@@ -100,10 +98,8 @@ pub fn tupd() -> (u32, u32, u32, u32) {
 }
 
 static TRAFFIC_REGEX: &str =
-    r#"([^\s]+):[\s]{0,}(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)"#;
-lazy_static! {
-    static ref TRAFFIC_REGEX_RE: Regex = Regex::new(TRAFFIC_REGEX).unwrap();
-}
+    r"([^\s]+):[\s]{0,}(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)";
+static TRAFFIC_REGEX_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(TRAFFIC_REGEX).unwrap());
 pub fn get_sys_traffic(args: &Args) -> (u64, u64) {
     let (mut network_in, mut network_out) = (0, 0);
     let file = File::open("/proc/net/dev").unwrap();
@@ -142,7 +138,7 @@ pub fn get_hdd(stat: &mut StatRequest) {
         .stdout;
 
     let _ = str::from_utf8(a).map(|content| {
-        let vs = content.trim().split('\n').collect::<Vec<&str>>().to_vec();
+        let vs = content.lines().collect::<Vec<&str>>();
 
         for (idx, s) in vs.iter().enumerate() {
             // header
@@ -181,9 +177,7 @@ pub struct NetSpeed {
     pub avgtx: u64,
 }
 
-lazy_static! {
-    pub static ref G_NET_SPEED: Arc<Mutex<NetSpeed>> = Arc::new(Default::default());
-}
+pub static G_NET_SPEED: LazyLock<Arc<Mutex<NetSpeed>>> = LazyLock::new(|| Arc::new(Mutex::default()));
 
 #[allow(unused)]
 pub fn start_net_speed_collect_t(args: &Args) {
@@ -226,9 +220,7 @@ pub fn start_net_speed_collect_t(args: &Args) {
     });
 }
 
-lazy_static! {
-    pub static ref G_CPU_PERCENT: Arc<Mutex<f64>> = Arc::new(Default::default());
-}
+pub static G_CPU_PERCENT: LazyLock<Arc<Mutex<f64>>> = LazyLock::new(|| Arc::new(Mutex::default()));
 #[allow(unused)]
 pub fn start_cpu_percent_collect_t() {
     let mut pre_cpu: Vec<u64> = vec![0, 0, 0, 0];
@@ -280,15 +272,15 @@ pub fn get_network(args: &Args) -> (bool, bool) {
     for (idx, probe_addr) in addrs.into_iter().enumerate() {
         let _ = probe_addr.to_socket_addrs().map(|mut iter| {
             if let Some(addr) = iter.next() {
-                info!("{} => {}", probe_addr, addr);
+                info!("{probe_addr} => {addr}");
 
                 let r = TcpStream::connect_timeout(&addr, Duration::from_millis(TIMEOUT_MS)).map(|s| {
                     network[idx] = true;
                     s.shutdown(Shutdown::Both)
                 });
 
-                info!("{:?}", r);
-            };
+                info!("{r:?}");
+            }
         });
     }
 
@@ -339,9 +331,9 @@ fn start_ping_collect_t(data: &Arc<Mutex<PingData>>) {
         let time_cost_ms = instant.elapsed().as_millis();
 
         if let Ok(mut o) = ping_data.lock() {
-            o.ping_time = time_cost_ms as u32;
+            o.ping_time = u32::try_from(time_cost_ms).unwrap_or(u32::MAX);
             if package_list.len() > 30 {
-                o.lost_rate = package_lost * 100 / package_list.len() as u32;
+                o.lost_rate = package_lost * 100 / u32::try_from(package_list.len()).unwrap_or(u32::MAX);
             }
         }
 
@@ -356,21 +348,21 @@ pub static G_PING_10086: OnceCell<Arc<Mutex<PingData>>> = OnceCell::new();
 pub fn start_all_ping_collect_t(args: &Args) {
     G_PING_10010
         .set(Arc::new(Mutex::new(PingData {
-            probe_uri: args.cu_addr.to_owned(),
+            probe_uri: args.cu_addr.clone(),
             lost_rate: 0,
             ping_time: 0,
         })))
         .unwrap();
     G_PING_189
         .set(Arc::new(Mutex::new(PingData {
-            probe_uri: args.ct_addr.to_owned(),
+            probe_uri: args.ct_addr.clone(),
             lost_rate: 0,
             ping_time: 0,
         })))
         .unwrap();
     G_PING_10086
         .set(Arc::new(Mutex::new(PingData {
-            probe_uri: args.cm_addr.to_owned(),
+            probe_uri: args.cm_addr.clone(),
             lost_rate: 0,
             ping_time: 0,
         })))

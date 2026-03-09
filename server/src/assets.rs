@@ -10,15 +10,16 @@ use rust_embed::RustEmbed;
 pub struct Asset;
 
 pub async fn index_handler() -> impl IntoResponse {
-    static_handler("/index.html".parse::<Uri>().unwrap()).await
+    static_handler(&"/index.html".parse::<Uri>().unwrap())
 }
 
 #[allow(unused)]
+#[allow(clippy::unused_async)]
 pub async fn admin_index_handler() -> impl IntoResponse {
-    static_handler("/admin.html".parse::<Uri>().unwrap()).await
+    static_handler(&"/admin.html".parse::<Uri>().unwrap())
 }
 
-pub async fn static_handler(uri: Uri) -> impl IntoResponse {
+pub fn static_handler(uri: &Uri) -> impl IntoResponse {
     let path = uri.path().to_string();
     StaticFile(path)
 }

@@ -1,6 +1,8 @@
 #![deny(warnings)]
+#![allow(clippy::struct_excessive_bools)]
 use serde::{Deserialize, Serialize};
 use stat_common::server_status::{DiskInfo, IpInfo, SysInfo};
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn default_as_true() -> bool {
@@ -104,7 +106,7 @@ pub struct HostStat {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct StatsResp {
     pub updated: u64,
-    pub servers: Vec<HostStat>,
+    pub servers: Vec<Arc<HostStat>>,
 }
 impl StatsResp {
     pub fn new() -> Self {

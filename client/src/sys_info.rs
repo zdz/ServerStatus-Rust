@@ -1,11 +1,12 @@
 #![deny(warnings)]
 #![allow(unused)]
-use lazy_static::lazy_static;
+#![allow(clippy::too_many_lines, clippy::cast_precision_loss, clippy::cast_possible_truncation, clippy::many_single_char_names)]
 use prettytable::{row, Table};
 use std::collections::HashSet;
+use std::fmt::Write;
 use std::fs;
 use std::sync::Arc;
-use std::sync::Mutex;
+use std::sync::{LazyLock, Mutex};
 use std::thread;
 use std::time::Duration;
 use sysinfo::CpuRefreshKind;
@@ -21,8 +22,8 @@ use stat_common::{
 
 const SAMPLE_PERIOD: u64 = 1000; //ms
 
-lazy_static! {
-    pub static ref G_EXPECT_FS: Vec<&'static str> = [
+pub static G_EXPECT_FS: LazyLock<Vec<&'static str>> = LazyLock::new(|| {
+    vec![
         "apfs",
         "hfs",
         "ext4",
@@ -41,9 +42,8 @@ lazy_static! {
         "xfs",
         "fuse.rclone",
     ]
-    .to_vec();
-    pub static ref G_CPU_PERCENT: Arc<Mutex<f64>> = Arc::new(Default::default());
-}
+});
+pub static G_CPU_PERCENT: LazyLock<Arc<Mutex<f64>>> = LazyLock::new(|| Arc::new(Mutex::default()));
 
 /// A minimal disk descriptor used by [`calc_hdd_stats`] so the logic can be
 /// tested without OS-level disk enumeration.
@@ -66,7 +66,7 @@ pub(crate) struct DiskCalcInput {
 pub(crate) fn calc_hdd_stats(disks: &[DiskCalcInput], si: bool, is_windows: bool) -> (u64, u64) {
     let (mut total_bytes, mut avail_bytes) = (0_u64, 0_u64);
     // Dedup set is only needed on non-Windows platforms.
-    let mut seen: Option<HashSet<String>> = if !is_windows { Some(HashSet::new()) } else { None };
+    let mut seen: Option<HashSet<String>> = if is_windows { None } else { Some(HashSet::new()) };
 
     for disk in disks {
         let fs = disk.fs_type.to_lowercase();
@@ -95,7 +95,7 @@ pub fn start_cpu_percent_collect_t() {
 
         let global_cpu = sys.global_cpu_usage();
         if let Ok(mut cpu_percent) = G_CPU_PERCENT.lock() {
-            *cpu_percent = global_cpu.round() as f64;
+            *cpu_percent = f64::from(global_cpu.round());
         }
 
         thread::sleep(Duration::from_millis(SAMPLE_PERIOD));
@@ -108,9 +108,7 @@ pub struct NetSpeed {
     pub net_tx: u64,
 }
 
-lazy_static! {
-    pub static ref G_NET_SPEED: Arc<Mutex<NetSpeed>> = Arc::new(Default::default());
-}
+pub static G_NET_SPEED: LazyLock<Arc<Mutex<NetSpeed>>> = LazyLock::new(|| Arc::new(Mutex::default()));
 
 pub fn start_net_speed_collect_t(args: &Args) {
     let mut networks = Networks::new_with_refreshed_list();
@@ -272,7 +270,7 @@ pub fn collect_sys_info(args: &Args) -> SysInfo {
     let mut sys = System::new();
     sys.refresh_cpu_all();
 
-    info_pb.name = args.user.to_owned();
+    info_pb.name.clone_from(&args.user);
     info_pb.version = env!("CARGO_PKG_VERSION").to_string();
 
     info_pb.os_name = std::env::consts::OS.to_string();
@@ -283,7 +281,7 @@ pub fn collect_sys_info(args: &Args) -> SysInfo {
 
     // cpu
     let cpus = sys.cpus();
-    info_pb.cpu_num = cpus.len() as u32;
+    info_pb.cpu_num = u32::try_from(cpus.len()).unwrap_or(u32::MAX);
     if let Some(cpu) = cpus.iter().next() {
         info_pb.cpu_brand = cpu.brand().to_string();
         info_pb.cpu_vender_id = cpu.vendor_id().to_string();
@@ -358,7 +356,7 @@ pub fn print_sysinfo() {
     let mut components_sb = String::new();
     let components = Components::new_with_refreshed_list();
     for component in &components {
-        components_sb.push_str(&format!("{component:?}\n"));
+        let _ = writeln!(components_sb, "{component:?}");
     }
     sysinfo_t.add_row(row!["Components", components_sb]);
 

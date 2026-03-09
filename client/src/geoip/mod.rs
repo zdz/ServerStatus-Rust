@@ -45,7 +45,7 @@ where
             }
             resp.json::<T>()
                 .await
-                .map(|resp| resp.into())
+                .map(std::convert::Into::into)
                 .map_err(anyhow::Error::new)
         }
         Err(err) => Err(anyhow::Error::new(err)),
@@ -56,7 +56,6 @@ pub async fn get_ip_info(args: &Args) -> Result<IpInfo> {
     let source = args.ip_source.as_str();
     match source {
         "ip-api.com" => ip_api_com::get_ip_info(args).await,
-        "ip.sb" => ip_sb::get_ip_info(args).await,
         "ipapi.co" => ipapi_co::get_ip_info(args).await,
         "myip.la" => myip_la::get_ip_info(args).await,
         _ => ip_sb::get_ip_info(args).await,

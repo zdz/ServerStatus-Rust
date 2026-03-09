@@ -26,7 +26,7 @@ impl ServerStatus for ServerStatusSrv {
                     let _ = mgr.report(v);
                 }
                 Err(err) => {
-                    error!("serde_json::to_value err => {:?}", err);
+                    error!("serde_json::to_value err => {err:?}");
                 }
             }
         }

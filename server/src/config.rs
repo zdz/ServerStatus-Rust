@@ -83,15 +83,15 @@ impl HostGroup {
     pub fn inst_host(&self, name: &str) -> Host {
         Host {
             name: name.to_owned(),
-            gid: self.gid.to_owned(),
-            password: self.password.to_owned(),
-            location: self.location.to_owned(),
-            r#type: self.r#type.to_owned(),
+            gid: self.gid.clone(),
+            password: self.password.clone(),
+            location: self.location.clone(),
+            r#type: self.r#type.clone(),
             monthstart: 1,
             notify: self.notify,
             pos: self.pos,
             weight: self.weight,
-            labels: self.labels.to_owned(),
+            labels: self.labels.clone(),
             ..Default::default()
         }
     }
@@ -183,19 +183,19 @@ pub fn from_str(content: &str) -> Option<Config> {
     for (idx, host) in o.hosts.iter_mut().enumerate() {
         host.pos = idx;
         if host.alias.is_empty() {
-            host.alias = host.name.to_owned();
+            host.alias = host.name.clone();
         }
         if host.monthstart < 1 || host.monthstart > 31 {
             host.monthstart = 1;
         }
         host.weight = 10000_u64 - idx as u64;
-        o.hosts_map.insert(host.name.to_owned(), host.clone());
+        o.hosts_map.insert(host.name.clone(), host.clone());
     }
 
     for (idx, group) in o.hosts_group.iter_mut().enumerate() {
         group.pos = idx;
         group.weight = (10000 - (1 + idx) * 100) as u64;
-        o.hosts_group_map.insert(group.gid.to_owned(), group.clone());
+        o.hosts_group_map.insert(group.gid.clone(), group.clone());
     }
 
     if o.offline_threshold < 30 {

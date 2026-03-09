@@ -28,7 +28,7 @@ impl Log {
     pub fn new(cfg: &'static Config) -> Self {
         let o = Self { config: cfg };
 
-        add_template(KIND, "tpl", o.config.tpl.to_string());
+        add_template(KIND, "tpl", o.config.tpl.clone());
 
         // build dir
         fs::create_dir_all(&cfg.log_dir).unwrap_or_else(|_| panic!("can't create dir `{}", cfg.log_dir));

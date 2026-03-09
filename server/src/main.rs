@@ -73,9 +73,11 @@ fn create_app_router() -> Router {
 }
 
 async fn fallback(uri: Uri) -> impl IntoResponse {
-    assets::static_handler(uri).await
+    assets::static_handler(&uri)
 }
 
+/// Waits for Ctrl-C or SIGTERM to initiate graceful shutdown.
+#[allow(clippy::missing_panics_doc)]
 pub async fn shutdown_signal() {
     let ctrl_c = async {
         signal::ctrl_c().await.expect("failed to install Ctrl+C handler");
@@ -93,8 +95,8 @@ pub async fn shutdown_signal() {
     let terminate = std::future::pending::<()>();
 
     tokio::select! {
-        _ = ctrl_c => {},
-        _ = terminate => {},
+        () = ctrl_c => {},
+        () = terminate => {},
     }
 
     println!("signal received, starting graceful shutdown");
@@ -183,7 +185,7 @@ async fn main() -> Result<(), anyhow::Error> {
     // serv grpc
     tokio::spawn(async move { grpc::serv_grpc(cfg).await });
 
-    let http_addr = cfg.http_addr.to_string();
+    let http_addr = cfg.http_addr.clone();
     eprintln!("🚀 listening on http://{http_addr}");
 
     let listener = TcpListener::bind(&http_addr).await.unwrap();

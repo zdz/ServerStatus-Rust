@@ -39,9 +39,9 @@ impl WeChat {
             config: cfg,
             http_client: reqwest::Client::new(),
         };
-        add_template(KIND, get_tag(&Event::NodeUp), o.config.online_tpl.to_string());
-        add_template(KIND, get_tag(&Event::NodeDown), o.config.offline_tpl.to_string());
-        add_template(KIND, get_tag(&Event::Custom), o.config.custom_tpl.to_string());
+        add_template(KIND, get_tag(&Event::NodeUp), o.config.online_tpl.clone());
+        add_template(KIND, get_tag(&Event::NodeDown), o.config.offline_tpl.clone());
+        add_template(KIND, get_tag(&Event::Custom), o.config.custom_tpl.clone());
 
         o
     }
@@ -55,12 +55,12 @@ impl crate::notifier::Notifier for WeChat {
     fn send_notify(&self, text_content: String) -> Result<()> {
         // get access_token
         let mut data = HashMap::new();
-        data.insert("corpid", self.config.corp_id.to_string());
-        data.insert("corpsecret", self.config.corp_secret.to_string());
+        data.insert("corpid", self.config.corp_id.clone());
+        data.insert("corpsecret", self.config.corp_secret.clone());
 
         let http_client = self.http_client.clone();
         let handle = NOTIFIER_HANDLE.lock().unwrap().as_ref().unwrap().clone();
-        let agent_id = self.config.agent_id.to_string();
+        let agent_id = self.config.agent_id.clone();
         handle.spawn(async move {
             match http_client
                 .post(TOKEN_URL)
@@ -70,7 +70,7 @@ impl crate::notifier::Notifier for WeChat {
                 .await
             {
                 Ok(resp) => {
-                    info!("wechat get access token resp => {:?}", resp);
+                    info!("wechat get access token resp => {resp:?}");
                     let json_res = resp.json::<HashMap<String, serde_json::Value>>().await;
                     if let Ok(json_data) = json_res {
                         if let Some(access_token) = json_data.get("access_token") {
@@ -95,10 +95,10 @@ impl crate::notifier::Notifier for WeChat {
                                     .await
                                 {
                                     Ok(resp) => {
-                                        info!("wechat send msg resp => {:?}", resp);
+                                        info!("wechat send msg resp => {resp:?}");
                                     }
                                     Err(err) => {
-                                        error!("wechat send msg error => {:?}", err);
+                                        error!("wechat send msg error => {err:?}");
                                     }
                                 }
                             }
@@ -106,7 +106,7 @@ impl crate::notifier::Notifier for WeChat {
                     }
                 }
                 Err(err) => {
-                    error!("wechat get access_token error => {:?}", err);
+                    error!("wechat get access_token error => {err:?}");
                 }
             }
         });
@@ -124,11 +124,11 @@ impl crate::notifier::Notifier for WeChat {
         .map(|content| match *e {
             Event::NodeUp | Event::NodeDown => self.send_notify(content).unwrap(),
             Event::Custom => {
-                info!("render.custom.tpl => {}", content);
+                info!("render.custom.tpl => {content}");
                 if !content.is_empty() {
                     self.send_notify(format!("{}\n{}", self.config.title, content))
                         .unwrap_or_else(|err| {
-                            error!("send_msg err => {:?}", err);
+                            error!("send_msg err => {err:?}");
                         });
                 }
             }

@@ -38,7 +38,7 @@ pub async fn authorize(Json(payload): Json<AuthPayload>) -> Result<Json<AuthBody
         sub: "dev@ssr.rs".to_owned(),
         company: "Company".to_owned(),
         // Mandatory expiry time as UTC timestamp
-        exp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as usize + 7 * 24 * 3600,
+        exp: usize::try_from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()).unwrap_or(usize::MAX) + 7 * 24 * 3600,
     };
     // Create the authorization token
     let token = encode(&Header::default(), &claims, &KEYS.encoding).map_err(|_| AuthError::TokenCreation)?;

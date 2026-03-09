@@ -19,10 +19,10 @@ pub async fn report(args: &Args, stat_base: &mut StatRequest) -> anyhow::Result<
     let auth_user: String;
     let ssr_auth: &[u8];
     if args.gid.is_empty() {
-        auth_user = args.user.to_string();
+        auth_user = args.user.clone();
         ssr_auth = b"single";
     } else {
-        auth_user = args.gid.to_string();
+        auth_user = args.gid.clone();
         ssr_auth = b"group";
     }
     let token = MetadataValue::try_from(format!("{}@_@{}", auth_user, args.pass))?;
@@ -55,7 +55,7 @@ pub async fn report(args: &Args, stat_base: &mut StatRequest) -> anyhow::Result<
         channel = Channel::from_shared(addr)?.tls_config(tls_config)?.connect().await?;
     } else {
         channel = Channel::from_shared(addr)?.connect().await?;
-    };
+    }
 
     let timeout_channel = Timeout::new(channel, Duration::from_millis(3000));
     let grpc_client = ServerStatusClient::with_interceptor(timeout_channel, move |mut req: Request<()>| {
@@ -73,10 +73,10 @@ pub async fn report(args: &Args, stat_base: &mut StatRequest) -> anyhow::Result<
             let request = tonic::Request::new(stat_rt);
             match client.report(request).await {
                 Ok(resp) => {
-                    info!("grpc report resp => {:?}", resp);
+                    info!("grpc report resp => {resp:?}");
                 }
                 Err(status) => {
-                    error!("grpc report status => {:?}", status);
+                    error!("grpc report status => {status:?}");
                 }
             }
         });

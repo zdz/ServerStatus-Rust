@@ -35,9 +35,9 @@ pub struct Email {
 impl Email {
     pub fn new(cfg: &'static Config) -> Self {
         let o = Self { config: cfg };
-        add_template(KIND, get_tag(&Event::NodeUp), o.config.online_tpl.to_string());
-        add_template(KIND, get_tag(&Event::NodeDown), o.config.offline_tpl.to_string());
-        add_template(KIND, get_tag(&Event::Custom), o.config.custom_tpl.to_string());
+        add_template(KIND, get_tag(&Event::NodeUp), o.config.online_tpl.clone());
+        add_template(KIND, get_tag(&Event::NodeDown), o.config.offline_tpl.clone());
+        add_template(KIND, get_tag(&Event::Custom), o.config.custom_tpl.clone());
         o
     }
 }
@@ -49,7 +49,7 @@ impl crate::notifier::Notifier for Email {
 
     fn send_notify(&self, html_content: String) -> Result<()> {
         let mut builder = Message::builder()
-            .subject(self.config.subject.to_string())
+            .subject(self.config.subject.clone())
             .from(format!("ServerStatus <{}>", self.config.username).parse().unwrap());
 
         let mailboxes: Mailboxes = self.config.to.parse().expect("Invalid email addresses");
@@ -67,9 +67,9 @@ impl crate::notifier::Notifier for Email {
             )
             .unwrap();
 
-        let creds = Credentials::new(self.config.username.to_string(), self.config.password.to_string());
+        let creds = Credentials::new(self.config.username.clone(), self.config.password.clone());
 
-        let smtp_server = self.config.server.to_string();
+        let smtp_server = self.config.server.clone();
         let handle = NOTIFIER_HANDLE.lock().unwrap().as_ref().unwrap().clone();
         handle.spawn(async move {
             let mailer: AsyncSmtpTransport<Tokio1Executor> =
@@ -84,7 +84,7 @@ impl crate::notifier::Notifier for Email {
                     info!("Email sent successfully!");
                 }
                 Err(err) => {
-                    error!("Could not send email: {:?}", err);
+                    error!("Could not send email: {err:?}");
                 }
             }
         });
@@ -102,11 +102,11 @@ impl crate::notifier::Notifier for Email {
         .map(|content| match *e {
             Event::NodeUp | Event::NodeDown => self.send_notify(content).unwrap(),
             Event::Custom => {
-                info!("render.custom.tpl => {}", content);
+                info!("render.custom.tpl => {content}");
                 if !content.is_empty() {
                     self.send_notify(format!("{}\n{}", self.config.title, content))
                         .unwrap_or_else(|err| {
-                            error!("send_msg err => {:?}", err);
+                            error!("send_msg err => {err:?}");
                         });
                 }
             }

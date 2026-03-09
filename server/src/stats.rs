@@ -1,12 +1,8 @@
 #![allow(unused)]
 use anyhow::Result;
 use chrono::{Datelike, Local, Timelike};
-use lazy_static::lazy_static;
 use once_cell::sync::OnceCell;
-use std::borrow::Borrow;
-use std::borrow::BorrowMut;
 use std::borrow::Cow;
-use std::collections::binary_heap::Iter;
 use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::fs;
@@ -14,8 +10,7 @@ use std::fs::File;
 use std::io::Write;
 use std::sync::mpsc::sync_channel;
 use std::sync::mpsc::SyncSender;
-use std::sync::Arc;
-use std::sync::Mutex;
+use std::sync::{Arc, LazyLock, Mutex};
 use std::thread;
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -25,6 +20,9 @@ use crate::notifier::{Event, Notifier};
 use crate::payload::{HostStat, StatsResp};
 
 const SAVE_INTERVAL: u64 = 60;
+const OS_LIST: [&str; 10] = [
+    "centos", "debian", "ubuntu", "arch", "windows", "macos", "pi", "android", "linux", "freebsd",
+];
 
 static STAT_SENDER: OnceCell<SyncSender<Cow<HostStat>>> = OnceCell::new();
 
@@ -41,7 +39,7 @@ impl StatsMgr {
         }
     }
 
-    fn load_last_network(&mut self, hosts_map: &mut HashMap<String, Host>) {
+    fn load_last_network(hosts_map: &mut HashMap<String, Host>) {
         let contents = fs::read_to_string("stats.json").unwrap_or_default();
         if contents.is_empty() {
             return;
@@ -62,7 +60,7 @@ impl StatsMgr {
                             trace!("{} => last in/out ({}/{}))", &name, last_network_in, last_network_out);
                         }
                     } else {
-                        error!("invalid json => {:?}", v);
+                        error!("invalid json => {v:?}");
                     }
                 }
                 trace!("load stats.json succ!");
@@ -72,6 +70,8 @@ impl StatsMgr {
         }
     }
 
+    #[allow(clippy::too_many_lines)]
+    #[allow(clippy::unnecessary_wraps)]
     pub fn init(
         &mut self,
         cfg: &'static crate::config::Config,
@@ -80,46 +80,45 @@ impl StatsMgr {
         let hosts_map_base = Arc::new(Mutex::new(cfg.hosts_map.clone()));
 
         // load last_network_in/out
-        if let Ok(mut hosts_map) = hosts_map_base.lock() {
-            self.load_last_network(&mut hosts_map);
+        if let Ok(mut hosts_map_guard) = hosts_map_base.lock() {
+            Self::load_last_network(&mut hosts_map_guard);
         }
 
         let (stat_tx, stat_rx) = sync_channel(512);
         STAT_SENDER.set(stat_tx).unwrap();
         let (notifier_tx, notifier_rx) = sync_channel(512);
 
-        let stat_map: Arc<Mutex<HashMap<String, Cow<HostStat>>>> = Arc::new(Mutex::new(HashMap::new()));
+        let stat_map: Arc<Mutex<HashMap<String, Arc<HostStat>>>> = Arc::new(Mutex::new(HashMap::new()));
 
         // stat_rx thread
         thread::spawn({
-            let hosts_group_map = cfg.hosts_group_map.clone();
             let hosts_map = hosts_map_base.clone();
             let stat_map = stat_map.clone();
             let notifier_tx = notifier_tx.clone();
 
             move || loop {
                 while let Ok(mut stat) = stat_rx.recv() {
-                    trace!("recv stat `{:?}", stat);
+                    trace!("recv stat `{stat:?}");
 
                     let mut stat_t = stat.to_mut();
 
                     // group mode
                     if !stat_t.gid.is_empty() {
                         if stat_t.alias.is_empty() {
-                            stat_t.alias = stat_t.name.to_string();
+                            stat_t.alias = stat_t.name.clone();
                         }
 
                         if let Ok(mut hosts_map) = hosts_map.lock() {
                             let host = hosts_map.get(&stat_t.name);
                             if host.is_none() || !host.unwrap().gid.eq(&stat_t.gid) {
-                                if let Some(group) = hosts_group_map.get(&stat_t.gid) {
+                                if let Some(group) = cfg.hosts_group_map.get(&stat_t.gid) {
                                     // 名称不变，换组了，更新组配置 & last in/out
                                     let mut inst = group.inst_host(&stat_t.name);
                                     if let Some(o) = host {
                                         inst.last_network_in = o.last_network_in;
                                         inst.last_network_out = o.last_network_out;
-                                    };
-                                    hosts_map.insert(stat_t.name.to_string(), inst);
+                                    }
+                                    hosts_map.insert(stat_t.name.clone(), inst);
                                 } else {
                                     continue;
                                 }
@@ -131,7 +130,7 @@ impl StatsMgr {
                     if let Ok(mut hosts_map) = hosts_map.lock() {
                         let host_info = hosts_map.get_mut(&stat_t.name);
                         if host_info.is_none() {
-                            error!("invalid stat `{:?}", stat_t);
+                            error!("invalid stat `{stat_t:?}");
                             continue;
                         }
                         let info = host_info.unwrap();
@@ -142,20 +141,20 @@ impl StatsMgr {
 
                         // 补齐
                         if stat_t.location.is_empty() {
-                            stat_t.location = info.location.to_string();
+                            stat_t.location = info.location.clone();
                         }
                         if stat_t.host_type.is_empty() {
-                            stat_t.host_type = info.r#type.to_owned();
+                            stat_t.host_type = info.r#type.clone();
                         }
                         stat_t.notify = info.notify && stat_t.notify;
                         stat_t.pos = info.pos;
                         stat_t.disabled = info.disabled;
                         stat_t.weight += info.weight;
-                        stat_t.labels = info.labels.to_owned();
+                        stat_t.labels = info.labels.clone();
 
                         // !group
                         if !info.alias.is_empty() {
-                            stat_t.alias = info.alias.to_owned();
+                            stat_t.alias = info.alias.clone();
                         }
 
                         info.latest_ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
@@ -179,31 +178,36 @@ impl StatsMgr {
                         }
 
                         // uptime str
-                        let day = (stat_t.uptime as f64 / 3600.0 / 24.0) as i64;
+                        let day = stat_t.uptime / (3600 * 24);
                         if day > 0 {
                             stat_t.uptime_str = format!("{day} 天");
                         } else {
                             stat_t.uptime_str = format!(
                                 "{:02}:{:02}:{:02}",
-                                (stat_t.uptime as f64 / 3600.0) as i64,
-                                (stat_t.uptime as f64 / 60.0) as i64 % 60,
+                                stat_t.uptime / 3600,
+                                (stat_t.uptime / 60) % 60,
                                 stat_t.uptime % 60
                             );
                         }
 
-                        info!("update stat `{:?}", stat_t);
+                        info!("update stat `{stat_t:?}");
                         if let Ok(mut host_stat_map) = stat_map.lock() {
+                            let mut notify_up = false;
                             if let Some(pre_stat) = host_stat_map.get(&stat_t.name) {
                                 if stat_t.ip_info.is_none() {
-                                    stat_t.ip_info = pre_stat.ip_info.to_owned();
+                                    stat_t.ip_info = pre_stat.ip_info.clone();
                                 }
 
                                 if stat_t.notify && (pre_stat.latest_ts + cfg.offline_threshold < stat_t.latest_ts) {
-                                    // node up notify
-                                    notifier_tx.send((Event::NodeUp, stat.clone()));
+                                    notify_up = true;
                                 }
                             }
-                            host_stat_map.insert(stat.name.to_string(), stat);
+                            let arc_stat = Arc::new(stat.into_owned());
+                            if notify_up {
+                                // node up notify
+                                notifier_tx.send((Event::NodeUp, Arc::clone(&arc_stat)));
+                            }
+                            host_stat_map.insert(arc_stat.name.clone(), arc_stat);
                             //trace!("{:?}", host_stat_map);
                         }
                     }
@@ -227,72 +231,74 @@ impl StatsMgr {
 
                 let mut resp = StatsResp::new();
                 let now = resp.updated;
-                let mut notified = false;
+                let mut any_notified = false;
 
                 // group gc
                 if latest_group_gc + cfg.group_gc < now {
                     latest_group_gc = now;
                     //
-                    if let Ok(mut hosts_map) = hosts_map.lock() {
-                        hosts_map.retain(|_, o| o.gid.is_empty() || o.latest_ts + cfg.group_gc >= now);
+                    if let Ok(mut hm) = hosts_map.lock() {
+                        hm.retain(|_, o| o.gid.is_empty() || o.latest_ts + cfg.group_gc >= now);
                     }
                     //
-                    if let Ok(mut stat_map) = stat_map.lock() {
-                        stat_map.retain(|_, o| o.gid.is_empty() || o.latest_ts + cfg.group_gc >= now);
+                    if let Ok(mut sm) = stat_map.lock() {
+                        sm.retain(|_, o| o.gid.is_empty() || o.latest_ts + cfg.group_gc >= now);
                     }
                 }
 
                 if let Ok(mut host_stat_map) = stat_map.lock() {
                     for (_, stat) in host_stat_map.iter_mut() {
                         if stat.disabled {
-                            resp.servers.push(stat.as_ref().clone());
+                            resp.servers.push(Arc::clone(stat));
                             continue;
                         }
-                        let stat = stat.borrow_mut();
-                        let o = stat.to_mut();
-                        // 30s 下线
-                        if o.latest_ts + cfg.offline_threshold < now {
-                            o.online4 = false;
-                            o.online6 = false;
-                        }
+                        let notify_event = {
+                            let o = Arc::make_mut(stat);
+                            // 30s 下线
+                            if o.latest_ts + cfg.offline_threshold < now {
+                                o.online4 = false;
+                                o.online6 = false;
+                            }
 
-                        // labels
-                        const OS_LIST: [&str; 10] = [
-                            "centos", "debian", "ubuntu", "arch", "windows", "macos", "pi", "android", "linux", "freebsd"
-                        ];
-                        if !o.labels.contains("os=") {
-                            if let Some(sys_info) = &o.sys_info {
-                                let os_r = sys_info.os_release.to_lowercase();
-                                for s in OS_LIST.iter() {
-                                    if os_r.contains(s) {
-                                        if o.labels.is_empty() {
-                                            write!(o.labels, "os={s}");
-                                        } else {
-                                            write!(o.labels, ";os={s}");
+                            // labels
+                            if !o.labels.contains("os=") {
+                                if let Some(sys_info) = &o.sys_info {
+                                    let os_r = sys_info.os_release.to_lowercase();
+                                    for s in &OS_LIST {
+                                        if os_r.contains(s) {
+                                            if o.labels.is_empty() {
+                                                write!(o.labels, "os={s}");
+                                            } else {
+                                                write!(o.labels, ";os={s}");
+                                            }
+                                            break;
                                         }
-                                        break;
                                     }
                                 }
                             }
-                        }
 
-                        // client notify
-                        if o.notify {
-                            // notify check /30 s
-                            if latest_notify_ts + cfg.notify_interval < now {
+                            // determine notify event (o is dropped after this block)
+                            if o.notify && latest_notify_ts + cfg.notify_interval < now {
                                 if o.online4 || o.online6 {
-                                    notifier_tx.send((Event::Custom, stat.clone()));
+                                    Some(Event::Custom)
                                 } else {
                                     o.disabled = true;
-                                    notifier_tx.send((Event::NodeDown, stat.clone()));
+                                    Some(Event::NodeDown)
                                 }
-                                notified = true;
+                            } else {
+                                None
                             }
+                        };
+
+                        // client notify — Arc::clone is O(1), no HostStat copy
+                        if let Some(event) = notify_event {
+                            notifier_tx.send((event, Arc::clone(stat)));
+                            any_notified = true;
                         }
 
-                        resp.servers.push(stat.as_ref().clone());
+                        resp.servers.push(Arc::clone(stat));
                     }
-                    if notified {
+                    if any_notified {
                         latest_notify_ts = now;
                     }
                 }
@@ -335,11 +341,11 @@ impl StatsMgr {
         thread::spawn(move || loop {
             while let Ok(msg) = notifier_rx.recv() {
                 let (e, stat) = msg;
-                let notifiers = &*notifies.lock().unwrap();
-                trace!("recv notify => {:?}, {:?}", e, stat);
-                for notifier in notifiers {
-                    trace!("{} notify {:?} => {:?}", notifier.kind(), e, stat);
-                    notifier.notify(&e, stat.borrow());
+                let notify_list = &*notifies.lock().unwrap();
+                trace!("recv notify => {e:?}, {stat:?}");
+                for n in notify_list {
+                    trace!("{} notify {:?} => {:?}", n.kind(), e, stat);
+                    n.notify(&e, &stat);
                 }
             }
         });
@@ -355,20 +361,21 @@ impl StatsMgr {
         self.resp_json.lock().unwrap().to_string()
     }
 
+    #[allow(clippy::unused_self)]
+    #[allow(clippy::unnecessary_wraps)]
     pub fn report(&self, data: serde_json::Value) -> Result<()> {
-        lazy_static! {
-            static ref SENDER: SyncSender<Cow<'static, HostStat>> = STAT_SENDER.get().unwrap().clone();
-        }
+        static SENDER: LazyLock<SyncSender<Cow<'static, HostStat>>> =
+            LazyLock::new(|| STAT_SENDER.get().unwrap().clone());
 
         match serde_json::from_value(data) {
             Ok(stat) => {
-                trace!("send stat => {:?} ", stat);
+                trace!("send stat => {stat:?} ");
                 SENDER.send(Cow::Owned(stat));
             }
             Err(err) => {
-                error!("report error => {:?}", err);
+                error!("report error => {err:?}");
             }
-        };
+        }
         Ok(())
     }
 
@@ -385,7 +392,7 @@ impl StatsMgr {
             }
         } else {
             // todo!()
-        };
+        }
 
         Ok(resp_json)
     }

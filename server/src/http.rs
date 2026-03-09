@@ -31,7 +31,7 @@ pub async fn get_stats_json() -> impl IntoResponse {
 }
 
 #[allow(unused)]
-pub async fn get_site_config_json() -> impl IntoResponse {
+pub fn get_site_config_json() -> impl IntoResponse {
     // TODO
     ([(header::CONTENT_TYPE, "application/json")], "{}")
 }
@@ -54,6 +54,7 @@ pub async fn admin_api(_claims: jwt::Claims, Path(path): Path<String>) -> Json<V
     Json(json!({ "code": 0, "message": "ok" }))
 }
 
+#[allow(clippy::unnecessary_wraps)]
 pub fn init_jinja_tpl() -> Result<(), anyhow::Error> {
     let detail_data = Asset::get("/jinja/detail.jinja.html").expect("detail.jinja.html not found");
     let detail_html: String = String::from_utf8(detail_data.data.into()).unwrap();
@@ -69,11 +70,12 @@ pub fn init_jinja_tpl() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 pub async fn init_client(uri: Uri, req_header: HeaderMap, Query(params): Query<HashMap<String, String>>) -> Response {
     // dbg!(&params);
 
     // query args
-    let invalid = "".to_string();
+    let invalid = String::new();
     let pass = params.get("pass").unwrap_or(&invalid);
     let uid = params.get("uid").unwrap_or(&invalid);
     let gid = params.get("gid").unwrap_or(&invalid);
@@ -87,9 +89,9 @@ pub async fn init_client(uri: Uri, req_header: HeaderMap, Query(params): Query<H
     let mut auth_ok = false;
     if let Some(cfg) = G_CONFIG.get() {
         if gid.is_empty() {
-            auth_ok = cfg.auth(uid, pass)
+            auth_ok = cfg.auth(uid, pass);
         } else {
-            auth_ok = cfg.group_auth(gid, pass)
+            auth_ok = cfg.group_auth(gid, pass);
         }
     }
     if !auth_ok {
@@ -98,62 +100,59 @@ pub async fn init_client(uri: Uri, req_header: HeaderMap, Query(params): Query<H
 
     let mut domain = "localhost".to_string();
     let mut scheme = "http".to_string();
-    let mut server_url = "".to_string();
-    let mut workspace = "".to_string();
+    let mut server_url = String::new();
+    let mut workspace = String::new();
 
     // load deploy config
     if let Some(cfg) = G_CONFIG.get() {
-        server_url = cfg.server_url.to_string();
-        workspace = cfg.workspace.to_string();
+        server_url.clone_from(&cfg.server_url);
+        workspace.clone_from(&cfg.workspace);
     }
     // build server url
     if server_url.is_empty() {
         if let Some(v) = uri.scheme() {
             scheme = v.to_string();
-            debug!("Http Scheme => {}", scheme);
+            debug!("Http Scheme => {scheme}");
         }
         req_header.get("x-forwarded-proto").map(|v| {
             v.to_str().map(|s| {
-                debug!("x-forwarded-proto => {}", s);
+                debug!("x-forwarded-proto => {s}");
                 scheme = s.to_string();
             })
         });
 
         req_header.get("Host").map(|v| {
             v.to_str().map(|host| {
-                debug!("Http Host => {}", host);
+                debug!("Http Host => {host}");
                 domain = host.to_string();
             })
         });
         req_header.get("x-forwarded-host").map(|v| {
             v.to_str().map(|host| {
-                debug!("x-forwarded-host => {}", host);
+                debug!("x-forwarded-host => {host}");
                 domain = host.to_string();
             })
         });
         server_url = format!("{scheme}://{domain}/report");
     }
 
-    let debug = params.get("debug").map(|p| p.eq("1")).unwrap_or(false);
-    let vnstat = params.get("vnstat").map(|p| p.eq("1")).unwrap_or(false);
-    let disable_ping = params.get("ping").map(|p| p.eq("0")).unwrap_or(false);
-    let disable_tupd = params.get("tupd").map(|p| p.eq("0")).unwrap_or(false);
-    let disable_extra = params.get("extra").map(|p| p.eq("0")).unwrap_or(false);
-    let cn = params.get("cn").map(|p| p.eq("1")).unwrap_or(false);
+    let debug = params.get("debug").is_some_and(|p| p.eq("1"));
+    let vnstat = params.get("vnstat").is_some_and(|p| p.eq("1"));
+    let disable_ping = params.get("ping").is_some_and(|p| p.eq("0"));
+    let disable_tupd = params.get("tupd").is_some_and(|p| p.eq("0"));
+    let disable_extra = params.get("extra").is_some_and(|p| p.eq("0"));
+    let cn = params.get("cn").is_some_and(|p| p.eq("1"));
     let weight = params
         .get("weight")
-        .map(|p| p.parse::<u64>().unwrap_or(0_u64))
-        .unwrap_or(0_u64);
+        .map_or(0_u64, |p| p.parse::<u64>().unwrap_or(0_u64));
     let vnstat_mr = params
         .get("vnstat-mr")
-        .map(|p| p.parse::<u32>().unwrap_or(1_u32))
-        .unwrap_or(1_u32);
+        .map_or(1_u32, |p| p.parse::<u32>().unwrap_or(1_u32));
     let interval = params
         .get("interval")
-        .map(|p| p.parse::<u32>().unwrap_or(1_u32))
-        .unwrap_or(1_u32);
+        .map_or(1_u32, |p| p.parse::<u32>().unwrap_or(1_u32));
 
-    let notify = params.get("notify").map(|p| !p.eq("0")).unwrap_or(true);
+    let notify = params.get("notify").is_none_or(|p| !p.eq("0"));
     let host_type = params.get("type").unwrap_or(&invalid);
     let location = params.get("loc").unwrap_or(&invalid);
 
@@ -174,7 +173,7 @@ pub async fn init_client(uri: Uri, req_header: HeaderMap, Query(params): Query<H
         client_opts.push_str(" -n");
     }
     if 1 < vnstat_mr && vnstat_mr <= 28 {
-        let _ = write!(client_opts, r#" --vnstat-mr {vnstat_mr}"#);
+        let _ = write!(client_opts, r" --vnstat-mr {vnstat_mr}");
     }
     if disable_ping {
         client_opts.push_str(" --disable-ping");
@@ -186,7 +185,7 @@ pub async fn init_client(uri: Uri, req_header: HeaderMap, Query(params): Query<H
         client_opts.push_str(" --disable-extra");
     }
     if weight > 0 {
-        let _ = write!(client_opts, r#" -w {weight}"#);
+        let _ = write!(client_opts, r" -w {weight}");
     }
     if !gid.is_empty() {
         let _ = write!(client_opts, r#" -g "{gid}""#);
@@ -222,7 +221,7 @@ pub async fn init_client(uri: Uri, req_header: HeaderMap, Query(params): Query<H
     }
 
     if interval > 0 {
-        let _ = write!(client_opts, r#" --interval {interval}"#);
+        let _ = write!(client_opts, r" --interval {interval}");
     }
 
     let ip_source = params.get("ip-source").unwrap_or(&invalid);
@@ -266,7 +265,7 @@ pub async fn init_client(uri: Uri, req_header: HeaderMap, Query(params): Query<H
     )
 }
 
-async fn render_jinja_ht_tpl(tag: &'static str) -> Response {
+fn render_jinja_ht_tpl(tag: &'static str) -> Response {
     let o = G_STATS_MGR.get().unwrap().get_all_info().unwrap();
 
     jinja::render_template(KIND, tag, context!(resp => &o), false)
@@ -287,9 +286,10 @@ pub async fn get_map(
     // _claims: jwt::Claims
     _auth: auth::AdminAuth,
 ) -> Response {
-    render_jinja_ht_tpl("map").await
+    render_jinja_ht_tpl("map")
 }
 
+#[allow(clippy::too_many_lines)]
 pub async fn get_detail(
     // _claims: jwt::Claims
     _auth: auth::AdminAuth,
@@ -315,21 +315,21 @@ pub async fn get_detail(
             .as_ref()
             .map(|o| {
                 let mut s = String::new();
-                s.push_str(&format!("version:        {}\n", o.version));
-                s.push_str(&format!("host_name:      {}\n", o.host_name));
-                s.push_str(&format!("os_name:        {}\n", o.os_name));
-                s.push_str(&format!("os_arch:        {}\n", o.os_arch));
-                s.push_str(&format!("os_family:      {}\n", o.os_family));
-                s.push_str(&format!("os_release:     {}\n", o.os_release));
-                s.push_str(&format!("kernel_version: {}\n", o.kernel_version));
-                s.push_str(&format!("cpu_num:        {}\n", o.cpu_num));
-                s.push_str(&format!("cpu_brand:      {}\n", o.cpu_brand));
-                s.push_str(&format!("cpu_vender_id:  {}", o.cpu_vender_id));
+                let _ = writeln!(s, "version:        {}", o.version);
+                let _ = writeln!(s, "host_name:      {}", o.host_name);
+                let _ = writeln!(s, "os_name:        {}", o.os_name);
+                let _ = writeln!(s, "os_arch:        {}", o.os_arch);
+                let _ = writeln!(s, "os_family:      {}", o.os_family);
+                let _ = writeln!(s, "os_release:     {}", o.os_release);
+                let _ = writeln!(s, "kernel_version: {}", o.kernel_version);
+                let _ = writeln!(s, "cpu_num:        {}", o.cpu_num);
+                let _ = writeln!(s, "cpu_brand:      {}", o.cpu_brand);
+                let _ = write!(s, "cpu_vender_id:  {}", o.cpu_vender_id);
                 s
             })
             .unwrap_or_default();
 
-        let mut di: String = "".to_string();
+        let mut di: String = String::new();
         if !host.disks.is_empty() {
             let mut t = Table::new();
             t.set_titles(row!["name", "mp", "fs", "total", "used", "free"]);
@@ -391,7 +391,7 @@ pub async fn get_detail(
                 host.uptime_str,
                 "xx.xx.xx.xx".to_string(),
                 sys_info,
-                "".to_string(),
+                String::new(),
                 di
             ]);
         }
@@ -426,7 +426,7 @@ pub async fn report(_auth: auth::HostAuth, req_header: HeaderMap, body: Bytes) -
                         json_data = Some(v);
                     }
                     Err(err) => {
-                        error!("Invalid pb data! {:?}", err);
+                        error!("Invalid pb data! {err:?}");
                     }
                 }
             }
@@ -436,7 +436,7 @@ pub async fn report(_auth: auth::HostAuth, req_header: HeaderMap, body: Bytes) -
                     json_data = Some(v);
                 }
                 Err(err) => {
-                    error!("Invalid json data! {:?}", err);
+                    error!("Invalid json data! {err:?}");
                 }
             }
         } else {
