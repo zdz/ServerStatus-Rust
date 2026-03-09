@@ -301,12 +301,12 @@ pub fn gen_sys_id(sys_info: &SysInfo) -> String {
     match fs::read_to_string(SYS_ID_FILE) {
         Ok(content) => {
             if (!content.is_empty()) {
-                info!("{}", format!("read sys_id from {SYS_ID_FILE}"));
+                info!("read sys_id from {SYS_ID_FILE}");
                 return content.trim().to_string();
             }
         }
         Err(_) => {
-            warn!("{}", format!("can't read {SYS_ID_FILE}, regen sys_id"));
+            warn!("can't read {SYS_ID_FILE}, regen sys_id");
         }
     }
 
@@ -330,10 +330,10 @@ pub fn gen_sys_id(sys_info: &SysInfo) -> String {
 
     match fs::write(SYS_ID_FILE, &sys_id) {
         Ok(()) => {
-            info!("{}", format!("save sys_id to {SYS_ID_FILE} succ"));
+            info!("save sys_id to {SYS_ID_FILE} succ");
         }
         Err(_) => {
-            warn!("{}", format!("save sys_id to {SYS_ID_FILE} fail"));
+            warn!("save sys_id to {SYS_ID_FILE} fail");
         }
     }
 

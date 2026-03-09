@@ -94,12 +94,10 @@ impl Webhook {
                 http_client_builder = http_client_builder.header(k, v);
             }
 
-            if r.username.is_some()
-                && r.password.is_some()
-                && !r.username.as_ref().unwrap().is_empty()
-                && !r.password.as_ref().unwrap().is_empty()
-            {
-                http_client_builder = http_client_builder.basic_auth(r.username.as_ref().unwrap(), r.password.as_ref());
+            if let (Some(user), Some(pass)) = (r.username.as_ref(), r.password.as_ref()) {
+                if !user.is_empty() && !pass.is_empty() {
+                    http_client_builder = http_client_builder.basic_auth(user, Some(pass));
+                }
             }
 
             //
