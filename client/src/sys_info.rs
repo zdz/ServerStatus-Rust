@@ -176,12 +176,9 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
         }
     }
 
-    stat.hdd_total = hdd_total_bytes / 1024 / 1024;
-    stat.hdd_used = (hdd_total_bytes - hdd_avail_bytes) / 1024 / 1024;
-
-    // stat.hdd_total = hdd_total / unit.pow(2);
-    // stat.hdd_used = (hdd_total - hdd_avail) / unit.pow(2);
-
+    let divisor = if stat.si { 1000_u64 * 1000_u64 } else { 1024_u64 * 1024_u64 };
+    stat.hdd_total = hdd_total_bytes / divisor;
+    stat.hdd_used = (hdd_total_bytes - hdd_avail_bytes) / divisor;
     // t/u/p/d
     let (t, u, p, d) = if args.disable_tupd {
         (0, 0, 0, 0)
