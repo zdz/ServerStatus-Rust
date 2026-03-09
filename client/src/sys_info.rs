@@ -44,6 +44,50 @@ lazy_static! {
     .to_vec();
     pub static ref G_CPU_PERCENT: Arc<Mutex<f64>> = Arc::new(Default::default());
 }
+
+/// A minimal disk descriptor used by [`calc_hdd_stats`] so the logic can be
+/// tested without OS-level disk enumeration.
+#[derive(Debug)]
+pub(crate) struct DiskCalcInput {
+    pub name: String,
+    pub fs_type: String,
+    pub total: u64,
+    pub avail: u64,
+}
+
+/// Compute `(hdd_total_mb, hdd_used_mb)` from a slice of disk descriptors.
+///
+/// * `si = true`  → SI units (1 MB  = 1 000 000 bytes, macOS style)
+/// * `si = false` → IEC units (1 MiB = 1 048 576 bytes, Linux/Windows style)
+///
+/// On non-Windows platforms the same physical disk can appear multiple times
+/// (once per mount point); `is_windows = false` enables deduplication by disk
+/// name so each physical device is counted only once.
+pub(crate) fn calc_hdd_stats(disks: &[DiskCalcInput], si: bool, is_windows: bool) -> (u64, u64) {
+    let (mut total_bytes, mut avail_bytes) = (0_u64, 0_u64);
+    // Dedup set is only needed on non-Windows platforms.
+    let mut seen: Option<HashSet<String>> = if !is_windows { Some(HashSet::new()) } else { None };
+
+    for disk in disks {
+        let fs = disk.fs_type.to_lowercase();
+        if G_EXPECT_FS.iter().any(|&k| fs.contains(k)) {
+            if let Some(ref mut s) = seen {
+                if s.contains(&disk.name) {
+                    continue;
+                }
+                s.insert(disk.name.clone());
+            }
+            total_bytes += disk.total;
+            avail_bytes += disk.avail;
+        }
+    }
+
+    // SI:  1 MB  = 1_000_000 bytes  (10^6,  used on macOS)
+    // IEC: 1 MiB = 1_048_576 bytes  (2^20, used on Linux / Windows)
+    let divisor = if si { 1_000_000_u64 } else { 1_048_576_u64 };
+    (total_bytes / divisor, (total_bytes - avail_bytes) / divisor)
+}
+
 pub fn start_cpu_percent_collect_t() {
     let mut sys = System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::new().with_cpu_usage()));
     thread::spawn(move || loop {
@@ -95,14 +139,10 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
     stat.version = env!("CARGO_PKG_VERSION").to_string();
     stat.vnstat = args.vnstat;
 
-    // 注意：sysinfo 统一使用 KB, 非KiB，需要转换一下
-    let mut unit: u64 = 1024;
-
     // mac系统 下面使用 KB 展示
     #[cfg(target_os = "macos")]
     {
         stat.si = true;
-        unit = 1000;
     }
 
     let mut sys = System::new_with_specifics(RefreshKind::new().with_memory(MemoryRefreshKind::everything()));
@@ -128,12 +168,7 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
     stat.swap_total = sys.total_swap() / 1024;
     stat.swap_used = (sys.total_swap() - sys.free_swap()) / 1024;
 
-    // hdd KB -> KiB
-    let (mut hdd_total, mut hdd_avail) = (0_u64, 0_u64);
-
-    #[cfg(not(target_os = "windows"))]
-    let mut uniq_disk_set = HashSet::new();
-
+    // hdd
     let disks = Disks::new_with_refreshed_list();
     for disk in &disks {
         let di = DiskInfo {
@@ -144,26 +179,23 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
             used: disk.total_space() - disk.available_space(),
             free: disk.available_space(),
         };
-
-        let fs = di.file_system.to_lowercase();
-        if G_EXPECT_FS.iter().any(|&k| fs.contains(k)) {
-            #[cfg(not(target_os = "windows"))]
-            {
-                if uniq_disk_set.contains(disk.name()) {
-                    continue;
-                }
-                uniq_disk_set.insert(disk.name());
-            }
-
-            hdd_total += disk.total_space();
-            hdd_avail += disk.available_space();
-        }
-
         stat.disks.push(di);
     }
 
-    stat.hdd_total = hdd_total / unit.pow(2);
-    stat.hdd_used = (hdd_total - hdd_avail) / unit.pow(2);
+    let disk_inputs: Vec<DiskCalcInput> = disks
+        .iter()
+        .map(|d| DiskCalcInput {
+            name: d.name().to_string_lossy().into_owned(),
+            fs_type: d.file_system().to_string_lossy().into_owned(),
+            total: d.total_space(),
+            avail: d.available_space(),
+        })
+        .collect();
+
+    let is_windows = cfg!(target_os = "windows");
+    let (hdd_total, hdd_used) = calc_hdd_stats(&disk_inputs, stat.si, is_windows);
+    stat.hdd_total = hdd_total;
+    stat.hdd_used = hdd_used;
 
     // t/u/p/d
     let (t, u, p, d) = if args.disable_tupd {
@@ -412,4 +444,132 @@ pub fn print_sysinfo() {
     sysinfo_t.add_row(row!["Disks", dt]);
 
     sysinfo_t.printstd();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn disk(name: &str, fs: &str, total: u64, avail: u64) -> DiskCalcInput {
+        DiskCalcInput {
+            name: name.to_string(),
+            fs_type: fs.to_string(),
+            total,
+            avail,
+        }
+    }
+
+    // ── SI units (macOS, 1 MB = 1_000_000 bytes) ────────────────────────────
+
+    #[test]
+    fn test_si_units_basic() {
+        // 1 GB (SI) = 1_000_000_000 bytes; used = 500 MB
+        let disks = vec![disk("/dev/sda1", "apfs", 1_000_000_000, 500_000_000)];
+        let (total, used) = calc_hdd_stats(&disks, true, false);
+        assert_eq!(total, 1000);
+        assert_eq!(used, 500);
+    }
+
+    // ── IEC units (Linux/Windows, 1 MiB = 1_048_576 bytes) ──────────────────
+
+    #[test]
+    fn test_iec_units_basic() {
+        // 1 GiB = 1_073_741_824 bytes = 1024 MiB; used = 512 MiB
+        let disks = vec![disk("/dev/sda1", "ext4", 1_073_741_824, 536_870_912)];
+        let (total, used) = calc_hdd_stats(&disks, false, false);
+        assert_eq!(total, 1024);
+        assert_eq!(used, 512);
+    }
+
+    // ── Filesystem filtering ─────────────────────────────────────────────────
+
+    #[test]
+    fn test_unknown_fs_excluded() {
+        // tmpfs / devtmpfs are not in G_EXPECT_FS and should not be counted
+        let disks = vec![
+            disk("/dev/sda1", "ext4", 1_073_741_824, 536_870_912),
+            disk("tmpfs", "tmpfs", 536_870_912, 536_870_912),
+        ];
+        let (total, used) = calc_hdd_stats(&disks, false, false);
+        assert_eq!(total, 1024);
+        assert_eq!(used, 512);
+    }
+
+    #[test]
+    fn test_all_unknown_fs_gives_zero() {
+        let disks = vec![
+            disk("tmpfs", "tmpfs", 1_073_741_824, 1_073_741_824),
+            disk("devtmpfs", "devtmpfs", 1_073_741_824, 1_073_741_824),
+        ];
+        let (total, used) = calc_hdd_stats(&disks, false, false);
+        assert_eq!(total, 0);
+        assert_eq!(used, 0);
+    }
+
+    // ── Disk deduplication on non-Windows ────────────────────────────────────
+
+    #[test]
+    fn test_dedup_same_name_counted_once() {
+        // The same physical disk (/dev/sda) may surface under multiple mount
+        // points; only the first entry should contribute to the totals.
+        let disks = vec![
+            disk("/dev/sda", "ext4", 1_073_741_824, 536_870_912),
+            disk("/dev/sda", "ext4", 1_073_741_824, 536_870_912),
+        ];
+        let (total, used) = calc_hdd_stats(&disks, false, false);
+        assert_eq!(total, 1024);
+        assert_eq!(used, 512);
+    }
+
+    #[test]
+    fn test_different_disk_names_both_counted() {
+        let disks = vec![
+            disk("/dev/sda1", "ext4", 1_073_741_824, 536_870_912),
+            disk("/dev/sdb1", "xfs", 1_073_741_824, 0),
+        ];
+        let (total, used) = calc_hdd_stats(&disks, false, false);
+        assert_eq!(total, 2048);
+        assert_eq!(used, 1536);
+    }
+
+    // ── Windows: no deduplication ────────────────────────────────────────────
+
+    #[test]
+    fn test_windows_no_dedup() {
+        // On Windows (is_windows = true) every entry is always counted,
+        // even when two entries share the same name.
+        let disks = vec![
+            disk("C:", "ntfs", 1_073_741_824, 536_870_912),
+            disk("C:", "ntfs", 1_073_741_824, 536_870_912),
+        ];
+        let (total, used) = calc_hdd_stats(&disks, false, true);
+        assert_eq!(total, 2048);
+        assert_eq!(used, 1024);
+    }
+
+    // ── Edge cases ───────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_empty_disk_list() {
+        let (total, used) = calc_hdd_stats(&[], false, false);
+        assert_eq!(total, 0);
+        assert_eq!(used, 0);
+    }
+
+    #[test]
+    fn test_fully_used_disk() {
+        let disks = vec![disk("/dev/sda1", "ext4", 1_073_741_824, 0)];
+        let (total, used) = calc_hdd_stats(&disks, false, false);
+        assert_eq!(total, 1024);
+        assert_eq!(used, 1024);
+    }
+
+    #[test]
+    fn test_case_insensitive_fs_match() {
+        // Filesystem strings from the OS may be uppercase or mixed case.
+        let disks = vec![disk("/dev/sda1", "EXT4", 1_073_741_824, 536_870_912)];
+        let (total, used) = calc_hdd_stats(&disks, false, false);
+        assert_eq!(total, 1024);
+        assert_eq!(used, 512);
+    }
 }
