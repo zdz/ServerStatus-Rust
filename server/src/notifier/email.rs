@@ -20,6 +20,7 @@ pub struct Config {
     pub server: String,
     pub username: String,
     pub password: String,
+    pub from: Option<String>,
     pub to: String,
     pub subject: String,
     pub title: String,
@@ -48,9 +49,16 @@ impl crate::notifier::Notifier for Email {
     }
 
     fn send_notify(&self, html_content: String) -> Result<()> {
+        let from_addr = self
+            .config
+            .from
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .unwrap_or(&self.config.username);
         let mut builder = Message::builder()
             .subject(self.config.subject.clone())
-            .from(format!("ServerStatus <{}>", self.config.username).parse().unwrap());
+            .from(format!("ServerStatus <{from_addr}>").parse()?);
 
         let mailboxes: Mailboxes = self.config.to.parse().expect("Invalid email addresses");
         for mailbox in mailboxes.iter() {
