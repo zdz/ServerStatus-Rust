@@ -1,5 +1,5 @@
 #![deny(warnings)]
-use anyhow::Result;
+use anyhow::{Context, Result};
 use lettre::{
     message::{header, Mailboxes, MultiPart, SinglePart},
     transport::smtp::authentication::Credentials,
@@ -60,7 +60,11 @@ impl crate::notifier::Notifier for Email {
             .subject(self.config.subject.clone())
             .from(format!("ServerStatus <{from_addr}>").parse()?);
 
-        let mailboxes: Mailboxes = self.config.to.parse().expect("Invalid email addresses");
+        let mailboxes: Mailboxes = self
+            .config
+            .to
+            .parse()
+            .context("Failed to parse recipient email addresses")?;
         for mailbox in mailboxes.iter() {
             builder = builder.to(mailbox.clone());
         }
