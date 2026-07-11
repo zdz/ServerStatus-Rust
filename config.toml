@@ -117,6 +117,10 @@ custom_tpl = """
 [email]
 enabled = false
 server = "smtp.gmail.com"
+# 可选：发件人邮箱地址。
+# 部分服务商（如 SendGrid）SMTP 登录账号(username)为 API Key 而非邮箱地址，
+# 此时需在此填写真实发件邮箱；留空则默认使用 username 作为发件地址。
+#from = "user@email.com"
 username = "user@email.com"
 password = "***"
 to = "user1@email.com;user2@email.com"
