@@ -401,11 +401,14 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
     stat.thread = d;
 
     if args.vnstat {
-        let (network_in, network_out, m_network_in, m_network_out) = vnstat::get_traffic(args).unwrap();
+        let (network_in, network_out, m_network_in, m_network_out, d_network_in, d_network_out) =
+            vnstat::get_traffic(args).unwrap();
         stat.network_in = network_in;
         stat.network_out = network_out;
         stat.last_network_in = network_in - m_network_in;
         stat.last_network_out = network_out - m_network_out;
+        stat.daily_network_in = d_network_in;
+        stat.daily_network_out = d_network_out;
     } else {
         let (network_in, network_out) = get_sys_traffic(args);
         stat.network_in = network_in;

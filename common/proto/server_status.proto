@@ -112,6 +112,10 @@ message StatRequest {
   // false: KiB (1024), true: KB (1000)
   bool si = 45;
   repeated DiskInfo disks = 46;
+
+  // current calendar day traffic
+  uint64 daily_network_in = 47;
+  uint64 daily_network_out = 48;
 }
 
 message Response {

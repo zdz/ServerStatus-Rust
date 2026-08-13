@@ -1,6 +1,6 @@
 #![allow(unused)]
 use anyhow::Result;
-use chrono::{Datelike, Local, Timelike};
+use chrono::{Datelike, Local, TimeZone, Timelike};
 use once_cell::sync::OnceCell;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -26,6 +26,48 @@ const OS_LIST: [&str; 10] = [
 
 static STAT_SENDER: OnceCell<SyncSender<Cow<HostStat>>> = OnceCell::new();
 
+fn date_key(year: i32, month: u32, day: u32) -> u32 {
+    u32::try_from(year).unwrap_or_default() * 10_000 + month * 100 + day
+}
+
+fn current_date_key() -> u32 {
+    let now = Local::now();
+    date_key(now.year(), now.month(), now.day())
+}
+
+fn timestamp_date_key(timestamp: u64) -> Option<u32> {
+    let timestamp = i64::try_from(timestamp).ok()?;
+    Local
+        .timestamp_opt(timestamp, 0)
+        .single()
+        .map(|dt| date_key(dt.year(), dt.month(), dt.day()))
+}
+
+fn apply_daily_traffic(info: &mut Host, stat: &mut HostStat, today: u32) {
+    if stat.vnstat && (stat.daily_network_in > 0 || stat.daily_network_out > 0) {
+        info.daily_network_in_base = stat.network_in.saturating_sub(stat.daily_network_in);
+        info.daily_network_out_base = stat.network_out.saturating_sub(stat.daily_network_out);
+        info.daily_base_date = today;
+        return;
+    }
+
+    let reset_baseline = info.daily_base_date != today
+        || info.daily_network_in_base > stat.network_in
+        || info.daily_network_out_base > stat.network_out;
+
+    if reset_baseline {
+        info.daily_network_in_base = stat.network_in;
+        info.daily_network_out_base = stat.network_out;
+        info.daily_base_date = today;
+        stat.daily_network_in = 0;
+        stat.daily_network_out = 0;
+        return;
+    }
+
+    stat.daily_network_in = stat.network_in.saturating_sub(info.daily_network_in_base);
+    stat.daily_network_out = stat.network_out.saturating_sub(info.daily_network_out_base);
+}
+
 pub struct StatsMgr {
     resp_json: Arc<Mutex<String>>,
     stats_data: Arc<Mutex<StatsResp>>,
@@ -47,20 +89,48 @@ impl StatsMgr {
 
         if let Ok(stats_json) = serde_json::from_str::<serde_json::Value>(contents.as_str()) {
             if let Some(servers) = stats_json["servers"].as_array() {
+                let today = current_date_key();
                 for v in servers {
-                    if let (Some(name), Some(last_network_in), Some(last_network_out)) = (
-                        v["name"].as_str(),
-                        v["last_network_in"].as_u64(),
-                        v["last_network_out"].as_u64(),
-                    ) {
-                        if let Some(srv) = hosts_map.get_mut(name) {
-                            srv.last_network_in = last_network_in;
-                            srv.last_network_out = last_network_out;
-
-                            trace!("{} => last in/out ({}/{}))", &name, last_network_in, last_network_out);
-                        }
-                    } else {
+                    let Some(name) = v["name"].as_str() else {
                         error!("invalid json => {v:?}");
+                        continue;
+                    };
+                    let Some(srv) = hosts_map.get_mut(name) else {
+                        continue;
+                    };
+
+                    if let (Some(last_network_in), Some(last_network_out)) =
+                        (v["last_network_in"].as_u64(), v["last_network_out"].as_u64())
+                    {
+                        srv.last_network_in = last_network_in;
+                        srv.last_network_out = last_network_out;
+                        trace!("{} => last in/out ({}/{}))", &name, last_network_in, last_network_out);
+                    }
+
+                    if let (
+                        Some(latest_ts),
+                        Some(network_in),
+                        Some(network_out),
+                        Some(daily_network_in),
+                        Some(daily_network_out),
+                    ) = (
+                        v["latest_ts"].as_u64(),
+                        v["network_in"].as_u64(),
+                        v["network_out"].as_u64(),
+                        v["daily_network_in"].as_u64(),
+                        v["daily_network_out"].as_u64(),
+                    ) {
+                        if timestamp_date_key(latest_ts) == Some(today) {
+                            srv.daily_network_in_base = network_in.saturating_sub(daily_network_in);
+                            srv.daily_network_out_base = network_out.saturating_sub(daily_network_out);
+                            srv.daily_base_date = today;
+                            trace!(
+                                "{} => daily base ({}/{})",
+                                &name,
+                                srv.daily_network_in_base,
+                                srv.daily_network_out_base
+                            );
+                        }
                     }
                 }
                 trace!("load stats.json succ!");
@@ -117,6 +187,9 @@ impl StatsMgr {
                                     if let Some(o) = host {
                                         inst.last_network_in = o.last_network_in;
                                         inst.last_network_out = o.last_network_out;
+                                        inst.daily_network_in_base = o.daily_network_in_base;
+                                        inst.daily_network_out_base = o.daily_network_out_base;
+                                        inst.daily_base_date = o.daily_base_date;
                                     }
                                     hosts_map.insert(stat_t.name.clone(), inst);
                                 } else {
@@ -176,6 +249,8 @@ impl StatsMgr {
                                 stat_t.last_network_out = info.last_network_out;
                             }
                         }
+
+                        apply_daily_traffic(info, stat_t, current_date_key());
 
                         // uptime str
                         let day = stat_t.uptime / (3600 * 24);
@@ -395,5 +470,119 @@ impl StatsMgr {
         }
 
         Ok(resp_json)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::apply_daily_traffic;
+    use crate::config::Host;
+    use crate::payload::HostStat;
+
+    #[test]
+    fn daily_traffic_uses_same_day_baseline() {
+        let mut host = Host {
+            daily_network_in_base: 100,
+            daily_network_out_base: 200,
+            daily_base_date: 20260813,
+            ..Default::default()
+        };
+        let mut stat = HostStat {
+            network_in: 150,
+            network_out: 260,
+            ..Default::default()
+        };
+
+        apply_daily_traffic(&mut host, &mut stat, 20260813);
+
+        assert_eq!(stat.daily_network_in, 50);
+        assert_eq!(stat.daily_network_out, 60);
+    }
+
+    #[test]
+    fn daily_traffic_resets_baseline_on_date_change() {
+        let mut host = Host {
+            daily_network_in_base: 100,
+            daily_network_out_base: 200,
+            daily_base_date: 20260812,
+            ..Default::default()
+        };
+        let mut stat = HostStat {
+            network_in: 150,
+            network_out: 260,
+            ..Default::default()
+        };
+
+        apply_daily_traffic(&mut host, &mut stat, 20260813);
+
+        assert_eq!(host.daily_network_in_base, 150);
+        assert_eq!(host.daily_network_out_base, 260);
+        assert_eq!(host.daily_base_date, 20260813);
+        assert_eq!(stat.daily_network_in, 0);
+        assert_eq!(stat.daily_network_out, 0);
+    }
+
+    #[test]
+    fn daily_traffic_resets_baseline_when_counter_regresses() {
+        let mut host = Host {
+            daily_network_in_base: 500,
+            daily_network_out_base: 600,
+            daily_base_date: 20260813,
+            ..Default::default()
+        };
+        let mut stat = HostStat {
+            network_in: 100,
+            network_out: 120,
+            ..Default::default()
+        };
+
+        apply_daily_traffic(&mut host, &mut stat, 20260813);
+
+        assert_eq!(host.daily_network_in_base, 100);
+        assert_eq!(host.daily_network_out_base, 120);
+        assert_eq!(stat.daily_network_in, 0);
+        assert_eq!(stat.daily_network_out, 0);
+    }
+
+    #[test]
+    fn vnstat_daily_values_are_authoritative_when_present() {
+        let mut host = Host::default();
+        let mut stat = HostStat {
+            vnstat: true,
+            network_in: 1_000,
+            network_out: 2_000,
+            daily_network_in: 100,
+            daily_network_out: 200,
+            ..Default::default()
+        };
+
+        apply_daily_traffic(&mut host, &mut stat, 20260813);
+
+        assert_eq!(stat.daily_network_in, 100);
+        assert_eq!(stat.daily_network_out, 200);
+        assert_eq!(host.daily_network_in_base, 900);
+        assert_eq!(host.daily_network_out_base, 1_800);
+        assert_eq!(host.daily_base_date, 20260813);
+    }
+
+    #[test]
+    fn old_vnstat_client_falls_back_to_server_baseline() {
+        let mut host = Host {
+            daily_network_in_base: 900,
+            daily_network_out_base: 1_800,
+            daily_base_date: 20260813,
+            ..Default::default()
+        };
+        let mut stat = HostStat {
+            vnstat: true,
+            network_in: 1_000,
+            network_out: 2_000,
+            ..Default::default()
+        };
+
+        apply_daily_traffic(&mut host, &mut stat, 20260813);
+
+        assert_eq!(stat.daily_network_in, 100);
+        assert_eq!(stat.daily_network_out, 200);
     }
 }

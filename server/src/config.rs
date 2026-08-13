@@ -49,6 +49,13 @@ pub struct Host {
     #[serde(skip_deserializing)]
     pub last_network_out: u64,
 
+    #[serde(skip_serializing, skip_deserializing)]
+    pub daily_network_in_base: u64,
+    #[serde(skip_serializing, skip_deserializing)]
+    pub daily_network_out_base: u64,
+    #[serde(skip_serializing, skip_deserializing)]
+    pub daily_base_date: u32,
+
     // user data
     #[serde(skip_serializing, skip_deserializing)]
     pub pos: usize,

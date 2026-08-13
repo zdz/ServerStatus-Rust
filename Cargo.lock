@@ -2418,7 +2418,7 @@ dependencies = [
 
 [[package]]
 name = "stat_client"
-version = "1.8.2"
+version = "1.8.3"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2454,7 +2454,7 @@ dependencies = [
 
 [[package]]
 name = "stat_common"
-version = "1.1.5"
+version = "1.1.6"
 dependencies = [
  "bytes",
  "chrono",
@@ -2470,7 +2470,7 @@ dependencies = [
 
 [[package]]
 name = "stat_server"
-version = "1.8.2"
+version = "1.8.3"
 dependencies = [
  "anyhow",
  "async-trait",

@@ -63,6 +63,11 @@ pub struct HostStat {
     #[serde(default)]
     pub last_network_out: u64,
 
+    #[serde(default)]
+    pub daily_network_in: u64,
+    #[serde(default)]
+    pub daily_network_out: u64,
+
     pub cpu: f64,
     pub memory_total: u64,
     pub memory_used: u64,

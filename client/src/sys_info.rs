@@ -218,11 +218,14 @@ pub fn sample(args: &Args, stat: &mut StatRequest) {
     if args.vnstat {
         #[cfg(target_os = "linux")]
         {
-            let (network_in, network_out, m_network_in, m_network_out) = vnstat::get_traffic(args).unwrap();
+            let (network_in, network_out, m_network_in, m_network_out, d_network_in, d_network_out) =
+                vnstat::get_traffic(args).unwrap();
             stat.network_in = network_in;
             stat.network_out = network_out;
             stat.last_network_in = network_in - m_network_in;
             stat.last_network_out = network_out - m_network_out;
+            stat.daily_network_in = d_network_in;
+            stat.daily_network_out = d_network_out;
         }
     } else {
         let (mut network_in, mut network_out) = (0_u64, 0_u64);

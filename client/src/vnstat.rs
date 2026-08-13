@@ -70,7 +70,7 @@ pub struct VnstatJson {
     pub interfaces: Vec<Iface>,
 }
 
-fn calc_traffic(j: &VnstatJson, mr: bool, args: &Args) -> (u64, u64, u64, u64) {
+fn calc_traffic(j: &VnstatJson, mr: bool, args: &Args) -> (u64, u64, u64, u64, u64, u64) {
     let mut v1 = false;
     if j.jsonversion.eq("1") {
         v1 = true;
@@ -83,6 +83,7 @@ fn calc_traffic(j: &VnstatJson, mr: bool, args: &Args) -> (u64, u64, u64, u64) {
     let cur_month = local_now.month();
     let cur_day = local_now.day();
     let (mut network_in, mut network_out, mut m_network_in, mut m_network_out) = (0, 0, 0, 0);
+    let (mut d_network_in, mut d_network_out) = (0, 0);
 
     for iface in &j.interfaces {
         let name = if v1 { &iface.r#id } else { &iface.name };
@@ -92,6 +93,14 @@ fn calc_traffic(j: &VnstatJson, mr: bool, args: &Args) -> (u64, u64, u64, u64) {
 
         network_in += iface.traffic.total.rx;
         network_out += iface.traffic.total.tx;
+
+        let day = if v1 { &iface.traffic.days } else { &iface.traffic.day };
+        for d in day {
+            if d.date.year == cur_year && d.date.month == cur_month && d.date.day == cur_day {
+                d_network_in += d.rx;
+                d_network_out += d.tx;
+            }
+        }
 
         if mr {
             // month rotate, v2 only
@@ -147,14 +156,16 @@ fn calc_traffic(j: &VnstatJson, mr: bool, args: &Args) -> (u64, u64, u64, u64) {
         network_out * factor,
         m_network_in * factor,
         m_network_out * factor,
+        d_network_in * factor,
+        d_network_out * factor,
     )
 }
 
-pub fn get_traffic(args: &Args) -> Result<(u64, u64, u64, u64)> {
+pub fn get_traffic(args: &Args) -> Result<(u64, u64, u64, u64, u64, u64)> {
     if args.vnstat_mr == 1 {
         // !
         let a = Command::new("/usr/bin/vnstat")
-            .args(["--json", "m"])
+            .args(["--json"])
             .output()
             .expect("failed to execute vnstat")
             .stdout;
@@ -185,7 +196,97 @@ pub fn get_traffic(args: &Args) -> Result<(u64, u64, u64, u64)> {
 #[allow(unused)]
 #[cfg(test)]
 mod tests {
-    use crate::vnstat::VnstatJson;
+    use chrono::{Datelike, Local};
+    use clap::Parser;
+
+    use crate::vnstat::{Date, DateRT, Iface, Traffic, VnstatJson, RT};
+    use crate::Args;
+
+    #[test]
+    fn test_calc_traffic_includes_current_day_v2() {
+        let now = Local::now();
+        let j = VnstatJson {
+            vnstatversion: "2.13".to_string(),
+            jsonversion: "2".to_string(),
+            interfaces: vec![Iface {
+                name: "eth0".to_string(),
+                traffic: Traffic {
+                    total: RT { rx: 1_000, tx: 2_000 },
+                    month: vec![DateRT {
+                        id: 1,
+                        date: Date {
+                            year: now.year(),
+                            month: now.month(),
+                            day: 0,
+                        },
+                        rx: 500,
+                        tx: 700,
+                    }],
+                    day: vec![DateRT {
+                        id: 2,
+                        date: Date {
+                            year: now.year(),
+                            month: now.month(),
+                            day: now.day(),
+                        },
+                        rx: 100,
+                        tx: 200,
+                    }],
+                    ..Default::default()
+                },
+                ..Default::default()
+            }],
+        };
+        let args = Args::parse_from(["stat_client"]);
+
+        assert_eq!(
+            super::calc_traffic(&j, false, &args),
+            (1_000, 2_000, 500, 700, 100, 200)
+        );
+    }
+
+    #[test]
+    fn test_calc_traffic_includes_current_day_v1_units() {
+        let now = Local::now();
+        let j = VnstatJson {
+            vnstatversion: "1.18".to_string(),
+            jsonversion: "1".to_string(),
+            interfaces: vec![Iface {
+                r#id: "eth0".to_string(),
+                traffic: Traffic {
+                    total: RT { rx: 10, tx: 20 },
+                    months: vec![DateRT {
+                        id: 1,
+                        date: Date {
+                            year: now.year(),
+                            month: now.month(),
+                            day: 0,
+                        },
+                        rx: 5,
+                        tx: 7,
+                    }],
+                    days: vec![DateRT {
+                        id: 2,
+                        date: Date {
+                            year: now.year(),
+                            month: now.month(),
+                            day: now.day(),
+                        },
+                        rx: 1,
+                        tx: 2,
+                    }],
+                    ..Default::default()
+                },
+                ..Default::default()
+            }],
+        };
+        let args = Args::parse_from(["stat_client"]);
+
+        assert_eq!(
+            super::calc_traffic(&j, false, &args),
+            (10 * 1024, 20 * 1024, 5 * 1024, 7 * 1024, 1024, 2 * 1024)
+        );
+    }
 
     #[test]
     fn test_json_v1_m() {
