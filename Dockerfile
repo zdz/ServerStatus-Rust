@@ -1,13 +1,13 @@
-FROM rust:1.76-alpine3.19 as builder
+FROM rust:1.94-alpine3.23 AS builder
 
 WORKDIR /app
 COPY ./ /app
 
-RUN apk add --no-cache musl-dev git cmake make g++
-RUN cargo build --release --bin stat_server
+RUN apk add --no-cache musl-dev linux-headers git cmake make g++
+RUN cargo build --release --locked --bin stat_server
 RUN strip /app/target/release/stat_server
 
-FROM scratch as production
+FROM scratch AS production
 LABEL maintainer="doge.py@gmail.com" \
     description="A simple server monitoring tool"
 
