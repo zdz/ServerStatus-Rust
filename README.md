@@ -397,7 +397,7 @@ OPTIONS:
 
 # 一些参数说明
 --ip-info       # 显示本机ip信息后立即退出，目前使用 ip-api.com 数据
---ip-source     # 指定 ip 信息源，ip-api.com / ip.sb / ipapi.co / myip.la
+--ip-source     # 指定 ip 信息源，ip-api.com / ip.sb / ipapi.co / myip.la / internetdata.io
 --sys-info      # 显示本机系统信息后立即退出
 --disable-extra # 不上报系统信息和IP信息
 --disable-ping  # 停用三网延时和丢包率探测

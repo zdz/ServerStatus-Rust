@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use crate::Args;
 
+mod internetdata;
 mod ip_api_com;
 mod ip_sb;
 mod ipapi_co;
@@ -58,6 +59,7 @@ pub async fn get_ip_info(args: &Args) -> Result<IpInfo> {
         "ip-api.com" => ip_api_com::get_ip_info(args).await,
         "ipapi.co" => ipapi_co::get_ip_info(args).await,
         "myip.la" => myip_la::get_ip_info(args).await,
+        "internetdata.io" => internetdata::get_ip_info(args).await,
         _ => ip_sb::get_ip_info(args).await,
     }
 }
